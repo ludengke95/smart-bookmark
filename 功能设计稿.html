@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智能书签 Smart Bookmark - 页面设计稿 & 交互原型 (高密度多布局版)</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    /* CSS 变量与主题定义 */
+    :root, [data-theme="dark-slate"] {
+      --bg-main: #0f172a;
+      --bg-card: #1e293b;
+      --bg-card-hover: #334155;
+      --bg-subtle: #0b1120;
+      --bg-input: #1e293b;
+      --border: #334155;
+      --border-focus: #6366f1;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-fg: #ffffff;
+      --accent-intranet: #10b981;
+      --accent-extranet: #3b82f6;
+      --accent-warn: #f59e0b;
+      --accent-danger: #ef4444;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+      --shadow-lg: 0 10px 25px -3px rgb(0 0 0 / 0.5);
+    }
+
+    [data-theme="clean-light"] {
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f1f5f9;
+      --bg-subtle: #edf2f7;
+      --bg-input: #f8fafc;
+      --border: #e2e8f0;
+      --border-focus: #4f46e5;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --text-dim: #94a3b8;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-fg: #ffffff;
+      --accent-intranet: #059669;
+      --accent-extranet: #2563eb;
+      --accent-warn: #d97706;
+      --accent-danger: #dc2626;
+      --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.08);
+      --shadow-lg: 0 10px 25px -3px rgb(0 0 0 / 0.1);
+    }
+
+    [data-theme="cyber-indigo"] {
+      --bg-main: #09090b;
+      --bg-card: #18181b;
+      --bg-card-hover: #27272a;
+      --bg-subtle: #000000;
+      --bg-input: #18181b;
+      --border: #27272a;
+      --border-focus: #ec4899;
+      --text-main: #fafafa;
+      --text-muted: #a1a1aa;
+      --text-dim: #71717a;
+      --primary: #ec4899;
+      --primary-hover: #db2777;
+      --primary-fg: #ffffff;
+      --accent-intranet: #06b6d4;
+      --accent-extranet: #8b5cf6;
+      --accent-warn: #eab308;
+      --accent-danger: #f43f5e;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+      --shadow-lg: 0 10px 25px -3px rgb(236 72 153 / 0.15);
+    }
+
+    [data-theme="emerald-minimal"] {
+      --bg-main: #064e3b;
+      --bg-card: #065f46;
+      --bg-card-hover: #047857;
+      --bg-subtle: #022c22;
+      --bg-input: #065f46;
+      --border: #047857;
+      --border-focus: #34d399;
+      --text-main: #ecfdf5;
+      --text-muted: #a7f3d0;
+      --text-dim: #6ee7b7;
+      --primary: #10b981;
+      --primary-hover: #059669;
+      --primary-fg: #ffffff;
+      --accent-intranet: #34d399;
+      --accent-extranet: #38bdf8;
+      --accent-warn: #fbbf24;
+      --accent-danger: #f87171;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+      --shadow-lg: 0 10px 25px -3px rgb(0 0 0 / 0.4);
+    }
+
+    [data-theme="sunset-warm"] {
+      --bg-main: #1c1917;
+      --bg-card: #292524;
+      --bg-card-hover: #44403c;
+      --bg-subtle: #0c0a09;
+      --bg-input: #292524;
+      --border: #44403c;
+      --border-focus: #f97316;
+      --text-main: #fafaf9;
+      --text-muted: #a8a29e;
+      --text-dim: #78716c;
+      --primary: #f97316;
+      --primary-hover: #ea580c;
+      --primary-fg: #ffffff;
+      --accent-intranet: #84cc16;
+      --accent-extranet: #0ea5e9;
+      --accent-warn: #eab308;
+      --accent-danger: #ef4444;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+      --shadow-lg: 0 10px 25px -3px rgb(249 115 22 / 0.15);
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      transition: background-color 0.25s ease, color 0.25s ease;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: var(--text-dim);
+    }
+
+    .pulse-dot {
+      animation: pulseAnimation 2s infinite;
+    }
+    @keyframes pulseAnimation {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* 视图密度样式定义 */
+    /* 1. 紧凑卡片 (默认 5~6 列) */
+    .density-compact .bookmark-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+    .density-compact .bm-card {
+      padding: 0.75rem;
+      border-radius: 0.75rem;
+    }
+    .density-compact .bm-icon {
+      width: 2rem;
+      height: 2rem;
+    }
+    .density-compact .bm-title {
+      font-size: 0.8125rem;
+    }
+    .density-compact .bm-tags {
+      display: flex;
+    }
+    .density-compact .bm-status {
+      display: flex;
+    }
+
+    /* 2. 极简图标网格 (6~8 列，九宫格极简) */
+    .density-icon .bookmark-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.625rem;
+    }
+    .density-icon .bm-card {
+      padding: 0.75rem 0.5rem;
+      border-radius: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .density-icon .bm-card-header {
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .density-icon .bm-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+    .density-icon .bm-title {
+      font-size: 0.75rem;
+      text-align: center;
+    }
+    .density-icon .bm-tags,
+    .density-icon .bm-status-full,
+    .density-icon .bm-actions {
+      display: none !important;
+    }
+    .density-icon .bm-status-mini {
+      display: inline-block !important;
+    }
+
+    /* 3. 舒适大卡片 (3~4 列) */
+    .density-comfortable .bookmark-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+    .density-comfortable .bm-card {
+      padding: 1rem;
+      border-radius: 1rem;
+    }
+    .density-comfortable .bm-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+    .density-comfortable .bm-title {
+      font-size: 0.875rem;
+    }
+
+    /* 4. 详细列表行模式 (单列) */
+    .density-list .bookmark-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .density-list .bm-card {
+      padding: 0.625rem 1rem;
+      border-radius: 0.625rem;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .density-list .bm-card-header {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .density-list .bm-icon {
+      width: 1.75rem;
+      height: 1.75rem;
+    }
+    .density-list .bm-footer {
+      border-top: none !important;
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white density-compact" data-theme="dark-slate">
+
+  <!-- =============================== -->
+  <!-- 顶部设计稿全局控制栏 (Design Toolbar) -->
+  <!-- =============================== -->
+  <header class="sticky top-0 z-50 bg-[var(--bg-main)] backdrop-blur-md px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-1.5 rounded-lg shadow-inner">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-sm tracking-wide text-[var(--text-main)]">Smart Bookmark 智能书签</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded font-mono bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">v0.2 高密度优化版</span>
+        </div>
+        <p class="text-[11px] text-[var(--text-muted)]">基于网络拓扑智能寻径的多入口 Chrome 扩展</p>
+      </div>
+    </div>
+
+    <!-- 视图切换 Tabs -->
+    <div class="flex items-center bg-[var(--bg-card)] border border-[var(--border)] p-1 rounded-xl gap-1 text-xs">
+      <button onclick="switchView('newtab')" id="tab-btn-newtab" class="view-tab-btn px-3 py-1.5 rounded-lg font-medium transition-all bg-[var(--primary)] text-white shadow-sm flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        新标签页 (管理主页)
+      </button>
+      <button onclick="switchView('popup')" id="tab-btn-popup" class="view-tab-btn px-3 py-1.5 rounded-lg font-medium transition-all text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+        Popup 快捷弹窗
+      </button>
+      <button onclick="openModal('modal-add-bookmark')" class="px-3 py-1.5 rounded-lg font-medium transition-all text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        新增/编辑弹窗
+      </button>
+      <button onclick="openModal('modal-import')" class="px-3 py-1.5 rounded-lg font-medium transition-all text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        书签导入 & 去重
+      </button>
+      <button onclick="switchView('settings')" id="tab-btn-settings" class="view-tab-btn px-3 py-1.5 rounded-lg font-medium transition-all text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        设置与统计
+      </button>
+    </div>
+  </header>
+
+  <!-- ============================================== -->
+  <!-- 视图 1：新标签页 / 独立管理主页面 (New Tab Page) -->
+  <!-- ============================================== -->
+  <main id="view-newtab" class="app-view flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 transition-all">
+
+    <!-- 3.3 美化区 (Top Aesthetic Area - 适度紧凑化) -->
+    <section class="mb-8 text-center flex flex-col items-center justify-center">
+      <!-- 实时时钟与日期 -->
+      <div class="mb-1">
+        <div id="live-clock" class="text-4xl sm:text-5xl font-light tracking-tight text-[var(--text-main)] font-mono drop-shadow-sm">
+          09:54:33
+        </div>
+        <div id="live-date" class="text-xs font-medium text-[var(--text-muted)] mt-1 tracking-wider">
+          2026年8月31日 星期一 · 农历七月十九
+        </div>
+      </div>
+
+      <!-- 可自定义座右铭 -->
+      <div class="group relative inline-flex items-center gap-2 mt-1.5 px-3 py-1 rounded-full bg-[var(--bg-card)]/60 border border-[var(--border)] backdrop-blur-sm text-xs text-[var(--text-muted)] hover:border-[var(--primary)] transition-all cursor-pointer" onclick="editMotto()">
+        <span class="text-[var(--primary)]">✦</span>
+        <span id="motto-text">Stay hungry, stay foolish. 无论身处内网还是外网，一键直达。</span>
+        <svg class="w-3 h-3 opacity-0 group-hover:opacity-100 text-[var(--text-dim)] transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+      </div>
+
+      <!-- 统一聚合搜索框 -->
+      <div class="w-full max-w-2xl mt-4 relative">
+        <div class="relative flex items-center bg-[var(--bg-card)] border border-[var(--border)] focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/20 rounded-2xl shadow-[var(--shadow-lg)] transition-all p-1">
+          
+          <!-- 搜索引擎切换器 Dropdown -->
+          <div class="relative">
+            <button onclick="toggleEngineDropdown(event)" id="engine-btn" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-[var(--bg-card-hover)] text-xs font-semibold text-[var(--text-main)] transition-colors">
+              <span id="engine-icon" class="w-4 h-4 flex items-center justify-center font-bold text-red-500">G</span>
+              <span id="engine-label" class="hidden sm:inline">Google</span>
+              <svg class="w-3 h-3 text-[var(--text-dim)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+
+            <!-- 下拉菜单 -->
+            <div id="engine-menu" class="hidden absolute left-0 top-full mt-2 w-36 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl shadow-2xl py-1 z-30 text-xs">
+              <button onclick="selectEngine('google', 'Google', 'G', 'text-red-500')" class="w-full px-3 py-2 text-left hover:bg-[var(--bg-card-hover)] flex items-center gap-2">
+                <span class="w-4 text-center font-bold text-red-500">G</span> Google
+              </button>
+              <button onclick="selectEngine('bing', 'Bing', 'B', 'text-blue-500')" class="w-full px-3 py-2 text-left hover:bg-[var(--bg-card-hover)] flex items-center gap-2">
+                <span class="w-4 text-center font-bold text-blue-500">B</span> Bing
+              </button>
+              <button onclick="selectEngine('baidu', '百度', '度', 'text-blue-600')" class="w-full px-3 py-2 text-left hover:bg-[var(--bg-card-hover)] flex items-center gap-2">
+                <span class="w-4 text-center font-bold text-blue-600">度</span> 百度
+              </button>
+              <button onclick="selectEngine('github', 'GitHub', '⌥', 'text-purple-500')" class="w-full px-3 py-2 text-left hover:bg-[var(--bg-card-hover)] flex items-center gap-2">
+                <span class="w-4 text-center font-bold text-purple-500">⌥</span> GitHub
+              </button>
+            </div>
+          </div>
+
+          <div class="h-4 w-px bg-[var(--border)] mx-1"></div>
+
+          <!-- 搜索输入框 -->
+          <input 
+            type="text" 
+            id="main-search-input"
+            oninput="handleSearch(this.value)"
+            onkeydown="handleSearchKey(event)"
+            placeholder="在本地书签中搜索，或按 Enter 直接网络搜索..."
+            class="flex-1 bg-transparent px-3 py-1.5 text-xs sm:text-sm text-[var(--text-main)] placeholder-[var(--text-dim)] focus:outline-none"
+          >
+
+          <!-- 快捷键提示 & 清除 -->
+          <div class="flex items-center gap-1.5 pr-2">
+            <span class="text-[10px] font-mono text-[var(--text-dim)] border border-[var(--border)] px-1.5 py-0.5 rounded bg-[var(--bg-subtle)]">Ctrl K</span>
+            <button onclick="triggerSearch()" class="p-1.5 rounded-xl bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] transition-all">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- 实时书签匹配悬浮下拉 (Search Instant Dropdown) -->
+        <div id="search-results-dropdown" class="hidden absolute left-0 right-0 top-full mt-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl shadow-2xl p-2 z-40 text-left max-h-80 overflow-y-auto custom-scrollbar">
+          <div class="text-[10px] font-bold text-[var(--text-dim)] px-3 py-1.5 uppercase tracking-wider">匹配的书签 (本地快速直达)</div>
+          <div id="search-matches-list" class="space-y-1">
+            <!-- 动态填充 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 3.2 顶部标签快速筛选栏 (Top Filter Tags Bar) -->
+      <div class="w-full max-w-4xl mt-3.5 flex flex-wrap items-center justify-center gap-1.5 px-4">
+        <span class="text-[11px] text-[var(--text-dim)] mr-1">高频标签:</span>
+        <button onclick="toggleTagFilter('all')" id="tag-pill-all" class="tag-pill active px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-[var(--primary)] text-white shadow-sm transition-all">
+          全部 (28)
+        </button>
+        <button onclick="toggleTagFilter('运维监控')" class="tag-pill px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--primary)] hover:text-[var(--text-main)] transition-all">
+          运维监控 <span class="text-[10px] opacity-60">12</span>
+        </button>
+        <button onclick="toggleTagFilter('CI/CD')" class="tag-pill px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--primary)] hover:text-[var(--text-main)] transition-all">
+          CI/CD <span class="text-[10px] opacity-60">8</span>
+        </button>
+        <button onclick="toggleTagFilter('开发环境')" class="tag-pill px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--primary)] hover:text-[var(--text-main)] transition-all">
+          开发环境 <span class="text-[10px] opacity-60">9</span>
+        </button>
+        <button onclick="toggleTagFilter('代码仓库')" class="tag-pill px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--primary)] hover:text-[var(--text-main)] transition-all">
+          代码仓库 <span class="text-[10px] opacity-60">7</span>
+        </button>
+        <button onclick="toggleTagFilter('知识库')" class="tag-pill px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--primary)] hover:text-[var(--text-main)] transition-all">
+          知识库 <span class="text-[10px] opacity-60">5</span>
+        </button>
+        <button onclick="toggleTagFilter('AI工具')" class="tag-pill px-2.5 py-0.5 rounded-lg text-[11px] font-medium bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--primary)] hover:text-[var(--text-main)] transition-all">
+          AI 工具 <span class="text-[10px] opacity-60">4</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 网络探测状态条 + 布局密度切换工具栏 (Toolbar & Density Switcher) -->
+    <div class="mb-6 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-2.5 px-4 flex flex-wrap items-center justify-between gap-3 text-xs shadow-sm">
+      <!-- 左侧：网络状态 -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[11px]">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 pulse-dot"></span>
+          <span>本机 IP: 192.168.10.25 (局域网)</span>
+        </div>
+        <span class="text-[var(--text-dim)] hidden sm:inline">|</span>
+        <button onclick="simulateNetworkChange()" class="text-[11px] text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors flex items-center gap-1">
+          <svg class="w-3 h-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          重新探测网络
+        </button>
+      </div>
+
+      <!-- 右侧：4 档视图密度切换器 (Density Selector) -->
+      <div class="flex items-center gap-2">
+        <span class="text-[11px] text-[var(--text-dim)] hidden sm:inline">布局密度:</span>
+        <div class="flex items-center bg-[var(--bg-subtle)] border border-[var(--border)] rounded-lg p-0.5 gap-0.5 text-[11px]">
+          <button onclick="setDensity('compact')" id="density-btn-compact" title="紧凑卡片 (推荐 5~6 列)" class="density-btn px-2 py-0.5 rounded bg-[var(--primary)] text-white font-medium flex items-center gap-1 transition-all">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+            紧凑 (5-6列)
+          </button>
+          <button onclick="setDensity('icon')" id="density-btn-icon" title="极简图标九宫格 (6~8 列)" class="density-btn px-2 py-0.5 rounded text-[var(--text-muted)] hover:text-[var(--text-main)] font-medium flex items-center gap-1 transition-all">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+            极简图标 (8列)
+          </button>
+          <button onclick="setDensity('list')" id="density-btn-list" title="详细列表行视图" class="density-btn px-2 py-0.5 rounded text-[var(--text-muted)] hover:text-[var(--text-main)] font-medium flex items-center gap-1 transition-all">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+            列表视图
+          </button>
+          <button onclick="setDensity('comfortable')" id="density-btn-comfortable" title="舒适大卡片 (3~4 列)" class="density-btn px-2 py-0.5 rounded text-[var(--text-muted)] hover:text-[var(--text-main)] font-medium flex items-center gap-1 transition-all">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+            舒适 (3-4列)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 单栏内容区：按"常用(固定置顶)" → "自定义分组" 展示 -->
+    <!-- ============================================== -->
+    <div class="space-y-6">
+
+      <!-- 分组 1: 常用 (系统内置固定排最前，不可删除，金色星标) -->
+      <section class="bookmark-group bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-4 sm:p-5 shadow-sm transition-all">
+        <!-- 分组标题栏 (可点击折叠/展开) -->
+        <div class="flex items-center justify-between cursor-pointer select-none pb-3 border-b border-[var(--border)]" onclick="toggleGroup('group-pinned')">
+          <div class="flex items-center gap-2">
+            <span class="p-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            </span>
+            <h2 class="font-bold text-sm sm:text-base text-[var(--text-main)]">常用 (Pinned)</h2>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-[var(--bg-subtle)] text-[var(--text-muted)] border border-[var(--border)]">6 个应用</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="event.stopPropagation(); openModal('modal-add-bookmark')" class="p-1.5 rounded-lg hover:bg-[var(--bg-card-hover)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              <span class="hidden sm:inline">添加</span>
+            </button>
+            <svg id="chevron-group-pinned" class="w-4 h-4 text-[var(--text-dim)] transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </div>
+        </div>
+
+        <!-- 书签网格容器 (通过 CSS 控制一行多列) -->
+        <div id="content-group-pinned" class="bookmark-grid pt-3.5">
+          
+          <!-- 卡片 1: GitLab -->
+          <div class="bm-card group relative bg-[var(--bg-subtle)] hover:bg-[var(--bg-card-hover)] border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-150 shadow-sm flex flex-col justify-between cursor-pointer" onclick="smartJump('GitLab', 'http://192.168.10.50:8080', '内网直连 (匹配 26 位前缀)')">
+            <div class="bm-card-header flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="bm-icon rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500 flex-shrink-0">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M23.955 13.587l-1.342-4.135-2.664-8.189c-.135-.423-.73-.423-.867 0L16.418 9.45H7.582L4.919 1.263C4.783.84 4.188.84 4.052 1.263L1.388 9.452.045 13.587c-.121.375.014.787.33 1.023l11.096 8.046a.881.881 0 001.056 0l11.097-8.046c.318-.236.453-.648.332-1.023"/></svg>
+                </div>
+                <div class="min-w-0">
+                  <h3 class="bm-title font-semibold text-[var(--text-main)] group-hover:text-[var(--primary)] transition-colors truncate">
+                    GitLab
+                  </h3>
+                  <div class="bm-tags flex items-center gap-1 mt-0.5">
+                    <span class="text-[9px] px-1 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">代码</span>
+                    <span class="text-[9px] px-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">CI/CD</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bm-actions flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation()">
+                <button onclick="openEditBookmark('GitLab')" title="编辑" class="p-1 hover:bg-[var(--bg-card)] rounded text-[var(--text-dim)] hover:text-[var(--text-main)]">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                </button>
+                <button onclick="toggleEndpointDetail(event, 'ep-gitlab')" title="所有入口" class="p-1 hover:bg-[var(--bg-card)] rounded text-[var(--text-dim)] hover:text-[var(--text-main)]">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- 极简模式下只显示的微型指示器 -->
+            <div class="bm-status-mini hidden mt-1.5 text-[10px] text-emerald-400 font-mono">
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 12ms
+            </div>
+
+            <!-- 紧凑/舒适模式下的完整状态区 -->
+            <div class="bm-footer bm-status-full mt-2.5 pt-1.5 border-t border-[var(--border)]/50 flex items-center justify-between text-[10px]">
+              <div class="flex items-center gap-1 text-emerald-400 font-mono truncate">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span class="truncate">192.168.10.50</span>
+              </div>
+              <span class="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300 font-sans flex-shrink-0">12ms</span>
+            </div>
+
+            <!-- 折叠入口面板 -->
+            <div id="ep-gitlab" class="hidden mt-2 pt-2 border-t border-[var(--border)] space-y-1 text-[10px]" onclick="event.stopPropagation()">
+              <div class="flex items-center justify-between p-1 rounded bg-[var(--bg-card)]">
+                <span class="truncate text-[var(--text-main)] font-mono">192.168.10.50</span>
+                <button onclick="directJump('http://192.168.10.50:8080')" class="px-1.5 py-0.5 rounded bg-emerald-600 text-white text-[9px]">直达</button>
+              </div>
+              <div class="flex items-center justify-between p-1 rounded bg-[var(--bg-card)] opacity-80">
+                <span class="truncate text-[var(--text-muted)] font-mono">git.company.com</span>
+                <button onclick="directJump('https://git.company.com')" class="px-1.5 py-0.5 rounded bg-[var(--bg-card-hover)] text-[var(--text-main)] text-[9px]">直达</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 卡片 2: Grafana -->
+          <div class="bm-card group relative bg-[var(--bg-subtle)] hover:bg-[var(--bg-card-hover)] border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-150 shadow-sm flex flex-col justify-between cursor-pointer" onclick="smartJump('Grafana', 'http://192.168.10.88:3000', '办公局域网 (低延迟 6ms)')">
+            <div class="bm-card-header flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="bm-icon rounded-lg bg-orange-600/10 border border-orange-600/20 flex items-center justify-center text-amber-500 flex-shrink-0">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M20.25 15.5c-.75 2.1-2.4 3.75-4.5 4.5-.6.2-1.2.3-1.8.3-.4 0-.8-.1-1.2-.2-1.6-.5-2.8-1.6-3.4-3.1-.4-1-.4-2 0-3 .5-1.3 1.5-2.3 2.8-2.8.9-.4 1.9-.4 2.8 0 1.3.5 2.3 1.5 2.8 2.8.4.8.5 1.5.5 1.5zm-8.25-11c4.5 0 8.2 3.4 8.7 7.8-.5-.5-1.1-.9-1.8-1.2-1.2-.5-2.5-.5-3.7 0-1.8.7-3.2 2.1-3.9 3.9-.5 1.2-.5 2.5 0 3.7.3.7.7 1.3 1.2 1.8-4.4-.5-7.8-4.2-7.8-8.7 0-4.8 3.9-8.7 8.7-8.7z"/></svg>
+                </div>
+                <div class="min-w-0">
+                  <h3 class="bm-title font-semibold text-[var(--text-main)] group-hover:text-[var(--primary)] transition-colors truncate">
+                    Grafana 看板
+                  </h3>
+                  <div class="bm-tags flex items-center gap-1 mt-0.5">
+                    <span class="text-[9px] px-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">监控</span>
+                  </div>
+                </div>
+              </div>
+              <div class="bm-actions flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation()">
+                <button onclick="openEditBookmark('Grafana')" class="p-1 hover:bg-[var(--bg-card)] rounded text-[var(--text-dim)]"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button>
+              </div>
+            </div>
+
+            <div class="bm-status-mini hidden mt-1.5 text-[10px] text-emerald-400 font-mono">
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 6ms
+            </div>
+
+            <div class="bm-footer bm-status-full mt-2.5 pt-1.5 border-t border-[var(--border)]/50 flex items-center justify-between text-[10px]">
+              <div class="flex items-center gap-1 text-emerald-400 font-mono truncate">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span class="truncate">192.168.10.88</span>
+              </div>
+              <span class="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300 font-sans flex-shrink-0">6ms</span>
+            </div>
+          </div>
+
+          <!-- 卡片 3: Jenkins -->
+          <div class="bm-card group relative bg-[var(--bg-subtle)] hover:bg-[var(--bg-card-hover)] border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-150 shadow-sm flex flex-col justify-between cursor-pointer" onclick="smartJump('Jenkins', 'http://192.168.10.60:8080', '机房内网 (匹配 26 位前缀)')">
+            <div class="bm-card-header flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="bm-icon rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 flex-shrink-0">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                </div>
+                <div class="min-w-0">
+                  <h3 class="bm-title font-semibold text-[var(--text-main)] group-hover:text-[var(--primary)] transition-colors truncate">
+                    Jenkins CI
+                  </h3>
+                  <div class="bm-tags flex items-center gap-1 mt-0.5">
+                    <span class="text-[9px] px-1 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">CI/CD</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="bm-status-mini hidden mt-1.5 text-[10px] text-emerald-400 font-mono">
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 18ms
+            </div>
+            <div class="bm-footer bm-status-full mt-2.5 pt-1.5 border-t border-[var(--border)]/50 flex items-center justify-between text-[10px]">
+              <div class="flex items-center gap-1 text-emerald-400 font-mono truncate">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span class="truncate">192.168.10.60</span>
+              </div>
+              <span class="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300 font-sans flex-shrink-0">18ms</span>
+            </div>
+          </div>
+
+          <!-- 卡片 4: Portainer -->
+          <div class="bm-card group relative bg-[var(--bg-subtle)] hover:bg-[var(--bg-card-hover)] border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-150 shadow-sm flex flex-col justify-between cursor-pointer" onclick="smartJump('Portainer', 'https://192.168.10.99:9443', '开发节点内网')">
+            <div class="bm-card-header flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="bm-icon rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 flex-shrink-0 font-bold text-xs">
+                  PR
+                </div>
+                <div class="min-w-0">
+                  <h3 class="bm-title font-semibold text-[var(--text-main)] group-hover:text-[var(--primary)] transition-colors truncate">Portainer</h3>
+                  <div class="bm-tags flex items-center gap-1 mt-0.5">
+                    <span class="text-[9px] px-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">容器</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="bm-status-mini hidden mt-1.5 text-[10px] text-emerald-400 font-mono">
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 15ms
+            </div>
+            <div class="bm-footer bm-status-full mt-2.5 pt-1.5 border-t border-[var(--border)]/50 flex items-center justify-between text-[10px]">
+              <div class="flex items-center gap-1 text-emerald-400 font-mono truncate">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span class="truncate">192.168.10.99</span>
+              </div>
+              <span class="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300 font-sans flex-shrink-0">15ms</span>
+            </div>
+          </div>
+
+          <!-- 卡片 5: Confluence Wiki -->
+          <div class="bm-card group relative bg-[var(--bg-subtle)] hover:bg-[var(--bg-card-hover)] border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-150 shadow-sm flex flex-col justify-between cursor-pointer" onclick="smartJump('Wiki', 'https://wiki.company.com', '外网云端 HTTPS')">
+            <div class="bm-card-header flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="bm-icon rounded-lg bg-blue-600/10 border border-blue-600/20 flex items-center justify-center text-blue-500 flex-shrink-0 font-bold text-xs">
+                  W
+                </div>
+                <div class="min-w-0">
+                  <h3 class="bm-title font-semibold text-[var(--text-main)] group-hover:text-[var(--primary)] transition-colors truncate">Wiki 知识库</h3>
+                  <div class="bm-tags flex items-center gap-1 mt-0.5">
+                    <span class="text-[9px] px-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">文档</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="bm-status-mini hidden mt-1.5 text-[10px] text-blue-400 font-mono">
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-500"></span> 外网
+            </div>
+            <div class="bm-footer bm-status-full mt-2.5 pt-1.5 border-t border-[var(--border)]/50 flex items-center justify-between text-[10px]">
+              <div class="flex items-center gap-1 text-blue-400 font-mono truncate">
+                <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                <span class="truncate">wiki.company.com</span>
+              </div>
+              <span class="text-[9px] px-1 rounded bg-blue-500/20 text-blue-300 font-sans flex-shrink-0">外网</span>
+            </div>
+          </div>
+
+          <!-- 卡片 6: 添加占位卡片 -->
+          <div onclick="openModal('modal-add-bookmark')" class="bm-card border border-dashed border-[var(--border)] hover:border-[var(--primary)] flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:bg-[var(--bg-card-hover)]/40 group min-h-[70px]">
+            <div class="p-1.5 rounded-full bg-[var(--bg-card)] text-[var(--text-muted)] group-hover:text-[var(--primary)] transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            </div>
+            <span class="text-[11px] font-medium text-[var(--text-muted)] group-hover:text-[var(--text-main)] mt-1">+ 添加书签</span>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- 分组 2: DevOps 与基础设施 -->
+      <section class="bookmark-group bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-4 sm:p-5 shadow-sm transition-all">
+        <div class="flex items-center justify-between cursor-pointer select-none pb-3 border-b border-[var(--border)]" onclick="toggleGroup('group-devops')">
+          <div class="flex items-center gap-2">
+            <span class="p-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+            </span>
+            <h2 class="font-bold text-sm sm:text-base text-[var(--text-main)]">DevOps & 基础设施</h2>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-[var(--bg-subtle)] text-[var(--text-muted)] border border-[var(--border)]">6 个应用</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <svg id="chevron-group-devops" class="w-4 h-4 text-[var(--text-dim)] transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </div>
+        </div>
+
+        <div id="content-group-devops" class="bookmark-grid pt-3.5">
+          
+          <!-- Prometheus -->
+          <div class="bm-card group relative bg-[var(--bg-subtle)] hover:bg-[var(--bg-card-hover)] border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-150 shadow-sm flex flex-col justify-between cursor-pointer" onclick="smartJump('Prometheus', 'http://10.10.1.20:9090', '数据中心内网')">
+            <div class="bm-card-header flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="bm-icon rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 flex-shrink-0 font-bold text-xs">PM</div>
+                <div class="min-w-0">
+                  <h3 class="bm-title font-semibold text-[var(--text-main)] group-hover:text-[var(--primary)] truncate">Prometheus</h3>
+                  <div class="bm-tags flex items-center gap-1 mt-0.5"><span class="text-[9px] px-1 rounded bg-red-500/10 text-red-400">监控</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="bm-footer bm-status-full mt-2.5 pt-1.5 border-t border-[var(--border)]/50 flex items-center justify-between text-[10px]">
+              <div class="flex items-center gap-1 text-emerald-400 font-mono truncate"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span class="truncate">10.10.1.20</span></div>
+              <span class="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300">内网</span>
+            </div>
+          </div>
+
+          <!-- Harbor -->
+          <div class="bm-card group relative bg-[var(--bg-subtle)] hover:bg-[var(--bg-card-hover)] border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-150 shadow-sm flex flex-col justify-between cursor-pointer" onclick="smartJump('Harbor', 'https://harbor.infra.local', '内网私有域名')">
+            <div class="bm-card-header flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="bm-icon rounded-lg bg-blue-400/10 border border-blue-400/20 flex items-center justify-center text-blue-400 flex-shrink-0 font-bold text-xs">HB</div>
+                <div class="min-w-0">
+                  <h3 class="bm-title font-semibold text-[var(--text-main)] group-hover:text-[var(--primary)] truncate">Harbor 镜像</h3>
+                  <div class="bm-tags flex items-center gap-1 mt-0.5"><span class="text-[9px] px-1 rounded bg-blue-500/10 text-blue-400">镜像</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="bm-footer bm-status-full mt-2.5 pt-1.5 border-t border-[var(--border)]/50 flex items-center justify-between text-[10px]">
+              <div class="flex items-center gap-1 text-emerald-400 font-mono truncate"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span class="truncate">harbor.infra.local</span></div>
+              <span class="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300">DNS</span>
+            </div>
+          </div>
+
+          <!-- K8s Dashboard -->
+          <div class="bm-card group relative bg-[var(--bg-subtle)] hover:bg-[var(--bg-card-hover)] border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-150 shadow-sm flex flex-col justify-between cursor-pointer" onclick="smartJump('K8s', 'https://192.168.10.200:8443', 'K8s 生产控制台')">
+            <div class="bm-card-header flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="bm-icon rounded-lg bg-blue-600/10 border border-blue-600/20 flex items-center justify-center text-blue-400 flex-shrink-0 font-bold text-xs">K8</div>
+                <div class="min-w-0">
+                  <h3 class="bm-title font-semibold text-[var(--text-main)] group-hover:text-[var(--primary)] truncate">K8s 控制台</h3>
+                  <div class="bm-tags flex items-center gap-1 mt-0.5"><span class="text-[9px] px-1 rounded bg-blue-500/10 text-blue-400">集群</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="bm-footer bm-status-full mt-2.5 pt-1.5 border-t border-[var(--border)]/50 flex items-center justify-between text-[10px]">
+              <div class="flex items-center gap-1 text-emerald-400 font-mono truncate"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span class="truncate">192.168.10.200</span></div>
+              <span class="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300">19ms</span>
+            </div>
+          </div>
+
+          <!-- Nacos 配置中心 -->
+          <div class="bm-card group relative bg-[var(--bg-subtle)] hover:bg-[var(--bg-card-hover)] border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-150 shadow-sm flex flex-col justify-between cursor-pointer" onclick="smartJump('Nacos', 'http://192.168.10.35:8848', '微服务注册中心')">
+            <div class="bm-card-header flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="bm-icon rounded-lg bg-cyan-600/10 border border-cyan-600/20 flex items-center justify-center text-cyan-400 flex-shrink-0 font-bold text-xs">NC</div>
+                <div class="min-w-0">
+                  <h3 class="bm-title font-semibold text-[var(--text-main)] group-hover:text-[var(--primary)] truncate">Nacos 注册中心</h3>
+                  <div class="bm-tags flex items-center gap-1 mt-0.5"><span class="text-[9px] px-1 rounded bg-cyan-500/10 text-cyan-400">微服务</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="bm-footer bm-status-full mt-2.5 pt-1.5 border-t border-[var(--border)]/50 flex items-center justify-between text-[10px]">
+              <div class="flex items-center gap-1 text-emerald-400 font-mono truncate"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span class="truncate">192.168.10.35</span></div>
+              <span class="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300">8ms</span>
+            </div>
+          </div>
+
+          <!-- RabbitMQ -->
+          <div class="bm-card group relative bg-[var(--bg-subtle)] hover:bg-[var(--bg-card-hover)] border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-150 shadow-sm flex flex-col justify-between cursor-pointer" onclick="smartJump('RabbitMQ', 'http://192.168.10.42:15672', 'MQ 消息队列')">
+            <div class="bm-card-header flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="bm-icon rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 flex-shrink-0 font-bold text-xs">MQ</div>
+                <div class="min-w-0">
+                  <h3 class="bm-title font-semibold text-[var(--text-main)] group-hover:text-[var(--primary)] truncate">RabbitMQ</h3>
+                  <div class="bm-tags flex items-center gap-1 mt-0.5"><span class="text-[9px] px-1 rounded bg-orange-500/10 text-orange-400">消息</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="bm-footer bm-status-full mt-2.5 pt-1.5 border-t border-[var(--border)]/50 flex items-center justify-between text-[10px]">
+              <div class="flex items-center gap-1 text-emerald-400 font-mono truncate"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span class="truncate">192.168.10.42</span></div>
+              <span class="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300">11ms</span>
+            </div>
+          </div>
+
+          <!-- Redis Commander -->
+          <div class="bm-card group relative bg-[var(--bg-subtle)] hover:bg-[var(--bg-card-hover)] border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-150 shadow-sm flex flex-col justify-between cursor-pointer" onclick="smartJump('Redis', 'http://192.168.10.77:8081', 'Redis 缓存管理')">
+            <div class="bm-card-header flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="bm-icon rounded-lg bg-red-600/10 border border-red-600/20 flex items-center justify-center text-red-400 flex-shrink-0 font-bold text-xs">RD</div>
+                <div class="min-w-0">
+                  <h3 class="bm-title font-semibold text-[var(--text-main)] group-hover:text-[var(--primary)] truncate">Redis 缓存</h3>
+                  <div class="bm-tags flex items-center gap-1 mt-0.5"><span class="text-[9px] px-1 rounded bg-red-500/10 text-red-400">DB</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="bm-footer bm-status-full mt-2.5 pt-1.5 border-t border-[var(--border)]/50 flex items-center justify-between text-[10px]">
+              <div class="flex items-center gap-1 text-emerald-400 font-mono truncate"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span class="truncate">192.168.10.77</span></div>
+              <span class="text-[9px] px-1 rounded bg-emerald-500/20 text-emerald-300">5ms</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- 分组 3: AI 工具与日常办公 -->
+      <section class="bookmark-group bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-4 sm:p-5 shadow-sm transition-all">
+        <div class="flex items-center justify-between cursor-pointer select-none pb-3 border-b border-[var(--border)]" onclick="toggleGroup('group-tools')">
+          <div class="flex items-center gap-2">
+            <span class="p-1 rounded-lg bg-pink-500/10 text-pink-400 border border-pink-500/20">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+            </span>
+            <h2 class="font-bold text-sm sm:text-base text-[var(--text-main)]">AI 工具与日常办公</h2>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-[var(--bg-subtle)] text-[var(--text-muted)] border border-[var(--border)]">4 个应用</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <svg id="chevron-group-tools" class="w-4 h-4 text-[var(--text-dim)] transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </div>
+        </div>
+
+        <div id="content-group-tools" class="bookmark-grid pt-3.5">
+          <!-- ChatGPT -->
+          <div class="bm-card group relative bg-[var(--bg-subtle)] hover:bg-[var(--bg-card-hover)] border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-150 shadow-sm flex flex-col justify-between cursor-pointer" onclick="smartJump('ChatGPT', 'https://chatgpt.com', '公网 HTTPS')">
+            <div class="bm-card-header flex items-center gap-2.5">
+              <div class="bm-icon rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-xs">AI</div>
+              <div>
+                <h3 class="bm-title font-semibold text-[var(--text-main)] group-hover:text-[var(--primary)]">ChatGPT</h3>
+                <span class="bm-tags text-[9px] px-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">AI</span>
+              </div>
+            </div>
+            <div class="bm-footer bm-status-full mt-2.5 pt-1.5 border-t border-[var(--border)]/50 flex justify-between text-blue-400 font-mono text-[10px]">
+              <span class="truncate">chatgpt.com</span>
+              <span class="text-[9px] px-1 rounded bg-blue-500/20 text-blue-300">外网</span>
+            </div>
+          </div>
+
+          <!-- Claude -->
+          <div class="bm-card group relative bg-[var(--bg-subtle)] hover:bg-[var(--bg-card-hover)] border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-150 shadow-sm flex flex-col justify-between cursor-pointer" onclick="smartJump('Claude', 'https://claude.ai', '公网 HTTPS')">
+            <div class="bm-card-header flex items-center gap-2.5">
+              <div class="bm-icon rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 font-bold text-xs">CL</div>
+              <div>
+                <h3 class="bm-title font-semibold text-[var(--text-main)] group-hover:text-[var(--primary)]">Claude AI</h3>
+                <span class="bm-tags text-[9px] px-1 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20">AI</span>
+              </div>
+            </div>
+            <div class="bm-footer bm-status-full mt-2.5 pt-1.5 border-t border-[var(--border)]/50 flex justify-between text-blue-400 font-mono text-[10px]">
+              <span class="truncate">claude.ai</span>
+              <span class="text-[9px] px-1 rounded bg-blue-500/20 text-blue-300">外网</span>
+            </div>
+          </div>
+
+          <!-- GitHub -->
+          <div class="bm-card group relative bg-[var(--bg-subtle)] hover:bg-[var(--bg-card-hover)] border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-150 shadow-sm flex flex-col justify-between cursor-pointer" onclick="smartJump('GitHub', 'https://github.com', '公网 HTTPS')">
+            <div class="bm-card-header flex items-center gap-2.5">
+              <div class="bm-icon rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 font-bold text-xs">GH</div>
+              <div>
+                <h3 class="bm-title font-semibold text-[var(--text-main)] group-hover:text-[var(--primary)]">GitHub</h3>
+                <span class="bm-tags text-[9px] px-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">代码</span>
+              </div>
+            </div>
+            <div class="bm-footer bm-status-full mt-2.5 pt-1.5 border-t border-[var(--border)]/50 flex justify-between text-blue-400 font-mono text-[10px]">
+              <span class="truncate">github.com</span>
+              <span class="text-[9px] px-1 rounded bg-blue-500/20 text-blue-300">外网</span>
+            </div>
+          </div>
+
+          <!-- DeepSeek -->
+          <div class="bm-card group relative bg-[var(--bg-subtle)] hover:bg-[var(--bg-card-hover)] border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-150 shadow-sm flex flex-col justify-between cursor-pointer" onclick="smartJump('DeepSeek', 'https://chat.deepseek.com', '公网 HTTPS')">
+            <div class="bm-card-header flex items-center gap-2.5">
+              <div class="bm-icon rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-xs">DS</div>
+              <div>
+                <h3 class="bm-title font-semibold text-[var(--text-main)] group-hover:text-[var(--primary)]">DeepSeek</h3>
+                <span class="bm-tags text-[9px] px-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">AI</span>
+              </div>
+            </div>
+            <div class="bm-footer bm-status-full mt-2.5 pt-1.5 border-t border-[var(--border)]/50 flex justify-between text-blue-400 font-mono text-[10px]">
+              <span class="truncate">deepseek.com</span>
+              <span class="text-[9px] px-1 rounded bg-blue-500/20 text-blue-300">外网</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+
+  <!-- ============================================== -->
+  <!-- 视图 2：Popup 快捷跳转弹窗仿真 (Extension Popup) -->
+  <!-- ============================================== -->
+  <main id="view-popup" class="app-view hidden flex-1 flex flex-col items-center justify-center p-4">
+    <div class="text-center mb-4">
+      <h2 class="text-lg font-bold text-[var(--text-main)]">Chrome 扩展 Popup 弹窗 (380px × 560px 仿真)</h2>
+      <p class="text-xs text-[var(--text-muted)]">点击浏览器右上角插件图标即时唤出，极速搜索与一键直达</p>
+    </div>
+
+    <!-- 模拟 Chrome Popup 窗口 -->
+    <div class="w-[380px] h-[560px] bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative">
+      
+      <!-- Popup Header -->
+      <div class="p-3 bg-[var(--bg-subtle)] border-b border-[var(--border)] flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-6 h-6 rounded-lg bg-[var(--primary)] text-white flex items-center justify-center shadow-sm">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+          </div>
+          <div>
+            <div class="font-bold text-xs text-[var(--text-main)]">Smart Bookmark</div>
+            <div class="text-[10px] text-emerald-400 flex items-center gap-1 font-mono">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot"></span>
+              192.168.10.25 (办公室)
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1">
+          <button onclick="switchView('newtab')" title="打开完整管理页" class="p-1.5 rounded-lg hover:bg-[var(--bg-card-hover)] text-[var(--text-muted)] hover:text-[var(--text-main)]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </button>
+          <button onclick="switchView('settings')" title="设置" class="p-1.5 rounded-lg hover:bg-[var(--bg-card-hover)] text-[var(--text-muted)] hover:text-[var(--text-main)]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Popup Search Bar -->
+      <div class="p-2.5 border-b border-[var(--border)] bg-[var(--bg-card)]">
+        <div class="relative flex items-center bg-[var(--bg-subtle)] border border-[var(--border)] focus-within:border-[var(--primary)] rounded-xl px-2.5 py-1.5">
+          <svg class="w-3.5 h-3.5 text-[var(--text-dim)] mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input type="text" placeholder="快速过滤书签..." class="w-full bg-transparent text-xs text-[var(--text-main)] placeholder-[var(--text-dim)] focus:outline-none">
+        </div>
+      </div>
+
+      <!-- Popup 快速标签过滤条 -->
+      <div class="px-3 py-1.5 bg-[var(--bg-card)]/50 border-b border-[var(--border)] flex items-center gap-1 overflow-x-auto custom-scrollbar text-[10px]">
+        <button class="px-2 py-0.5 rounded bg-[var(--primary)] text-white font-medium flex-shrink-0">常用</button>
+        <button class="px-2 py-0.5 rounded bg-[var(--bg-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] border border-[var(--border)] flex-shrink-0">运维监控</button>
+        <button class="px-2 py-0.5 rounded bg-[var(--bg-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] border border-[var(--border)] flex-shrink-0">CI/CD</button>
+        <button class="px-2 py-0.5 rounded bg-[var(--bg-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] border border-[var(--border)] flex-shrink-0">开发环境</button>
+      </div>
+
+      <!-- Popup 列表内容区 -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+        
+        <!-- 条目 1: GitLab -->
+        <div onclick="smartJump('GitLab', 'http://192.168.10.50:8080', '最优内网入口')" class="p-2 rounded-xl hover:bg-[var(--bg-card-hover)] border border-transparent hover:border-[var(--border)] flex items-center justify-between cursor-pointer transition-all">
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="w-7 h-7 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M23.955 13.587l-1.342-4.135-2.664-8.189c-.135-.423-.73-.423-.867 0L16.418 9.45H7.582L4.919 1.263C4.783.84 4.188.84 4.052 1.263L1.388 9.452.045 13.587c-.121.375.014.787.33 1.023l11.096 8.046a.881.881 0 001.056 0l11.097-8.046c.318-.236.453-.648.332-1.023"/></svg>
+            </div>
+            <div class="min-w-0">
+              <div class="text-xs font-semibold text-[var(--text-main)] truncate">GitLab 代码平台</div>
+              <div class="text-[10px] text-[var(--text-dim)] font-mono truncate">192.168.10.50:8080</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono">12ms</span>
+            <svg class="w-3.5 h-3.5 text-[var(--text-dim)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <!-- 条目 2: Grafana -->
+        <div onclick="smartJump('Grafana', 'http://192.168.10.88:3000', '办公内网入口')" class="p-2 rounded-xl hover:bg-[var(--bg-card-hover)] border border-transparent hover:border-[var(--border)] flex items-center justify-between cursor-pointer transition-all">
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M20.25 15.5c-.75 2.1-2.4 3.75-4.5 4.5-.6.2-1.2.3-1.8.3-.4 0-.8-.1-1.2-.2-1.6-.5-2.8-1.6-3.4-3.1-.4-1-.4-2 0-3 .5-1.3 1.5-2.3 2.8-2.8.9-.4 1.9-.4 2.8 0 1.3.5 2.3 1.5 2.8 2.8.4.8.5 1.5.5 1.5zm-8.25-11c4.5 0 8.2 3.4 8.7 7.8-.5-.5-1.1-.9-1.8-1.2-1.2-.5-2.5-.5-3.7 0-1.8.7-3.2 2.1-3.9 3.9-.5 1.2-.5 2.5 0 3.7.3.7.7 1.3 1.2 1.8-4.4-.5-7.8-4.2-7.8-8.7 0-4.8 3.9-8.7 8.7-8.7z"/></svg>
+            </div>
+            <div class="min-w-0">
+              <div class="text-xs font-semibold text-[var(--text-main)] truncate">Grafana 看板</div>
+              <div class="text-[10px] text-[var(--text-dim)] font-mono truncate">192.168.10.88:3000</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono">6ms</span>
+            <svg class="w-3.5 h-3.5 text-[var(--text-dim)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <!-- 条目 3: Jenkins -->
+        <div onclick="smartJump('Jenkins', 'http://192.168.10.60:8080', '机房内网')" class="p-2 rounded-xl hover:bg-[var(--bg-card-hover)] border border-transparent hover:border-[var(--border)] flex items-center justify-between cursor-pointer transition-all">
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center flex-shrink-0 font-bold text-xs">
+              JK
+            </div>
+            <div class="min-w-0">
+              <div class="text-xs font-semibold text-[var(--text-main)] truncate">Jenkins CI</div>
+              <div class="text-[10px] text-[var(--text-dim)] font-mono truncate">192.168.10.60:8080</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono">18ms</span>
+            <svg class="w-3.5 h-3.5 text-[var(--text-dim)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <!-- 条目 4: Wiki Confluence -->
+        <div onclick="smartJump('Wiki', 'https://wiki.company.com', '外网云端 HTTPS')" class="p-2 rounded-xl hover:bg-[var(--bg-card-hover)] border border-transparent hover:border-[var(--border)] flex items-center justify-between cursor-pointer transition-all">
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="w-7 h-7 rounded-lg bg-blue-600/10 text-blue-500 flex items-center justify-center flex-shrink-0 font-bold text-xs">
+              W
+            </div>
+            <div class="min-w-0">
+              <div class="text-xs font-semibold text-[var(--text-main)] truncate">团队知识库 Wiki</div>
+              <div class="text-[10px] text-[var(--text-dim)] font-mono truncate">wiki.company.com</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 font-mono">外网</span>
+            <svg class="w-3.5 h-3.5 text-[var(--text-dim)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Popup Footer -->
+      <div class="p-2.5 bg-[var(--bg-subtle)] border-t border-[var(--border)] flex items-center justify-between text-[11px] text-[var(--text-dim)]">
+        <span>按 <kbd class="px-1 py-0.5 bg-[var(--bg-card)] rounded border border-[var(--border)] font-mono">↑</kbd> <kbd class="px-1 py-0.5 bg-[var(--bg-card)] rounded border border-[var(--border)] font-mono">↓</kbd> 导航</span>
+        <button onclick="openModal('modal-add-bookmark')" class="text-[var(--primary)] hover:underline flex items-center gap-1 font-medium">
+          + 添加当前页面
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+
+  <!-- ============================================== -->
+  <!-- 视图 3：设置与使用统计分析页 (Settings & Stats) -->
+  <!-- ============================================== -->
+  <main id="view-settings" class="app-view hidden flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <div class="flex items-center justify-between mb-8 pb-4 border-b border-[var(--border)]">
+      <div>
+        <h1 class="text-2xl font-bold text-[var(--text-main)]">设置与偏好</h1>
+        <p class="text-xs text-[var(--text-muted)] mt-1">管理外观主题、默认布局密度、分组排序规则以及本地访问统计数据</p>
+      </div>
+      <button onclick="switchView('newtab')" class="px-3 py-1.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] hover:bg-[var(--bg-card-hover)] text-xs text-[var(--text-main)] transition-colors flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        返回管理主页
+      </button>
+    </div>
+
+    <!-- 左右分栏结构 -->
+    <div class="flex flex-col md:flex-row gap-6 items-start">
+      <!-- 左侧导航栏 -->
+      <div class="w-full md:w-56 space-y-1.5 flex-shrink-0 bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-2.5 shadow-sm">
+        <button onclick="switchSettingsTab('theme')" id="set-tab-theme" class="settings-tab-btn w-full px-3.5 py-2.5 rounded-xl bg-[var(--primary)] text-white text-xs font-medium transition-all text-left flex items-center gap-2 shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+          <span>外观与布局</span>
+        </button>
+        <button onclick="switchSettingsTab('groups')" id="set-tab-groups" class="settings-tab-btn w-full px-3.5 py-2.5 rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-main)] text-xs font-medium transition-all text-left flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+          <span>分组与标签管理</span>
+        </button>
+        <button onclick="switchSettingsTab('stats')" id="set-tab-stats" class="settings-tab-btn w-full px-3.5 py-2.5 rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-main)] text-xs font-medium transition-all text-left flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <span>使用频率与统计</span>
+        </button>
+      </div>
+
+      <!-- 右侧面板容器 -->
+      <div class="flex-1 w-full min-w-0">
+        <!-- Tab 1: 外观与主题设置 -->
+        <div id="settings-content-theme" class="settings-content space-y-6">
+      
+      <!-- 默认布局密度设置 -->
+      <div class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm">
+        <h3 class="font-bold text-base text-[var(--text-main)] mb-1">默认卡片布局密度</h3>
+        <p class="text-xs text-[var(--text-muted)] mb-4">决定在新标签页打开时书签卡片的排列密度与尺寸</p>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          <div onclick="setDensity('compact')" class="p-3.5 rounded-xl border border-indigo-500 bg-indigo-500/5 cursor-pointer">
+            <div class="font-bold text-[var(--text-main)]">⚡ 紧凑卡片 (默认 5-6 列)</div>
+            <div class="text-[var(--text-dim)] mt-1">推荐桌面显示器，单行展示 5~6 个书签，信息密集度高。</div>
+          </div>
+          <div onclick="setDensity('icon')" class="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] hover:border-[var(--primary)] cursor-pointer">
+            <div class="font-bold text-[var(--text-main)]">🔲 极简图标 (8 列九宫格)</div>
+            <div class="text-[var(--text-dim)] mt-1">纯图标与简短标题，最省空间，适合书签数量极多。</div>
+          </div>
+          <div onclick="setDensity('list')" class="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] hover:border-[var(--primary)] cursor-pointer">
+            <div class="font-bold text-[var(--text-main)]">📑 详细列表行</div>
+            <div class="text-[var(--text-dim)] mt-1">单列通栏横条展示，完整呈现 URL 与延迟详情。</div>
+          </div>
+          <div onclick="setDensity('comfortable')" class="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] hover:border-[var(--primary)] cursor-pointer">
+            <div class="font-bold text-[var(--text-main)]">🖼️ 舒适卡片 (3-4 列)</div>
+            <div class="text-[var(--text-dim)] mt-1">大号卡片与大图标，间距宽松，适合平板或超大字号。</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5套预设主题选择卡片 -->
+      <div class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm">
+        <h3 class="font-bold text-base text-[var(--text-main)] mb-1">主题配色库 (阶段一 5 套预设)</h3>
+        <p class="text-xs text-[var(--text-muted)] mb-4">切换后立即全局生效并持久化存储在 chrome.storage.local</p>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- 主题 1 -->
+          <div onclick="setTheme('dark-slate')" class="cursor-pointer border-2 rounded-xl p-4 bg-[#0f172a] text-[#f8fafc] border-indigo-500 shadow-md transition-transform hover:scale-[1.02]">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-bold text-sm">Dark Slate (暗黑岩板)</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500 text-white">默认</span>
+            </div>
+            <p class="text-xs text-[#94a3b8]">深邃蓝灰基调，高对比度低眼疲劳</p>
+            <div class="flex gap-1.5 mt-3">
+              <span class="w-4 h-4 rounded-full bg-[#1e293b] border border-slate-700"></span>
+              <span class="w-4 h-4 rounded-full bg-[#6366f1]"></span>
+              <span class="w-4 h-4 rounded-full bg-[#10b981]"></span>
+            </div>
+          </div>
+
+          <!-- 主题 2 -->
+          <div onclick="setTheme('clean-light')" class="cursor-pointer border-2 rounded-xl p-4 bg-[#f8fafc] text-[#0f172a] border-slate-300 shadow-sm transition-transform hover:scale-[1.02]">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-bold text-sm">Clean Light (清新浅白)</span>
+            </div>
+            <p class="text-xs text-[#64748b]">明亮洁净，办公场景极佳可读性</p>
+            <div class="flex gap-1.5 mt-3">
+              <span class="w-4 h-4 rounded-full bg-[#ffffff] border border-slate-300"></span>
+              <span class="w-4 h-4 rounded-full bg-[#4f46e5]"></span>
+              <span class="w-4 h-4 rounded-full bg-[#059669]"></span>
+            </div>
+          </div>
+
+          <!-- 主题 3 -->
+          <div onclick="setTheme('cyber-indigo')" class="cursor-pointer border-2 rounded-xl p-4 bg-[#09090b] text-[#fafafa] border-pink-500/40 shadow-sm transition-transform hover:scale-[1.02]">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-bold text-sm">Cyber Indigo (赛博数码)</span>
+            </div>
+            <p class="text-xs text-[#a1a1aa]">纯黑高对比，粉紫炫酷霓虹点缀</p>
+            <div class="flex gap-1.5 mt-3">
+              <span class="w-4 h-4 rounded-full bg-[#18181b] border border-zinc-800"></span>
+              <span class="w-4 h-4 rounded-full bg-[#ec4899]"></span>
+              <span class="w-4 h-4 rounded-full bg-[#06b6d4]"></span>
+            </div>
+          </div>
+
+          <!-- 主题 4 -->
+          <div onclick="setTheme('emerald-minimal')" class="cursor-pointer border-2 rounded-xl p-4 bg-[#064e3b] text-[#ecfdf5] border-emerald-400/40 shadow-sm transition-transform hover:scale-[1.02]">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-bold text-sm">Emerald (极客墨绿)</span>
+            </div>
+            <p class="text-xs text-[#a7f3d0]">复古终端绿，专为极客开发者设计</p>
+            <div class="flex gap-1.5 mt-3">
+              <span class="w-4 h-4 rounded-full bg-[#065f46] border border-emerald-700"></span>
+              <span class="w-4 h-4 rounded-full bg-[#10b981]"></span>
+              <span class="w-4 h-4 rounded-full bg-[#34d399]"></span>
+            </div>
+          </div>
+
+          <!-- 主题 5 -->
+          <div onclick="setTheme('sunset-warm')" class="cursor-pointer border-2 rounded-xl p-4 bg-[#1c1917] text-[#fafaf9] border-amber-500/40 shadow-sm transition-transform hover:scale-[1.02]">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-bold text-sm">Sunset (暮色暖金)</span>
+            </div>
+            <p class="text-xs text-[#a8a29e]">温暖大地质感，沉稳橙金点缀</p>
+            <div class="flex gap-1.5 mt-3">
+              <span class="w-4 h-4 rounded-full bg-[#292524] border border-stone-700"></span>
+              <span class="w-4 h-4 rounded-full bg-[#f97316]"></span>
+              <span class="w-4 h-4 rounded-full bg-[#84cc16]"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: 分组与标签管理 -->
+    <div id="settings-content-groups" class="settings-content hidden space-y-6">
+      <div class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="font-bold text-base text-[var(--text-main)]">分组管理与排序</h3>
+            <p class="text-xs text-[var(--text-muted)]">支持拖拽调整管理页分组展示顺序及设置默认折叠状态</p>
+          </div>
+          <button class="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white text-xs font-medium hover:bg-[var(--primary-hover)] transition-colors">
+            + 新增自定义分组
+          </button>
+        </div>
+
+        <div class="space-y-2">
+          <!-- 常用分组 (不可删除) -->
+          <div class="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-subtle)] border border-amber-500/30">
+            <div class="flex items-center gap-3">
+              <span class="text-amber-400">★</span>
+              <div>
+                <div class="text-sm font-semibold text-[var(--text-main)]">常用 (系统内置)</div>
+                <div class="text-[11px] text-amber-400">固定排在最前 · 不可删除 · 6 个书签</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 text-xs">
+              <label class="flex items-center gap-1.5 text-[var(--text-muted)] cursor-pointer">
+                <input type="checkbox" checked class="rounded accent-indigo-500">
+                默认展开
+              </label>
+              <span class="text-xs text-[var(--text-dim)]">固定置顶</span>
+            </div>
+          </div>
+
+          <!-- DevOps 分组 -->
+          <div class="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)]">
+            <div class="flex items-center gap-3">
+              <span class="cursor-grab text-[var(--text-dim)]">⋮⋮</span>
+              <div>
+                <div class="text-sm font-semibold text-[var(--text-main)]">DevOps & 基础设施</div>
+                <div class="text-[11px] text-[var(--text-muted)]">6 个书签</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 text-xs">
+              <label class="flex items-center gap-1.5 text-[var(--text-muted)] cursor-pointer">
+                <input type="checkbox" checked class="rounded accent-indigo-500">
+                默认展开
+              </label>
+              <button class="text-indigo-400 hover:underline">重命名</button>
+              <button class="text-red-400 hover:underline">删除</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: 使用频率与统计分析 -->
+    <div id="settings-content-stats" class="settings-content hidden space-y-6">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-4">
+          <div class="text-xs text-[var(--text-muted)]">书签总数</div>
+          <div class="text-2xl font-bold text-[var(--text-main)] mt-1">28</div>
+        </div>
+        <div class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-4">
+          <div class="text-xs text-[var(--text-muted)]">分组总数</div>
+          <div class="text-2xl font-bold text-[var(--text-main)] mt-1">5</div>
+        </div>
+        <div class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-4">
+          <div class="text-xs text-[var(--text-muted)]">标签总数</div>
+          <div class="text-2xl font-bold text-[var(--text-main)] mt-1">14</div>
+        </div>
+        <div class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-4">
+          <div class="text-xs text-[var(--text-muted)]">网络可达率</div>
+          <div class="text-2xl font-bold text-emerald-400 mt-1">96.4%</div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+
+  <!-- ============================================== -->
+  <!-- 弹窗 1：新增 / 编辑书签弹窗 (Modal) -->
+  <!-- ============================================== -->
+  <div id="modal-add-bookmark" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-subtle)]">
+        <h3 id="modal-title" class="font-bold text-base text-[var(--text-main)]">新增智能书签</h3>
+        <button onclick="closeModal('modal-add-bookmark')" class="text-[var(--text-dim)] hover:text-[var(--text-main)]">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto custom-scrollbar space-y-5 text-xs">
+        <div class="flex gap-4 items-start">
+          <div class="flex flex-col items-center gap-1.5 flex-shrink-0">
+            <div id="icon-preview" class="w-14 h-14 rounded-2xl bg-[var(--bg-subtle)] border-2 border-dashed border-[var(--border)] hover:border-[var(--primary)] flex flex-col items-center justify-center text-[var(--text-dim)] cursor-pointer transition-colors" onclick="toggleIconPicker()">
+              <svg class="w-6 h-6 text-indigo-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+            </div>
+            <span class="text-[10px] text-[var(--text-muted)] cursor-pointer hover:underline" onclick="toggleIconPicker()">选择图标</span>
+          </div>
+
+          <div class="flex-1 space-y-1">
+            <label class="font-medium text-[var(--text-main)]">书签/应用名称 <span class="text-red-400">*</span></label>
+            <input type="text" id="bm-input-name" placeholder="例如：GitLab 代码平台" value="GitLab 代码平台" class="w-full bg-[var(--bg-subtle)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-main)] focus:border-[var(--primary)] focus:outline-none">
+          </div>
+        </div>
+
+        <div id="icon-picker-drawer" class="hidden p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)] space-y-2">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="font-semibold text-[var(--text-main)]">内置离线图标库 (Simple Icons & Lucide)</span>
+          </div>
+          <input type="text" placeholder="搜索图标..." class="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-2.5 py-1 text-xs text-[var(--text-main)] focus:outline-none">
+          <div class="grid grid-cols-6 gap-2 pt-1 max-h-24 overflow-y-auto">
+            <button class="p-2 rounded-lg bg-[var(--bg-card)] hover:bg-[var(--primary)]/20 border border-[var(--border)] flex items-center justify-center text-orange-500 font-bold">GL</button>
+            <button class="p-2 rounded-lg bg-[var(--bg-card)] hover:bg-[var(--primary)]/20 border border-[var(--border)] flex items-center justify-center text-blue-500 font-bold">JK</button>
+            <button class="p-2 rounded-lg bg-[var(--bg-card)] hover:bg-[var(--primary)]/20 border border-[var(--border)] flex items-center justify-center text-amber-500 font-bold">GF</button>
+            <button class="p-2 rounded-lg bg-[var(--bg-card)] hover:bg-[var(--primary)]/20 border border-[var(--border)] flex items-center justify-center text-cyan-400 font-bold">DK</button>
+            <button class="p-2 rounded-lg bg-[var(--bg-card)] hover:bg-[var(--primary)]/20 border border-[var(--border)] flex items-center justify-center text-purple-400 font-bold">GH</button>
+            <button class="p-2 rounded-lg bg-[var(--bg-card)] hover:bg-[var(--primary)]/20 border border-[var(--border)] flex items-center justify-center text-emerald-400 font-bold">DB</button>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="font-semibold text-sm text-[var(--text-main)] flex items-center gap-1.5">
+              访问入口列表 (Endpoints)
+            </label>
+            <span class="text-[10px] text-[var(--text-dim)]">智能自动识别内网/外网</span>
+          </div>
+
+          <div id="endpoint-inputs-container" class="space-y-2">
+            <div class="flex items-center gap-2 p-2.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)]">
+              <span class="text-[var(--text-dim)] cursor-grab">⋮⋮</span>
+              <div class="flex-1 min-w-0">
+                <input type="text" value="http://192.168.10.50:8080" class="w-full bg-transparent text-xs font-mono text-[var(--text-main)] focus:outline-none">
+              </div>
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex-shrink-0">
+                内网 (192.168.x)
+              </span>
+            </div>
+          </div>
+
+          <button onclick="addUrlInput()" class="w-full py-2 border border-dashed border-[var(--border)] hover:border-[var(--primary)] rounded-xl text-center text-[var(--primary)] hover:bg-[var(--primary)]/5 font-medium transition-colors flex items-center justify-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            添加一个访问入口
+          </button>
+        </div>
+      </div>
+
+      <div class="px-6 py-3.5 border-t border-[var(--border)] bg-[var(--bg-subtle)] flex items-center justify-end gap-2">
+        <button onclick="closeModal('modal-add-bookmark')" class="px-4 py-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs font-medium">取消</button>
+        <button onclick="saveBookmark()" class="px-5 py-2 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-semibold shadow-md">保存书签</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 弹窗 2：浏览器书签导入 (Import Modal) -->
+  <div id="modal-import" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-subtle)]">
+        <div>
+          <h3 class="font-bold text-base text-[var(--text-main)]">一键导入 Chrome 浏览器书签</h3>
+          <p class="text-xs text-[var(--text-muted)]">直接读取 chrome.bookmarks API，智能识别相似重复项</p>
+        </div>
+        <button onclick="closeModal('modal-import')" class="text-[var(--text-dim)] hover:text-[var(--text-main)]">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="p-6 space-y-3 text-xs flex-1">
+        <div class="p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-amber-500/40 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-amber-400">【疑似重复】GitLab 内部库</span>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">名称相似</span>
+          </div>
+          <div class="flex justify-end gap-2 pt-1">
+            <button class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-medium">作为新入口合并到已有书签</button>
+            <button class="px-2.5 py-1 rounded-lg bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)]">独立导入</button>
+          </div>
+        </div>
+      </div>
+      <div class="px-6 py-3.5 border-t border-[var(--border)] bg-[var(--bg-subtle)] flex items-center justify-end gap-2">
+        <button onclick="closeModal('modal-import')" class="px-4 py-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] text-xs">取消</button>
+        <button onclick="finishImport()" class="px-5 py-2 rounded-xl bg-[var(--primary)] text-white text-xs font-semibold">确认导入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast 提示 -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-main)] px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border-l-4 border-l-[var(--primary)] max-w-md">
+      <div class="text-emerald-400">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      </div>
+      <div>
+        <div id="toast-title" class="font-bold text-xs">正在跳转...</div>
+        <div id="toast-desc" class="text-[11px] text-[var(--text-muted)] mt-0.5 font-mono"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript 交互逻辑 -->
+  <script>
+    // 视图密度切换
+    function setDensity(densityName) {
+      document.body.classList.remove('density-compact', 'density-icon', 'density-list', 'density-comfortable');
+      document.body.classList.add('density-' + densityName);
+      
+      document.querySelectorAll('.density-btn').forEach(btn => {
+        btn.classList.remove('bg-[var(--primary)]', 'text-white');
+        btn.classList.add('text-[var(--text-muted)]');
+      });
+      
+      const activeBtn = document.getElementById('density-btn-' + densityName);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-[var(--primary)]', 'text-white');
+        activeBtn.classList.remove('text-[var(--text-muted)]');
+      }
+
+      localStorage.setItem('smart_bm_density', densityName);
+      showToast('📐 布局已切换', '当前视图已切换为: ' + densityName + ' 模式');
+    }
+
+    // 视图切换
+    function switchView(viewName) {
+      document.querySelectorAll('.app-view').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.view-tab-btn').forEach(btn => {
+        btn.classList.remove('bg-[var(--primary)]', 'text-white', 'shadow-sm');
+        btn.classList.add('text-[var(--text-muted)]');
+      });
+
+      const targetView = document.getElementById('view-' + viewName);
+      if (targetView) targetView.classList.remove('hidden');
+
+      const activeBtn = document.getElementById('tab-btn-' + viewName);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-[var(--primary)]', 'text-white', 'shadow-sm');
+        activeBtn.classList.remove('text-[var(--text-muted)]');
+      }
+    }
+
+    // 主题切换
+    function setTheme(themeName) {
+      document.body.setAttribute('data-theme', themeName);
+      localStorage.setItem('smart_bm_theme', themeName);
+      showToast('🎨 主题已切换', '当前配色已设置为 ' + themeName);
+    }
+
+    // 设置页内 Tab 切换
+    function switchSettingsTab(tabName) {
+      document.querySelectorAll('.settings-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+        btn.classList.remove('bg-[var(--primary)]', 'text-white');
+        btn.classList.add('text-[var(--text-muted)]');
+      });
+
+      const target = document.getElementById('settings-content-' + tabName);
+      if (target) target.classList.remove('hidden');
+
+      const btn = document.getElementById('set-tab-' + tabName);
+      if (btn) {
+        btn.classList.add('bg-[var(--primary)]', 'text-white');
+        btn.classList.remove('text-[var(--text-muted)]');
+      }
+    }
+
+    // 分组折叠与展开
+    function toggleGroup(groupId) {
+      const content = document.getElementById('content-' + groupId);
+      const chevron = document.getElementById('chevron-' + groupId);
+      if (content) {
+        content.classList.toggle('hidden');
+        if (chevron) chevron.classList.toggle('rotate-180');
+      }
+    }
+
+    // 打开/关闭 Modal
+    function openModal(modalId) { document.getElementById(modalId).classList.remove('hidden'); }
+    function closeModal(modalId) { document.getElementById(modalId).classList.add('hidden'); }
+
+    // 智能跳转
+    function smartJump(title, url, reason) {
+      showToast('⚡ 智能跳转: ' + title, '寻径决策: ' + reason + ' → ' + url);
+    }
+    function directJump(url) {
+      showToast('🚀 手动直达', '入口: ' + url);
+    }
+    function toggleEndpointDetail(event, epId) {
+      event.stopPropagation();
+      const el = document.getElementById(epId);
+      if (el) el.classList.toggle('hidden');
+    }
+
+    // 搜索引擎下拉
+    function toggleEngineDropdown(event) {
+      event.stopPropagation();
+      document.getElementById('engine-menu').classList.toggle('hidden');
+    }
+    function selectEngine(id, label, iconText, colorClass) {
+      document.getElementById('engine-label').innerText = label;
+      const icon = document.getElementById('engine-icon');
+      icon.innerText = iconText;
+      icon.className = 'w-4 h-4 flex items-center justify-center font-bold ' + colorClass;
+      document.getElementById('engine-menu').classList.add('hidden');
+    }
+
+    // 搜索匹配
+    const mockBookmarks = [
+      { name: 'GitLab', url: 'http://192.168.10.50:8080', tags: '代码, CI/CD' },
+      { name: 'Grafana', url: 'http://192.168.10.88:3000', tags: '监控' },
+      { name: 'Jenkins', url: 'http://192.168.10.60:8080', tags: 'CI/CD' },
+      { name: 'Portainer', url: 'https://192.168.10.99:9443', tags: '容器' },
+      { name: 'Wiki', url: 'https://wiki.company.com', tags: '知识库' }
+    ];
+
+    function handleSearch(val) {
+      const dropdown = document.getElementById('search-results-dropdown');
+      const list = document.getElementById('search-matches-list');
+      if (!val || val.trim() === '') {
+        dropdown.classList.add('hidden');
+        return;
+      }
+      const q = val.toLowerCase();
+      const matches = mockBookmarks.filter(b => b.name.toLowerCase().includes(q) || b.url.toLowerCase().includes(q));
+      if (matches.length > 0) {
+        list.innerHTML = matches.map(m => `
+          <div onclick="smartJump('${m.name}', '${m.url}', '搜索匹配')" class="p-2 rounded-xl hover:bg-[var(--bg-card-hover)] flex items-center justify-between cursor-pointer">
+            <div>
+              <div class="font-semibold text-xs text-[var(--text-main)]">${m.name}</div>
+              <div class="text-[10px] text-[var(--text-dim)] font-mono">${m.url}</div>
+            </div>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400">直达</span>
+          </div>
+        `).join('');
+        dropdown.classList.remove('hidden');
+      } else {
+        dropdown.classList.add('hidden');
+      }
+    }
+
+    function handleSearchKey(e) { if (e.key === 'Enter') triggerSearch(); }
+    function triggerSearch() {
+      const val = document.getElementById('main-search-input').value;
+      if (!val) return;
+      showToast('🔍 网络搜索', `通过 ${document.getElementById('engine-label').innerText} 检索: ${val}`);
+      document.getElementById('search-results-dropdown').classList.add('hidden');
+    }
+
+    function toggleTagFilter(tag) {
+      document.querySelectorAll('.tag-pill').forEach(btn => btn.classList.remove('bg-[var(--primary)]', 'text-white'));
+      event.currentTarget.classList.add('bg-[var(--primary)]', 'text-white');
+      showToast('🏷️ 标签筛选', '已筛选标签: ' + tag);
+    }
+
+    function simulateNetworkChange() {
+      showToast('🔄 网络环境已变更', '当前 IP 变更为 172.16.8.102，全量探测探针已触发');
+    }
+
+    function openEditBookmark(name) {
+      document.getElementById('modal-title').innerText = '编辑书签: ' + name;
+      document.getElementById('bm-input-name').value = name;
+      openModal('modal-add-bookmark');
+    }
+    function toggleIconPicker() { document.getElementById('icon-picker-drawer').classList.toggle('hidden'); }
+    function saveBookmark() { closeModal('modal-add-bookmark'); showToast('✅ 保存成功', '书签已保存'); }
+    function finishImport() { closeModal('modal-import'); showToast('🎉 导入成功', '书签已导入'); }
+    function editMotto() {
+      const m = prompt('修改座右铭:', document.getElementById('motto-text').innerText);
+      if (m) { document.getElementById('motto-text').innerText = m; showToast('✍️ 座右铭已更新', m); }
+    }
+
+    let toastTimeout;
+    function showToast(title, desc) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-title').innerText = title;
+      document.getElementById('toast-desc').innerText = desc;
+      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none'), 3000);
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#engine-btn') && !e.target.closest('#engine-menu')) {
+        const menu = document.getElementById('engine-menu');
+        if (menu) menu.classList.add('hidden');
+      }
+      if (!e.target.closest('#main-search-input') && !e.target.closest('#search-results-dropdown')) {
+        const drop = document.getElementById('search-results-dropdown');
+        if (drop) drop.classList.add('hidden');
+      }
+    });
+
+    function updateClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      const clockEl = document.getElementById('live-clock');
+      if (clockEl) clockEl.innerText = `${h}:${m}:${s}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+  </script>
+</body>
+</html>

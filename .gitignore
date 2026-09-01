@@ -1,0 +1,18 @@
+﻿# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Editor & IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build & Package outputs
+dist/
+node_modules/
+*.crx

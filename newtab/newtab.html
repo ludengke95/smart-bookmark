@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Bookmark - 智能书签</title>
+  <link rel="stylesheet" href="./newtab.css">
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white density-compact aesthetic-size-large" data-theme="dark-slate">
+
+  <!-- 独立全屏壁纸渲染层与高斯柔化遮罩 -->
+  <div id="app-wallpaper-layer" class="hidden fixed inset-0 pointer-events-none z-[-2] bg-cover bg-center bg-no-repeat transition-all duration-500"></div>
+  <div id="app-wallpaper-mask" class="hidden fixed inset-0 pointer-events-none z-[-1] bg-black transition-opacity duration-300"></div>
+
+  <!-- =============================== -->
+  <!-- 顶部全局导航与工具栏 (Top Navbar) -->
+  <!-- =============================== -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-[var(--bg-main)] backdrop-blur-md px-4 py-2 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)]">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-inner">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-sm text-[var(--text-main)]">Smart Bookmark</span>
+        </div>
+        <p class="text-[10px] text-[var(--text-muted)] hidden sm:block">多入口智能寻径书签</p>
+      </div>
+    </div>
+
+    <!-- 顶部功能按钮组 -->
+    <div class="flex items-center gap-1.5 text-xs">
+      <button id="nav-btn-clear-all" class="px-2.5 py-1.5 rounded-lg font-medium bg-red-500/10 border border-red-500/25 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all flex items-center gap-1 cursor-pointer" title="清空全部书签与分组（测试用）">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        <span>清空数据</span>
+      </button>
+      <button id="nav-btn-add" class="px-3 py-1.5 rounded-lg font-medium bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] transition-all shadow-sm flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+        添加书签
+      </button>
+      <button id="nav-btn-import" class="px-3 py-1.5 rounded-lg font-medium bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] transition-all flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        导入书签
+      </button>
+      <button id="nav-btn-settings" class="p-1.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] transition-all" title="设置与统计">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============================================== -->
+  <!-- 核心主区域 (Main Content Area)                  -->
+  <!-- ============================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pt-[56px]">
+
+    <!-- 3.3 美化区 (Top Aesthetic Area) -->
+    <section id="aesthetic-area" class="text-center flex flex-col items-center justify-center transition-all">
+      <!-- 实时时钟与日期 -->
+      <div id="clock-date-container" class="transition-all">
+        <div id="live-clock" class="tracking-tight text-[var(--color-clock,var(--text-main))] font-mono drop-shadow-sm transition-all">
+          --:--:--
+        </div>
+        <div id="live-date" class="font-medium text-[var(--color-date,var(--text-muted))] tracking-wider transition-all">
+          正在加载日期...
+        </div>
+      </div>
+
+      <!-- 座右铭展示 -->
+      <div id="motto-box" class="relative inline-flex items-center text-[var(--color-motto,var(--text-muted))] select-none">
+        <span id="motto-star" class="text-[var(--color-motto-star,var(--primary))] font-bold">✦</span>
+        <span id="motto-text">Stay hungry, stay foolish. 无论身处内网还是外网，一键直达。</span>
+      </div>
+
+      <!-- 极简纯粹搜索框 (无提示文字，左侧保留精致放大镜图标) -->
+      <div id="search-box-container" class="w-full max-w-2xl mt-4 relative transition-all">
+        <div class="relative flex items-center bg-[var(--bg-card)] border border-[var(--border)] focus-within:border-[var(--primary)] focus-within:ring-4 focus-within:ring-[var(--primary)]/15 rounded-2xl shadow-[var(--shadow-lg)] transition-all">
+          
+          <!-- 左侧：经典放大镜图标 (支持点击切换默认搜索引擎) -->
+          <div class="relative flex-shrink-0 flex items-center">
+            <button id="engine-btn" type="button" title="当前搜索引擎，点击可切换" class="pl-4 pr-2 py-3 text-[var(--text-dim)] hover:text-[var(--primary)] flex items-center justify-center transition-colors cursor-pointer select-none">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </button>
+
+            <!-- 搜索引擎下拉浮层 -->
+            <div id="engine-menu" class="hidden absolute left-0 top-full mt-2 w-44 bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl shadow-2xl p-1.5 z-50 text-xs">
+              <!-- 动态加载引擎选项 -->
+            </div>
+          </div>
+
+          <!-- 中间：纯净文本输入框 (无任何 placeholder 提示文字) -->
+          <input 
+            type="text" 
+            id="main-search-input"
+            class="flex-1 bg-transparent border-0 outline-none px-2 py-3 text-xs sm:text-sm text-[var(--text-main)] focus:outline-none min-w-0"
+            autocomplete="off"
+          >
+
+          <!-- 快捷清除按钮 (输入时显式) -->
+          <button id="search-clear-btn" type="button" title="清空输入" class="hidden px-3.5 py-3 text-[var(--text-dim)] hover:text-[var(--text-main)] transition-colors flex-shrink-0 cursor-pointer items-center justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- 即时搜索候选下拉浮层 -->
+        <div id="search-results-dropdown" class="hidden absolute left-0 right-0 top-full mt-2.5 bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl shadow-2xl p-2 z-40 text-left max-h-80 overflow-y-auto custom-scrollbar">
+          <div class="text-[10px] font-bold text-[var(--text-dim)] px-3 py-1.5 uppercase tracking-wider">本地书签匹配</div>
+          <div id="search-matches-list" class="space-y-1"></div>
+        </div>
+      </div>
+
+      <!-- 3.2 顶部高频标签筛选栏 -->
+      <div id="top-tags-bar" class="w-full max-w-4xl mt-3.5 flex flex-wrap items-center justify-center gap-1.5 px-4">
+        <!-- 动态填充标签药丸 -->
+      </div>
+    </section>
+
+    <!-- 网络状态栏与 4 档布局密度切换器 -->
+    <div class="mb-6 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-2.5 px-4 flex flex-wrap items-center justify-between gap-3 text-xs shadow-sm">
+      <!-- 左侧：局域网状态 -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[11px]">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 pulse-dot"></span>
+          <span id="status-local-ip">本机 IP: 探测中...</span>
+        </div>
+        <span class="text-[var(--text-dim)] hidden sm:inline">|</span>
+        <button id="btn-reprobe-network" class="text-[11px] text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors flex items-center gap-1">
+          <svg class="w-3 h-3 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          重新探测网络
+        </button>
+      </div>
+
+      <!-- 右侧：4 档密度切换 (纯图标形式) -->
+      <div class="flex items-center gap-2">
+        <span class="text-[11px] text-[var(--text-dim)] hidden sm:inline">视图模式:</span>
+        <div class="flex items-center bg-[var(--bg-subtle)] border border-[var(--border)] rounded-lg p-0.5 gap-0.5 text-[11px]">
+          <button data-density="compact" title="紧凑卡片 (5~6列)" class="density-switch-btn p-1.5 rounded font-medium flex items-center justify-center transition-all">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          </button>
+          <button data-density="icon" title="极简九宫格图标 (8列)" class="density-switch-btn p-1.5 rounded font-medium flex items-center justify-center transition-all">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><circle cx="4" cy="4" r="2.2"/><circle cx="12" cy="4" r="2.2"/><circle cx="20" cy="4" r="2.2"/><circle cx="4" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="20" cy="12" r="2.2"/><circle cx="4" cy="20" r="2.2"/><circle cx="12" cy="20" r="2.2"/><circle cx="20" cy="20" r="2.2"/></svg>
+          </button>
+          <button data-density="list" title="详细列表行" class="density-switch-btn p-1.5 rounded font-medium flex items-center justify-center transition-all">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor"/><circle cx="4" cy="12" r="1.5" fill="currentColor"/><circle cx="4" cy="18" r="1.5" fill="currentColor"/></svg>
+          </button>
+          <button data-density="comfortable" title="舒适大卡片 (3~4列)" class="density-switch-btn p-1.5 rounded font-medium flex items-center justify-center transition-all">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="7" rx="1.5"/><rect x="3" y="14" width="18" height="7" rx="1.5"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 单栏可折叠分组容器流                           -->
+    <!-- ============================================== -->
+    <div id="groups-container" class="space-y-6">
+      <!-- 动态渲染各分组与书签网格 -->
+    </div>
+
+  </main>
+
+
+  <!-- ============================================== -->
+  <!-- 模态框 1：新增 / 编辑书签弹窗                   -->
+  <!-- ============================================== -->
+  <div id="modal-bookmark" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      
+      <!-- 弹窗顶栏 (与导入弹窗风格一致) -->
+      <div class="px-6 py-3.5 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-subtle)] flex-shrink-0">
+        <div>
+          <h3 id="modal-bm-title" class="font-bold text-base text-[var(--text-main)]">新增智能书签</h3>
+          <p class="text-[11px] text-[var(--text-muted)]">配置多网络拓扑访问入口，系统将自动识别内外网并智能寻径</p>
+        </div>
+        <button id="modal-bm-close" class="text-[var(--text-dim)] hover:text-[var(--text-main)] p-1 rounded-lg hover:bg-[var(--bg-card-hover)] transition-colors cursor-pointer" title="关闭">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- 弹窗内容主体 -->
+      <div class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs flex-1">
+        <input type="hidden" id="bm-form-id">
+
+        <!-- 1. 名称与图标选择 -->
+        <div class="flex gap-4 items-start">
+          <div class="flex flex-col items-center gap-1.5 flex-shrink-0">
+            <div id="bm-icon-preview" class="w-12 h-12 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)] hover:border-[var(--primary)] flex items-center justify-center cursor-pointer transition-colors" title="点击选择图标">
+              <!-- 预览图 -->
+            </div>
+            <button id="btn-toggle-icon-picker" type="button" class="text-[10px] text-[var(--primary)] hover:underline cursor-pointer">选图标</button>
+          </div>
+
+          <div class="flex-1 space-y-1">
+            <label class="font-medium text-[var(--text-main)]">书签/应用名称 <span class="text-red-400">*</span></label>
+            <input type="text" id="bm-form-name" placeholder="例如：GitLab 代码平台" class="w-full bg-[var(--bg-subtle)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-main)] focus:border-[var(--primary)] focus:outline-none">
+          </div>
+        </div>
+
+        <!-- 多源图标选择抽屉 -->
+        <div id="bm-icon-drawer" class="hidden p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)] space-y-3">
+          <!-- 抽屉头部 Tab 切换 -->
+          <div class="flex items-center justify-between border-b border-[var(--border)] pb-2">
+            <div class="flex items-center gap-1.5">
+              <button type="button" data-icon-tab="online" class="icon-tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--primary)] text-white shadow-xs transition-all cursor-pointer">
+                <span>🌐 在线搜索 (Iconify 20万+)</span>
+              </button>
+              <button type="button" data-icon-tab="url" class="icon-tab-btn px-3 py-1.5 rounded-lg text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] transition-all cursor-pointer">
+                <span>🔗 远程图片链接</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tab 1: 在线搜索 (Iconify 20万+) -->
+          <div id="icon-panel-online" class="icon-source-panel space-y-2">
+            <div class="flex items-center gap-1.5">
+              <input type="text" id="online-icon-search-input" placeholder="输入技术栈或品牌英文（如 redis, vue, spring, k8s, jira, mysql, nginx）..." class="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
+              <button type="button" id="btn-do-online-icon-search" class="px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-medium rounded-lg flex-shrink-0 cursor-pointer shadow-xs">搜索</button>
+            </div>
+            <div id="online-icon-loading" class="hidden py-4 text-center text-xs text-[var(--text-dim)] flex items-center justify-center gap-2">
+              <svg class="animate-spin w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              <span>正在检索 Iconify 全球开源图标库...</span>
+            </div>
+            <div id="online-icon-grid-picker" class="grid grid-cols-6 sm:grid-cols-8 gap-2 pt-1 max-h-44 overflow-y-auto custom-scrollbar"></div>
+          </div>
+
+          <!-- Tab 2: 远程图片 URL -->
+          <div id="icon-panel-url" class="icon-source-panel hidden space-y-2">
+            <div class="flex items-center gap-2">
+              <input type="text" id="remote-icon-url-input" placeholder="输入任意外部 HTTPS 图标/Logo 地址 (如 https://.../logo.svg 或 png)" class="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
+              <button type="button" id="btn-apply-remote-icon-url" class="px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-semibold rounded-lg flex-shrink-0 cursor-pointer shadow-xs">应用并缓存</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. 访问入口列表动态增减与内网自动判别 -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="font-semibold text-sm text-[var(--text-main)] flex items-center gap-1.5">
+              <span>访问入口列表</span>
+            </label>
+            <button id="btn-add-endpoint-row" type="button" class="text-xs text-[var(--primary)] hover:underline flex items-center gap-1 cursor-pointer font-medium">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+              <span>添加入口</span>
+            </button>
+          </div>
+
+          <div id="endpoints-input-list" class="space-y-2">
+            <!-- 动态生成 URL 行 -->
+          </div>
+        </div>
+
+        <!-- 3. 分组与标签设置 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <div class="space-y-1">
+            <label class="font-medium text-[var(--text-main)]">所属分组</label>
+            <select id="bm-form-group" class="w-full bg-[var(--bg-subtle)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--text-main)] focus:border-[var(--primary)] focus:outline-none">
+              <!-- 动态填充 -->
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="font-medium text-[var(--text-main)]">标签 (逗号分隔)</label>
+            <input type="text" id="bm-form-tags" placeholder="例如：开发环境, CI/CD" class="w-full bg-[var(--bg-subtle)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--text-main)] focus:border-[var(--primary)] focus:outline-none">
+          </div>
+        </div>
+      </div>
+
+      <!-- 弹窗底栏 (与导入弹窗风格一致) -->
+      <div class="px-6 py-3.5 border-t border-[var(--border)] bg-[var(--bg-subtle)] flex items-center justify-between flex-shrink-0">
+        <button id="btn-fetch-favicon" type="button" class="text-xs text-[var(--primary)] hover:underline flex items-center gap-1.5 font-medium cursor-pointer">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span>抓取首个 URL 的 Favicon</span>
+        </button>
+        <div class="flex items-center gap-2">
+          <button id="bm-form-cancel" type="button" class="px-4 py-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] text-xs font-medium transition-colors cursor-pointer">取消</button>
+          <button id="bm-form-save" type="button" class="px-5 py-2 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-semibold shadow-md transition-all cursor-pointer">保存书签</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ============================================== -->
+  <!-- 模态框 2：浏览器书签导入与智能去重             -->
+  <!-- ============================================== -->
+  <div id="modal-import" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      
+      <div class="px-6 py-3.5 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-subtle)]">
+        <div>
+          <h3 class="font-bold text-base text-[var(--text-main)]">导入浏览器书签</h3>
+          <p class="text-[11px] text-[var(--text-muted)]">直接调用 chrome.bookmarks API，智能识别相似项</p>
+        </div>
+        <button id="modal-import-close" class="text-[var(--text-dim)] hover:text-[var(--text-main)]">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- 导入模式切换条 (按路径建组 vs 统一单分组) -->
+      <div class="px-6 py-2.5 bg-[var(--bg-subtle)] border-b border-[var(--border)] space-y-2 text-xs">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="text-[var(--text-muted)] font-semibold flex items-center gap-1">
+            <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            分组创建模式:
+          </span>
+
+          <!-- 模式切换分段按钮 -->
+          <div class="flex items-center bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-0.5 text-xs">
+            <button id="import-mode-folder" type="button" class="px-2.5 py-1 rounded font-medium transition-all bg-[var(--primary)] text-white shadow-sm flex items-center gap-1">
+              📁 按书签路径自动建组
+            </button>
+            <button id="import-mode-single" type="button" class="px-2.5 py-1 rounded font-medium transition-all text-[var(--text-muted)] hover:text-[var(--text-main)] flex items-center gap-1">
+              📦 全部导入至单一分组
+            </button>
+          </div>
+        </div>
+
+        <!-- 单分组目标选择器 (仅在切换为单一分组模式时显示) -->
+        <div id="import-single-group-box" class="hidden flex items-center gap-2 pt-1 border-t border-[var(--border)]">
+          <span class="text-[var(--text-muted)]">选择目标分组:</span>
+          <select id="import-target-group" class="bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-2.5 py-1 text-xs text-[var(--text-main)] focus:outline-none flex-1 max-w-xs">
+            <!-- 动态填充分组选项 -->
+          </select>
+        </div>
+
+        <div id="import-folder-tip" class="text-[10px] text-[var(--text-dim)] flex items-center gap-1">
+          <span>💡 系统将根据浏览器的文件夹全路径（如“书签栏 / 研发协同 / 项目A”）自动创建同名分组并归类导入</span>
+        </div>
+      </div>
+
+      <!-- 实时导入进度条 -->
+      <div id="import-progress-box" class="hidden px-6 py-3 bg-[var(--bg-card)] border-b border-[var(--border)] space-y-2">
+        <div class="flex items-center justify-between text-xs">
+          <span id="import-progress-status" class="font-semibold text-[var(--text-main)] flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-indigo-500 pulse-dot"></span>
+            正在智能解析并去重导入...
+          </span>
+          <span id="import-progress-percent" class="font-mono text-indigo-400 font-bold">0%</span>
+        </div>
+        <div class="w-full bg-[var(--bg-subtle)] rounded-full h-2 overflow-hidden border border-[var(--border)]">
+          <div id="import-progress-bar" class="bg-indigo-600 h-full rounded-full transition-all duration-100" style="width: 0%"></div>
+        </div>
+        <div id="import-progress-detail" class="text-[10px] text-[var(--text-dim)] font-mono truncate">准备就绪...</div>
+      </div>
+
+      <!-- 查重警示横幅 -->
+      <div id="import-dup-banner" class="hidden bg-amber-500/10 border-b border-amber-500/20 px-6 py-2 flex items-center justify-between text-xs text-amber-400">
+        <span>⚠️ 检测到疑似与现有书签重复的项，建议选择合并为新入口：</span>
+      </div>
+
+      <div id="import-list-container" class="p-6 overflow-y-auto custom-scrollbar space-y-3 text-xs flex-1">
+        <!-- 动态填充导入候选项 -->
+      </div>
+
+      <div class="px-6 py-3.5 border-t border-[var(--border)] bg-[var(--bg-subtle)] flex items-center justify-between">
+        <label class="flex items-center gap-2 text-xs text-[var(--text-muted)] cursor-pointer select-none">
+          <input type="checkbox" id="import-select-all" checked class="custom-checkbox">
+          <span>全选</span>
+        </label>
+        <div class="flex items-center gap-2">
+          <button id="import-cancel-btn" class="px-4 py-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] text-xs">取消</button>
+          <button id="import-confirm-btn" class="px-5 py-2 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-semibold shadow-md">确认导入</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ============================================== -->
+  <!-- 模态框 3：设置与数据统计分析面板 (左右结构开阔大尺寸) -->
+  <!-- ============================================== -->
+  <div id="modal-settings" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col h-[760px] min-h-[660px] max-h-[94vh]">
+      
+      <!-- 弹窗顶栏 -->
+      <div class="px-6 py-3.5 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-subtle)] flex-shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-inner">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm sm:text-base text-[var(--text-main)]">设置与数据统计</h3>
+            <p class="text-[10px] text-[var(--text-muted)]">自定义外观、常用限制、分组与使用分析</p>
+          </div>
+        </div>
+        <button id="modal-settings-close" class="text-[var(--text-dim)] hover:text-[var(--text-main)] p-1 rounded-lg hover:bg-[var(--bg-card-hover)] transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- 核心左右分栏区域 -->
+      <div class="flex flex-1 overflow-hidden min-h-0">
+        
+        <!-- 左侧导航栏 -->
+        <div class="w-48 sm:w-52 border-r border-[var(--border)] bg-[var(--bg-subtle)] p-3 flex flex-col justify-between flex-shrink-0 select-none">
+          <nav class="space-y-1 text-xs font-medium">
+            <button id="set-tab-appearance" class="settings-nav-btn w-full px-3 py-2.5 rounded-xl bg-[var(--primary)] text-white font-medium transition-all flex items-center gap-2.5 text-left shadow-sm">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+              <span>外观与布局</span>
+            </button>
+            <button id="set-tab-groups" class="settings-nav-btn w-full px-3 py-2.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] font-medium transition-all flex items-center gap-2.5 text-left">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+              <span>分组管理</span>
+            </button>
+            <button id="set-tab-tags" class="settings-nav-btn w-full px-3 py-2.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] font-medium transition-all flex items-center gap-2.5 text-left">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+              <span>标签管理</span>
+            </button>
+            <button id="set-tab-stats" class="settings-nav-btn w-full px-3 py-2.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] font-medium transition-all flex items-center gap-2.5 text-left">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+              <span>使用统计分析</span>
+            </button>
+            <button id="set-tab-backup" class="settings-nav-btn w-full px-3 py-2.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] font-medium transition-all flex items-center gap-2.5 text-left">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+              <span>数据备份与回滚</span>
+            </button>
+            <button id="set-tab-storage" class="settings-nav-btn w-full px-3 py-2.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)] font-medium transition-all flex items-center gap-2.5 text-left">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+              <span>存储分析与缓存</span>
+            </button>
+          </nav>
+
+          <div class="p-2 text-[10px] text-[var(--text-dim)] border-t border-[var(--border)] pt-2.5">
+            <div>Smart Bookmark</div>
+            <div class="text-[9px] mt-0.5 opacity-70 font-mono">v0.2 智能寻径</div>
+          </div>
+        </div>
+
+        <!-- 右侧内容面板 (具备独立滚动条，大小恒定) -->
+        <div class="flex-1 h-full overflow-y-auto custom-scrollbar px-6 py-4 text-xs bg-[var(--bg-card)]">
+          
+          <!-- Tab 1: 外观与偏好 (模块化子分段导航) -->
+          <div id="set-panel-appearance" class="settings-panel space-y-4">
+            
+            <!-- 顶部子分段切换器 (Segmented Tabs) -->
+            <div class="flex items-center gap-1.5 p-1 bg-[var(--bg-subtle)] border border-[var(--border)] rounded-xl w-fit">
+              <button type="button" data-appearance-subtab="themes" class="appearance-subtab-btn px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer">
+                <span>🎨</span> <span>主题包管理</span>
+              </button>
+              <button type="button" data-appearance-subtab="wallpaper" class="appearance-subtab-btn px-3 py-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer">
+                <span>🖼️</span> <span>壁纸背景</span>
+              </button>
+              <button type="button" data-appearance-subtab="layout" class="appearance-subtab-btn px-3 py-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer">
+                <span>📐</span> <span>布局与组件</span>
+              </button>
+            </div>
+
+            <!-- 子面板 1: 主题包管理 -->
+            <div id="subpanel-appearance-themes" class="appearance-subpanel space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h4 class="font-bold text-sm text-[var(--text-main)]">主题配色方案 (Theme Packs)</h4>
+                  <p class="text-[10px] text-[var(--text-dim)]">支持一键切换内置极简配色、导入/导出专属主题包或进行深度 DIY 定制</p>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <input type="file" id="theme-file-input" accept=".zip,.json" class="hidden">
+                  <button id="btn-import-theme-pkg" type="button" class="px-2.5 py-1.5 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border)] hover:border-[var(--primary)] text-[var(--text-main)] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer" title="导入主题压缩包 (.zip) 或 JSON 文件">
+                    <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    <span>导入主题包 (.zip)</span>
+                  </button>
+                  <button id="btn-export-active-theme" type="button" class="px-2.5 py-1.5 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border)] hover:border-[var(--primary)] text-[var(--text-main)] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer" title="打包导出当前主题与壁纸为 .zip 压缩包">
+                    <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <span>导出当前主题包</span>
+                  </button>
+                  <button id="btn-open-diy-theme" type="button" class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    <span>DIY 专属主题包</span>
+                  </button>
+                </div>
+              </div>
+              <div id="theme-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5"></div>
+            </div>
+
+            <!-- 子面板 2: 壁纸背景设置 -->
+            <div id="subpanel-appearance-wallpaper" class="appearance-subpanel hidden space-y-4">
+              <div class="p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)] space-y-3">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h4 class="font-bold text-xs text-[var(--text-main)] flex items-center gap-1.5">
+                      <span class="text-indigo-400">🖼️</span> 主页壁纸系统
+                    </h4>
+                    <p class="text-[10px] text-[var(--text-dim)] mt-0.5">支持必应每日一图自动同步、精选高清壁纸、本地上传及链接，配备滤镜微调</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[11px] text-[var(--text-muted)]">开启壁纸:</span>
+                    <label class="switch" title="开启或关闭主页壁纸">
+                      <input type="checkbox" id="setting-wallpaper-enable">
+                      <span class="switch-slider"></span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- 壁纸配置区（开启时展开） -->
+                <div id="wallpaper-config-area" class="space-y-3 pt-2 border-t border-[var(--border)] hidden">
+                  <!-- 来源切换 Tab (5 个来源) -->
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex flex-wrap bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-0.5 text-xs">
+                      <button type="button" data-wp-tab="theme-pack" class="wp-source-tab-btn px-2.5 py-1 rounded-md bg-[var(--primary)] text-white font-semibold transition-all flex items-center gap-1 cursor-pointer">
+                        <span>🌟</span> <span>主题包壁纸</span>
+                      </button>
+                      <button type="button" data-wp-tab="built-in" class="wp-source-tab-btn px-2.5 py-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-main)] font-semibold transition-all flex items-center gap-1 cursor-pointer">
+                        <span>🖼️</span> <span>内置预设</span>
+                      </button>
+                      <button type="button" data-wp-tab="bing" class="wp-source-tab-btn px-2.5 py-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-main)] font-semibold transition-all flex items-center gap-1 cursor-pointer">
+                        <span>🌄</span> <span>必应每日壁纸</span>
+                      </button>
+                      <button type="button" data-wp-tab="upload" class="wp-source-tab-btn px-2.5 py-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-main)] font-semibold transition-all flex items-center gap-1 cursor-pointer">
+                        <span>📁</span> <span>本地上传</span>
+                      </button>
+                      <button type="button" data-wp-tab="url" class="wp-source-tab-btn px-2.5 py-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-main)] font-semibold transition-all flex items-center gap-1 cursor-pointer">
+                        <span>🔗</span> <span>网络链接</span>
+                      </button>
+                    </div>
+                    <span id="wallpaper-active-status-desc" class="text-[10px] text-indigo-400 font-mono">已套用当前壁纸</span>
+                  </div>
+
+                  <!-- 1. 主题包专属壁纸网格面板 -->
+                  <div id="wp-panel-theme-pack" class="wp-source-panel">
+                    <div id="wallpaper-theme-pack-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5"></div>
+                  </div>
+
+                  <!-- 2. 插件内置预设壁纸网格面板 -->
+                  <div id="wp-panel-built-in" class="wp-source-panel hidden">
+                    <div id="wallpaper-built-in-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5"></div>
+                  </div>
+
+                  <!-- 3. 必应每日壁纸专属面板 (全自动每日静默同步) -->
+                  <div id="wp-panel-bing" class="wp-source-panel hidden space-y-3">
+                    <div id="bing-wallpaper-container">
+                      <!-- 动态渲染 Bing 今日壁纸大卡片 -->
+                    </div>
+                  </div>
+
+                  <!-- 4. 本地上传壁纸面板 (支持批量管理、防误触删除与剪贴板极速粘贴) -->
+                  <div id="wp-panel-upload" class="wp-source-panel hidden space-y-3">
+                    <input type="file" id="wallpaper-file-input" accept="image/*" multiple class="hidden">
+                    
+                    <!-- 图库顶部控制条 -->
+                    <div id="wallpaper-uploads-header-bar" class="flex flex-wrap items-center justify-between gap-2">
+                      <div class="flex items-center gap-2">
+                        <span class="text-[11px] font-bold text-[var(--text-main)] flex items-center gap-1.5">
+                          <span>📂 本地壁纸库</span>
+                          <span id="uploads-gallery-count" class="px-1.5 py-0.5 rounded text-[9px] font-mono bg-[var(--bg-subtle)] border border-[var(--border)] text-[var(--text-dim)]">0 / 12 张</span>
+                        </span>
+                      </div>
+
+                      <div class="flex items-center gap-1.5">
+                        <button type="button" id="btn-trigger-upload" class="px-2.5 py-1 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-[10px] font-semibold transition-all flex items-center gap-1 cursor-pointer shadow-xs">
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                          <span>上传壁纸</span>
+                        </button>
+                        <button type="button" id="btn-toggle-batch-uploads" class="px-2.5 py-1 rounded-lg bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-[10px] font-medium transition-all flex items-center gap-1 cursor-pointer">
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                          <span>批量管理</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- 批量管理操作条 -->
+                    <div id="uploads-batch-bar" class="hidden p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between text-xs animate-fadeIn">
+                      <div class="flex items-center gap-2.5">
+                        <label class="inline-flex items-center gap-1.5 cursor-pointer text-[11px] font-medium text-[var(--text-main)]">
+                          <input type="checkbox" id="chk-select-all-uploads" class="rounded accent-[var(--primary)] cursor-pointer">
+                          <span>全选</span>
+                        </label>
+                        <span class="text-[10px] text-[var(--text-dim)]">已选 <strong id="batch-selected-count" class="text-indigo-400 font-mono font-bold">0</strong> 张</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <button type="button" id="btn-batch-delete-uploads" class="px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500 text-red-300 hover:text-white border border-red-500/30 text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:pointer-events-none">
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                          <span>删除所选</span>
+                        </button>
+                        <button type="button" id="btn-cancel-batch-uploads" class="px-2 py-1 rounded-lg bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-[10px] transition-all cursor-pointer">
+                          完成
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- 紧凑上传/粘贴拖拽条 -->
+                    <div id="wallpaper-dropzone-compact" class="border border-dashed border-[var(--border)] hover:border-[var(--primary)] rounded-xl py-2 px-3 text-center cursor-pointer transition-all bg-[var(--bg-card)]/40 hover:bg-[var(--bg-card)] flex items-center justify-between gap-2">
+                      <div class="flex items-center gap-2 text-[10px] text-[var(--text-muted)]">
+                        <span class="text-indigo-400 font-bold">💡 快捷上传:</span>
+                        <span>拖拽文件至此处、点击选择，或直接按下 <kbd class="px-1 py-0.2 rounded bg-[var(--bg-subtle)] border border-[var(--border)] font-mono text-[9px]">Ctrl+V</kbd> 粘贴截图</span>
+                      </div>
+                      <span class="text-[9px] text-[var(--text-dim)] font-mono flex-shrink-0">支持多图 PNG/JPG/WebP</span>
+                    </div>
+
+                    <!-- 空状态拖拽上传区 -->
+                    <div id="wallpaper-dropzone-empty" class="hidden border-2 border-dashed border-[var(--border)] hover:border-[var(--primary)] rounded-2xl p-7 text-center cursor-pointer transition-all bg-[var(--bg-card)]/40 hover:bg-[var(--bg-card)]">
+                      <div class="w-11 h-11 mx-auto rounded-2xl bg-[var(--bg-subtle)] text-indigo-400 flex items-center justify-center mb-2.5 shadow-sm border border-[var(--border)]">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                      </div>
+                      <p class="text-xs font-bold text-[var(--text-main)]">点击选择本地壁纸 或 拖拽图片至此处</p>
+                      <p class="text-[10px] text-[var(--text-dim)] mt-1">支持同时上传多张图片，亦可在本页直接使用 <kbd class="px-1 py-0.2 rounded bg-[var(--bg-subtle)] border border-[var(--border)] font-mono text-[9px]">Ctrl + V</kbd> 粘贴截图</p>
+                    </div>
+
+                    <!-- 已上传壁纸图库网格 -->
+                    <div id="wallpaper-uploads-gallery" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-0.5"></div>
+                  </div>
+
+                  <!-- 5. 网络 URL 壁纸面板 -->
+                  <div id="wp-panel-url" class="wp-source-panel hidden">
+                    <div class="flex items-center gap-2">
+                      <input type="text" id="wallpaper-url-input" placeholder="输入任意高清图片直接链接 (例如：https://.../wallpaper.jpg)" class="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
+                      <button type="button" id="btn-apply-wallpaper-url" class="px-4 py-2 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-semibold shadow-sm transition-all flex-shrink-0 cursor-pointer">应用</button>
+                    </div>
+                  </div>
+
+                  <!-- 滤镜与对比度调节滑块 -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[var(--border)]">
+                    <div class="space-y-1">
+                      <div class="flex items-center justify-between text-[11px]">
+                        <span class="text-[var(--text-muted)]">背景模糊度 (Blur)</span>
+                        <span id="wallpaper-blur-label" class="font-mono text-indigo-400 font-bold text-[10px]">0px</span>
+                      </div>
+                      <input type="range" id="wallpaper-blur-slider" min="0" max="20" step="1" value="0" class="w-full custom-range">
+                    </div>
+                    <div class="space-y-1">
+                      <div class="flex items-center justify-between text-[11px]">
+                        <span class="text-[var(--text-muted)]">暗色遮罩浓度 (Mask)</span>
+                        <span id="wallpaper-mask-label" class="font-mono text-indigo-400 font-bold text-[10px]">35%</span>
+                      </div>
+                      <input type="range" id="wallpaper-mask-slider" min="5" max="85" step="5" value="35" class="w-full custom-range">
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <!-- 子面板 3: 布局与基础组件 -->
+            <div id="subpanel-appearance-layout" class="appearance-subpanel hidden space-y-4">
+              
+              <!-- 美化区 (时钟与搜索框) 尺寸设置: 大 / 中 / 小 -->
+              <div class="p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)] space-y-2.5">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h4 class="font-bold text-xs text-[var(--text-main)] flex items-center gap-1.5">
+                      <span>✨</span> 美化区尺寸比重 (时钟、搜索框与间距留白)
+                    </h4>
+                    <p class="text-[10px] text-[var(--text-dim)] mt-0.5">控制顶部时钟、座右铭与搜索栏的视觉比重与通透呼吸空间，默认推荐为「大」</p>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2.5 pt-1">
+                  <button type="button" data-aesthetic-size="large" class="aesthetic-size-btn p-2.5 rounded-xl border-2 transition-all flex flex-col items-center gap-1 text-center bg-[var(--bg-card)] border-[var(--primary)] text-[var(--text-main)] bg-[var(--primary)]/10 shadow-sm cursor-pointer">
+                    <span class="font-bold text-xs">大 (大气开阔 / 默认)</span>
+                    <span class="text-[10px] text-[var(--text-dim)]">超大时钟与开阔搜索栏，通透舒适</span>
+                  </button>
+                  <button type="button" data-aesthetic-size="medium" class="aesthetic-size-btn p-2.5 rounded-xl border-2 transition-all flex flex-col items-center gap-1 text-center bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--primary)]/50 cursor-pointer">
+                    <span class="font-bold text-xs">中 (标准平衡)</span>
+                    <span class="text-[10px] text-[var(--text-dim)]">均衡布局与标准间距留白</span>
+                  </button>
+                  <button type="button" data-aesthetic-size="small" class="aesthetic-size-btn p-2.5 rounded-xl border-2 transition-all flex flex-col items-center gap-1 text-center bg-[var(--bg-card)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--primary)]/50 cursor-pointer">
+                    <span class="font-bold text-xs">小 (极简紧凑)</span>
+                    <span class="text-[10px] text-[var(--text-dim)]">紧凑时钟，首屏展示更多书签</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 时间格式与默认搜索引擎 -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)]">
+                <div class="space-y-1.5">
+                  <label class="font-medium text-xs text-[var(--text-main)] flex items-center gap-1.5">
+                    <span>⏰</span> <span>时钟制式</span>
+                  </label>
+                  <select id="setting-time-format" class="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--text-main)] focus:outline-none">
+                    <option value="24">24 小时制 (09:54:33)</option>
+                    <option value="12">12 小时制 (09:54:33 AM)</option>
+                  </select>
+                </div>
+                <div class="space-y-1.5">
+                  <label class="font-medium text-xs text-[var(--text-main)] flex items-center gap-1.5">
+                    <span>🔍</span> <span>默认搜索引擎</span>
+                  </label>
+                  <select id="setting-default-engine" class="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--text-main)] focus:outline-none">
+                    <option value="google">Google</option>
+                    <option value="bing">Bing</option>
+                    <option value="baidu">百度</option>
+                    <option value="github">GitHub</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 座右铭/寄语输入框 -->
+              <div class="p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)] space-y-1.5">
+                <label class="font-medium text-xs text-[var(--text-main)] flex items-center gap-1.5">
+                  <span>💬</span> <span>座右铭 / 寄语文本</span>
+                </label>
+                <input type="text" id="setting-motto-input" class="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
+                <p class="text-[10px] text-[var(--text-dim)]">显示在主页时钟下方，随时鼓励自己</p>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Tab 2: 分组管理 (模块化子分段导航) -->
+          <div id="set-panel-groups" class="settings-panel hidden space-y-4">
+            
+            <!-- 顶部子分段切换器 (Segmented Tabs) -->
+            <div class="flex items-center gap-1.5 p-1 bg-[var(--bg-subtle)] border border-[var(--border)] rounded-xl w-fit">
+              <button type="button" data-groups-subtab="strategy" class="groups-subtab-btn px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer">
+                <span>📋</span> <span>展示与折叠策略</span>
+              </button>
+              <button type="button" data-groups-subtab="list" class="groups-subtab-btn px-3 py-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer">
+                <span>📁</span> <span>分组列表与排序</span>
+              </button>
+            </div>
+
+            <!-- 子面板 1: 全局展示行数与展开策略 -->
+            <div id="subpanel-groups-strategy" class="groups-subpanel space-y-4">
+              <div class="p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)] space-y-3">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h4 class="font-bold text-xs text-[var(--text-main)] flex items-center gap-1.5">
+                      <span class="text-indigo-400">📋</span> 全局分组展示行数与展开策略
+                    </h4>
+                    <p class="text-[10px] text-[var(--text-dim)] mt-0.5">常用分组智能聚合 Top 高频应用；全部分组均支持定制默认展示行数与一键展开</p>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <!-- 1. 常用分组展示行数 -->
+                  <div class="space-y-1.5 p-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border)]">
+                    <div class="flex items-center justify-between">
+                      <span class="font-semibold text-xs text-[var(--text-main)] flex items-center gap-1">
+                        <span class="text-amber-400">★</span> 常用高频分组展示
+                      </span>
+                      <span class="text-[10px] text-indigo-400 font-mono">智能聚合</span>
+                    </div>
+                    <p class="text-[10px] text-[var(--text-dim)]">基于近 30 天点击频次，默认只占 1 行保持首屏极简</p>
+                    <select id="setting-frequent-rows" class="w-full bg-[var(--bg-subtle)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--text-main)] focus:outline-none">
+                      <option value="1">智能展示 1 行 (默认推荐)</option>
+                      <option value="2">展示 2 行</option>
+                      <option value="3">展示 3 行</option>
+                      <option value="0">不限制 (展示全部高频应用)</option>
+                    </select>
+                  </div>
+
+                  <!-- 2. 普通业务分组展示行数 -->
+                  <div class="space-y-1.5 p-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border)]">
+                    <div class="flex items-center justify-between">
+                      <span class="font-semibold text-xs text-[var(--text-main)] flex items-center gap-1">
+                        <span class="text-indigo-400">📁</span> 普通业务分组展示
+                      </span>
+                      <span class="text-[10px] text-emerald-400 font-mono">支持展开</span>
+                    </div>
+                    <p class="text-[10px] text-[var(--text-dim)]">设置业务分组默认展示行数，超量时提供一键展开</p>
+                    <select id="setting-group-rows" class="w-full bg-[var(--bg-subtle)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--text-main)] focus:outline-none">
+                      <option value="0">不限制 (默认推荐 · 展示全部)</option>
+                      <option value="1">默认展示 1 行 (超量折叠)</option>
+                      <option value="2">默认展示 2 行 (超量折叠)</option>
+                      <option value="3">默认展示 3 行 (超量折叠)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- 3. 4 种排版模式下的单行容量微调 -->
+                <div class="pt-2 border-t border-[var(--border)] space-y-1.5">
+                  <div class="flex items-center justify-between text-[11px]">
+                    <span class="text-[var(--text-muted)] font-medium">各排版模式单行基准容量 (条/行)</span>
+                    <span class="text-[10px] text-[var(--text-dim)]">用于精确计算 1 行所容纳的书签数与列数</span>
+                  </div>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div class="space-y-1">
+                      <label class="text-[10px] text-[var(--text-muted)]">紧凑卡片 (5~6列)</label>
+                      <div class="number-stepper">
+                        <button type="button" class="number-stepper-btn" data-step-target="setting-limit-compact" data-step-dir="-1" title="减少">−</button>
+                        <input type="number" id="setting-limit-compact" min="1" max="50" class="number-stepper-input">
+                        <span class="number-stepper-suffix">条</span>
+                        <button type="button" class="number-stepper-btn" data-step-target="setting-limit-compact" data-step-dir="1" title="增加">+</button>
+                      </div>
+                    </div>
+                    <div class="space-y-1">
+                      <label class="text-[10px] text-[var(--text-muted)]">极简图标 (8列)</label>
+                      <div class="number-stepper">
+                        <button type="button" class="number-stepper-btn" data-step-target="setting-limit-icon" data-step-dir="-1" title="减少">−</button>
+                        <input type="number" id="setting-limit-icon" min="1" max="50" class="number-stepper-input">
+                        <span class="number-stepper-suffix">条</span>
+                        <button type="button" class="number-stepper-btn" data-step-target="setting-limit-icon" data-step-dir="1" title="增加">+</button>
+                      </div>
+                    </div>
+                    <div class="space-y-1">
+                      <label class="text-[10px] text-[var(--text-muted)]">详细列表行</label>
+                      <div class="number-stepper">
+                        <button type="button" class="number-stepper-btn" data-step-target="setting-limit-list" data-step-dir="-1" title="减少">−</button>
+                        <input type="number" id="setting-limit-list" min="1" max="50" class="number-stepper-input">
+                        <span class="number-stepper-suffix">条</span>
+                        <button type="button" class="number-stepper-btn" data-step-target="setting-limit-list" data-step-dir="1" title="增加">+</button>
+                      </div>
+                    </div>
+                    <div class="space-y-1">
+                      <label class="text-[10px] text-[var(--text-muted)]">舒适大卡片</label>
+                      <div class="number-stepper">
+                        <button type="button" class="number-stepper-btn" data-step-target="setting-limit-comfortable" data-step-dir="-1" title="减少">−</button>
+                        <input type="number" id="setting-limit-comfortable" min="1" max="50" class="number-stepper-input">
+                        <span class="number-stepper-suffix">条</span>
+                        <button type="button" class="number-stepper-btn" data-step-target="setting-limit-comfortable" data-step-dir="1" title="增加">+</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 子面板 2: 业务分组列表与排序 -->
+            <div id="subpanel-groups-list" class="groups-subpanel hidden space-y-4">
+              <div class="p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)] space-y-3">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <span class="font-bold text-xs text-[var(--text-main)]">业务分组管理与排序</span>
+                    <p class="text-[10px] text-[var(--text-dim)]">按住 ⋮⋮ 拖拽调整排列顺序，或设置主页独立显示开关</p>
+                  </div>
+                  <button id="btn-add-new-group" class="px-2.5 py-1 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg text-xs font-medium transition-colors cursor-pointer">+ 新增自定义分组</button>
+                </div>
+                <div id="settings-group-list" class="space-y-2"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Tab 3: 标签管理 (Tag Management) -->
+          <div id="set-panel-tags" class="settings-panel hidden space-y-4">
+            <!-- 顶部说明与新增栏 (与分组管理保持统一) -->
+            <div class="flex justify-between items-center">
+              <div>
+                <span class="font-bold text-xs text-[var(--text-main)]">标签全生命周期管理</span>
+                <p class="text-[10px] text-[var(--text-dim)]">支持批量重命名与安全删除标签（删除前自动备份）</p>
+              </div>
+              <button id="btn-add-new-tag" type="button" class="px-2.5 py-1 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                <span>新增标签</span>
+              </button>
+            </div>
+
+            <!-- 标签列表容器 -->
+            <div id="settings-tags-list" class="space-y-2">
+              <!-- 动态渲染标签卡片 -->
+            </div>
+          </div>
+
+          <!-- Tab 4: 使用统计 -->
+          <div id="set-panel-stats" class="settings-panel hidden space-y-5">
+            <div class="flex items-center justify-between">
+              <div class="flex bg-[var(--bg-subtle)] border border-[var(--border)] rounded-lg p-0.5">
+                <button data-stat-period="7d" class="stat-period-btn px-2.5 py-1 rounded bg-[var(--primary)] text-white font-medium">近 7 天</button>
+                <button data-stat-period="30d" class="stat-period-btn px-2.5 py-1 rounded text-[var(--text-muted)]">近 30 天</button>
+                <button data-stat-period="all" class="stat-period-btn px-2.5 py-1 rounded text-[var(--text-muted)]">全部时间</button>
+              </div>
+              <button id="btn-reset-stats" class="text-red-400 hover:underline">清空统计数据</button>
+            </div>
+
+            <!-- 4 项概览指标 -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div class="bg-[var(--bg-subtle)] p-3 rounded-xl border border-[var(--border)]">
+                <div class="text-[var(--text-muted)]">书签总数</div>
+                <div id="stat-total-bm" class="text-xl font-bold text-[var(--text-main)] mt-1">-</div>
+              </div>
+              <div class="bg-[var(--bg-subtle)] p-3 rounded-xl border border-[var(--border)]">
+                <div class="text-[var(--text-muted)]">分组总数</div>
+                <div id="stat-total-groups" class="text-xl font-bold text-[var(--text-main)] mt-1">-</div>
+              </div>
+              <div class="bg-[var(--bg-subtle)] p-3 rounded-xl border border-[var(--border)]">
+                <div class="text-[var(--text-muted)]">标签总数</div>
+                <div id="stat-total-tags" class="text-xl font-bold text-[var(--text-main)] mt-1">-</div>
+              </div>
+              <div class="bg-[var(--bg-subtle)] p-3 rounded-xl border border-[var(--border)]">
+                <div class="text-[var(--text-muted)]">网络可达率</div>
+                <div id="stat-reachability" class="text-xl font-bold text-emerald-400 mt-1">-</div>
+              </div>
+            </div>
+
+            <!-- Top 5 点击排行 -->
+            <div>
+              <h4 class="font-bold text-xs text-[var(--text-main)] mb-2">访问频次 Top 5</h4>
+              <div id="stat-top-list" class="space-y-1.5"></div>
+            </div>
+          </div>
+
+          <!-- Tab 4: 数据备份与回滚 (Backup & Rollback) -->
+          <div id="set-panel-backup" class="settings-panel hidden space-y-4">
+            <!-- 顶部策略控制卡片 -->
+            <div class="p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)] space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h4 class="font-bold text-xs text-[var(--text-main)] flex items-center gap-1.5">
+                    <span class="text-indigo-400">🛡️</span> 自动快照与安全回滚策略
+                  </h4>
+                  <p class="text-[10px] text-[var(--text-dim)] mt-0.5">支持定期后台静默快照、关键操作前置自动备份与双保险安全回滚机制</p>
+                </div>
+
+                <!-- 立即创建快照按钮 -->
+                <button id="btn-open-create-snapshot" type="button" class="px-3 py-1.5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                  <span>创建当前快照</span>
+                </button>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-[var(--border)] text-xs">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[11px] text-[var(--text-muted)] flex-shrink-0">定时后台自动备份周期:</span>
+                  <div class="w-40 sm:w-44 flex-shrink-0">
+                    <select id="backup-interval-select" class="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-2 py-1 text-xs text-[var(--text-main)] focus:outline-none">
+                      <option value="daily">每天一次 (推荐)</option>
+                      <option value="3days">每 3 天一次</option>
+                      <option value="weekly">每周一次</option>
+                      <option value="off">关闭定时备份</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] text-[var(--text-muted)]">重要操作前自动打快照 (导入/清空/回滚):</span>
+                  <label class="switch" title="开启后在关键操作前自动备份">
+                    <input type="checkbox" id="backup-preaction-toggle" checked>
+                    <span class="switch-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 历史快照版本时间轴列表 -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <h4 class="font-bold text-xs text-[var(--text-main)] flex items-center gap-1.5">
+                  <span>⏱️</span> 历史快照时间轴 (最多保留 <span id="snapshot-max-count" class="font-mono text-indigo-400 font-bold">15</span> 份)
+                </h4>
+                <span class="text-[10px] text-[var(--text-dim)]">带 ⭐ 标记的锁定快照不会被自动清理</span>
+              </div>
+
+              <!-- 快照列表容器 -->
+              <div id="snapshot-list-container" class="space-y-2 max-h-[290px] overflow-y-auto custom-scrollbar pr-1">
+                <!-- 动态填充快照条目 -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 5: 存储分析与缓存管理 (Storage & Cache) -->
+          <div id="set-panel-storage" class="settings-panel hidden space-y-4">
+            <!-- 存储总览仪表卡片 -->
+            <div class="p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)] space-y-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="font-bold text-xs text-[var(--text-main)] flex items-center gap-1.5">
+                    <span class="text-indigo-400">💾</span> 本地存储占用分析
+                  </h4>
+                  <p class="text-[10px] text-[var(--text-dim)] mt-0.5">全离线安全沙箱存储，实时监测各项数据与可释放缓存体积</p>
+                </div>
+                <div class="text-right">
+                  <div id="storage-total-text" class="text-sm font-bold font-mono text-[var(--text-main)]">0 KB / 100.0 MB</div>
+                  <div id="storage-percentage-text" class="text-[10px] text-indigo-400 font-mono">占用 0%</div>
+                </div>
+              </div>
+
+              <!-- 分段多彩存储占用进度条 (带联动交互) -->
+              <div id="storage-progress-bar" class="w-full h-3.5 rounded-full bg-[var(--bg-card)] border border-[var(--border)] overflow-hidden flex cursor-pointer">
+                <div id="storage-bar-bookmarks" data-storage-cat="bm" style="width: 0%" class="storage-bar-seg h-full storage-color-bm transition-all duration-300" title="书签与分组核心数据"></div>
+                <div id="storage-bar-icons" data-storage-cat="icon" style="width: 0%" class="storage-bar-seg h-full storage-color-icon transition-all duration-300" title="远程图标缓存"></div>
+                <div id="storage-bar-wallpapers" data-storage-cat="wp" style="width: 0%" class="storage-bar-seg h-full storage-color-wp transition-all duration-300" title="自定义壁纸图库"></div>
+                <div id="storage-bar-backups" data-storage-cat="bk" style="width: 0%" class="storage-bar-seg h-full storage-color-bk transition-all duration-300" title="快照与备份历史"></div>
+                <div id="storage-bar-themes" data-storage-cat="th" style="width: 0%" class="storage-bar-seg h-full storage-color-th transition-all duration-300" title="DIY 自定义主题"></div>
+                <div id="storage-bar-other" data-storage-cat="other" style="width: 0%" class="storage-bar-seg h-full storage-color-other transition-all duration-300" title="点击统计与网络探测"></div>
+              </div>
+
+              <!-- 图例与上面轴完全对应 (带悬浮/点击联动) -->
+              <div class="storage-legend-container text-[10px] pt-1 text-[var(--text-dim)]">
+                <span data-storage-cat="bm" class="storage-legend-item cursor-pointer hover:text-[var(--text-main)] transition-colors"><span class="storage-legend-dot storage-color-bm"></span> 书签与分组</span>
+                <span data-storage-cat="icon" class="storage-legend-item cursor-pointer hover:text-[var(--text-main)] transition-colors"><span class="storage-legend-dot storage-color-icon"></span> 远程图标缓存</span>
+                <span data-storage-cat="wp" class="storage-legend-item cursor-pointer hover:text-[var(--text-main)] transition-colors"><span class="storage-legend-dot storage-color-wp"></span> 自定义壁纸</span>
+                <span data-storage-cat="bk" class="storage-legend-item cursor-pointer hover:text-[var(--text-main)] transition-colors"><span class="storage-legend-dot storage-color-bk"></span> 快照备份</span>
+                <span data-storage-cat="th" class="storage-legend-item cursor-pointer hover:text-[var(--text-main)] transition-colors"><span class="storage-legend-dot storage-color-th"></span> DIY 主题</span>
+                <span data-storage-cat="other" class="storage-legend-item cursor-pointer hover:text-[var(--text-main)] transition-colors"><span class="storage-legend-dot storage-color-other"></span> 其他/统计</span>
+              </div>
+            </div>
+
+            <!-- 明细分类与独立清理卡片列表 (6项完整对应) -->
+            <div class="space-y-2.5">
+              <div class="flex items-center justify-between">
+                <h4 class="font-bold text-xs text-[var(--text-main)]">📁 数据分类明细与清理</h4>
+                <button type="button" id="btn-refresh-storage-analysis" class="text-[11px] text-[var(--primary)] hover:underline flex items-center gap-1 font-normal cursor-pointer">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                  <span>刷新分析</span>
+                </button>
+              </div>
+
+              <!-- 1. 书签与分组核心数据 -->
+              <div data-storage-card="bm" class="storage-detail-card p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)] transition-all flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center text-base">
+                    🔖
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="font-bold text-xs text-[var(--text-main)]">书签与分组核心数据</span>
+                      <span class="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 font-mono">核心资产</span>
+                    </div>
+                    <p class="text-[10px] text-[var(--text-dim)] mt-0.5">所有书签配置、多入口拓扑及分组排序列表</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div id="storage-bookmarks-bytes" class="font-mono font-bold text-xs text-[var(--text-main)]">0 KB</div>
+                  <div id="storage-bookmarks-count" class="text-[10px] text-[var(--text-dim)] font-mono">0 项</div>
+                </div>
+              </div>
+
+              <!-- 2. 远程图标缓存 -->
+              <div data-storage-card="icon" class="storage-detail-card p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)] transition-all space-y-2">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-base">
+                      🌐
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-1.5">
+                        <span class="font-bold text-xs text-[var(--text-main)]">远程图标本地缓存池</span>
+                        <span class="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/25 font-mono">可安全清理</span>
+                      </div>
+                      <p class="text-[10px] text-[var(--text-dim)] mt-0.5">已缓存的 Iconify / Simple Icons 与网络图片，用于断网及极速复用</p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <div id="storage-icons-bytes" class="font-mono font-bold text-xs text-[var(--text-main)]">0 KB</div>
+                    <div id="storage-icons-count" class="text-[10px] text-[var(--text-dim)] font-mono">0 个图标</div>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-2 border-t border-[var(--border)] text-[10px]">
+                  <span class="text-[var(--text-dim)]">💡 清除后书签仍保留图标配置，主页访问时会自动静默重拉取自愈。</span>
+                  <button type="button" id="btn-clear-remote-icons" class="px-3 py-1 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer">
+                    <span>🧹 清除图标缓存</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 3. 自定义壁纸图库 -->
+              <div data-storage-card="wp" class="storage-detail-card p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)] transition-all flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-base">
+                    🖼️
+                  </div>
+                  <div>
+                    <span class="font-bold text-xs text-[var(--text-main)]">自定义壁纸图库</span>
+                    <p class="text-[10px] text-[var(--text-dim)] mt-0.5">本地上传并压缩适配的背景图片数据</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div id="storage-wallpapers-bytes" class="font-mono font-bold text-xs text-[var(--text-main)]">0 KB</div>
+                  <div id="storage-wallpapers-count" class="text-[10px] text-[var(--text-dim)] font-mono">0 张壁纸</div>
+                </div>
+              </div>
+
+              <!-- 4. 快照与备份历史 -->
+              <div data-storage-card="bk" class="storage-detail-card p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)] transition-all flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center text-base">
+                    📦
+                  </div>
+                  <div>
+                    <span class="font-bold text-xs text-[var(--text-main)]">快照与备份历史</span>
+                    <p class="text-[10px] text-[var(--text-dim)] mt-0.5">用于版本回滚与安全恢复的数据快照</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div id="storage-backups-bytes" class="font-mono font-bold text-xs text-[var(--text-main)]">0 KB</div>
+                  <div id="storage-backups-count" class="text-[10px] text-[var(--text-dim)] font-mono">0 份快照</div>
+                </div>
+              </div>
+
+              <!-- 5. DIY 自定义主题 -->
+              <div data-storage-card="th" class="storage-detail-card p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)] transition-all flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-lg bg-pink-500/10 text-pink-400 border border-pink-500/20 flex items-center justify-center text-base">
+                    🎨
+                  </div>
+                  <div>
+                    <span class="font-bold text-xs text-[var(--text-main)]">DIY 自定义主题</span>
+                    <p class="text-[10px] text-[var(--text-dim)] mt-0.5">用户自定义配置的主题色板包及专属壁纸</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div id="storage-themes-bytes" class="font-mono font-bold text-xs text-[var(--text-main)]">0 KB</div>
+                  <div id="storage-themes-count" class="text-[10px] text-[var(--text-dim)] font-mono">0 套主题</div>
+                </div>
+              </div>
+
+              <!-- 6. 点击统计与网络探测 -->
+              <div data-storage-card="other" class="storage-detail-card p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)] transition-all space-y-2">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-slate-500/10 text-slate-400 border border-slate-500/20 flex items-center justify-center text-base">
+                      ⚡
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-1.5">
+                        <span class="font-bold text-xs text-[var(--text-main)]">网络探测与点击统计缓存</span>
+                        <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-500/15 text-slate-300 border border-slate-500/25 font-mono">可重置</span>
+                      </div>
+                      <p class="text-[10px] text-[var(--text-dim)] mt-0.5">历史访问统计、网络连通性探针缓存与用户设置偏好</p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <div id="storage-stats-bytes" class="font-mono font-bold text-xs text-[var(--text-main)]">0 KB</div>
+                    <div class="text-[10px] text-[var(--text-dim)] font-mono">临时统计</div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between pt-2 border-t border-[var(--border)] text-[10px]">
+                  <span class="text-[var(--text-dim)]">💡 可清空网络探测缓存并重置访问频次计数。</span>
+                  <button type="button" id="btn-clear-stats-probe-cache" class="px-3 py-1 bg-slate-500/15 hover:bg-slate-500/25 text-slate-300 border border-slate-500/30 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer">
+                    <span>🧹 清空探测与统计</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- 底部操作栏 -->
+      <div class="px-6 py-3 border-t border-[var(--border)] bg-[var(--bg-subtle)] flex items-center justify-between flex-shrink-0">
+        <span class="text-[11px] text-[var(--text-dim)]">设置项实时自动保存生效</span>
+        <button id="modal-settings-done" class="px-5 py-1.5 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-semibold shadow-md transition-all">完成</button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ============================================== -->
+  <!-- 模态框 4：手动创建数据快照弹窗                 -->
+  <!-- ============================================== -->
+  <div id="modal-snapshot-create" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+      <div class="px-6 py-3.5 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-subtle)]">
+        <div class="flex items-center gap-2">
+          <span class="text-indigo-400">💾</span>
+          <h3 class="font-bold text-sm text-[var(--text-main)]">创建实时数据快照</h3>
+        </div>
+        <button id="modal-snapshot-close" class="text-[var(--text-dim)] hover:text-[var(--text-main)]">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="p-5 space-y-3.5 text-xs">
+        <div class="space-y-1.5">
+          <label class="font-medium text-[var(--text-main)] flex items-center justify-between">
+            <span>快照备注说明</span>
+            <span class="text-[10px] text-[var(--text-dim)]">可选</span>
+          </label>
+          <input type="text" id="snapshot-reason-input" placeholder="例如：整理完研发书签后备份 / 调整主题前备份" class="w-full bg-[var(--bg-subtle)] border border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
+        </div>
+        <label class="flex items-center gap-2 text-xs text-[var(--text-muted)] cursor-pointer pt-1 select-none">
+          <input type="checkbox" id="snapshot-lock-checkbox" class="custom-checkbox cursor-pointer">
+          <span class="text-[var(--text-main)]">⭐ 永久锁定此快照（不被自动滚动淘汰）</span>
+        </label>
+      </div>
+      <div class="px-6 py-3 border-t border-[var(--border)] bg-[var(--bg-subtle)] flex items-center justify-end gap-2">
+        <button id="snapshot-cancel-btn" type="button" class="px-4 py-1.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs">取消</button>
+        <button id="snapshot-confirm-btn" type="button" class="px-5 py-1.5 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-semibold shadow-md">立即保存</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============================================== -->
+  <!-- 模态框 5: DIY 主题可视化编辑器                     -->
+  <!-- ============================================== -->
+  <div id="modal-diy-theme" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      
+      <!-- 头部：与设置弹窗风格统一 -->
+      <div class="px-6 py-3.5 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-subtle)]">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-indigo-500/15 border border-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs shadow-inner">🎨</div>
+          <div>
+            <h3 id="diy-theme-modal-title" class="font-bold text-sm text-[var(--text-main)]">DIY 专属主题包</h3>
+            <p class="text-[10px] text-[var(--text-muted)]">调配色彩方案并可绑定专属壁纸，保存为独立主题包</p>
+          </div>
+        </div>
+        <button id="modal-diy-close" class="text-[var(--text-dim)] hover:text-[var(--text-main)] p-1 rounded-lg hover:bg-[var(--bg-card-hover)] transition-colors cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- 内容区：左右双栏联动 (大幅缩减垂直高度) -->
+      <div class="p-5 overflow-y-auto custom-scrollbar text-xs">
+        <input type="hidden" id="diy-theme-id">
+        
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+          
+          <!-- 左栏：配色与参数调控 (7 列) -->
+          <div class="md:col-span-7 space-y-3">
+            
+            <!-- 1. 基本信息单行 -->
+            <div class="grid grid-cols-3 gap-2">
+              <div class="col-span-2 space-y-0.5">
+                <label class="font-medium text-[var(--text-muted)] text-[10px]">主题包名称 *</label>
+                <input type="text" id="diy-theme-name" placeholder="例如：Nord 极光暗夜" class="w-full bg-[var(--bg-subtle)] border border-[var(--border)] rounded-lg px-2.5 py-1 text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
+              </div>
+              <div class="space-y-0.5">
+                <label class="font-medium text-[var(--text-muted)] text-[10px]">作者署名</label>
+                <input type="text" id="diy-theme-author" placeholder="你的昵称" class="w-full bg-[var(--bg-subtle)] border border-[var(--border)] rounded-lg px-2.5 py-1 text-xs text-[var(--text-main)] focus:outline-none focus:border-[var(--primary)]">
+              </div>
+            </div>
+
+            <!-- 2. 灵感预设盘 -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-semibold text-[11px] text-[var(--text-main)] flex items-center gap-1">
+                  <span class="text-amber-400">⚡</span> 灵感预设盘
+                </span>
+                <span class="text-[9px] text-[var(--text-dim)]">点击秒级载入方案</span>
+              </div>
+              <div id="diy-preset-chips" class="grid grid-cols-4 gap-1.5">
+                <!-- 动态生成 8 套大师级配色预设胶囊 -->
+              </div>
+            </div>
+
+            <!-- 3. 3 大核心视觉基准色 -->
+            <div class="space-y-1">
+              <span class="font-semibold text-[11px] text-[var(--text-main)] flex items-center gap-1">
+                <span class="text-indigo-400">🎨</span> 3 大核心基准色
+              </span>
+              <div class="grid grid-cols-3 gap-2" id="diy-core-colors-grid">
+                <!-- 动态生成：主背景、卡片底色、品牌主色 -->
+              </div>
+            </div>
+
+            <!-- 4. 主页美化专属色 (时钟 / 日期 / 座右铭) -->
+            <div class="space-y-1">
+              <span class="font-semibold text-[11px] text-[var(--text-main)] flex items-center gap-1">
+                <span class="text-amber-400">✨</span> 主页时钟与座右铭色
+              </span>
+              <div class="grid grid-cols-3 gap-2" id="diy-aesthetic-colors-grid">
+                <!-- 动态生成：时间颜色、日期颜色、座右铭色 -->
+              </div>
+            </div>
+
+            <!-- 5. 高级细节色彩微调折叠抽屉 -->
+            <div class="rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] overflow-hidden">
+              <button id="diy-advanced-toggle" type="button" class="w-full px-3 py-1.5 flex items-center justify-between text-left text-[10px] font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card-hover)]/40 transition-colors cursor-pointer select-none">
+                <span>⚙️ 高级细节色 (文字 / 边框)</span>
+                <svg id="diy-advanced-arrow" class="w-3.5 h-3.5 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+              <div id="diy-advanced-drawer" class="hidden p-2.5 pt-0 border-t border-[var(--border)]">
+                <div class="grid grid-cols-3 gap-2 pt-1.5" id="diy-detail-colors-grid">
+                  <!-- 动态生成：边框线条、主要文字、次要文字 -->
+                </div>
+              </div>
+            </div>
+
+            <!-- 6. 专属壁纸绑定折叠抽屉（支持多张壁纸，第一张为默认） -->
+            <div class="rounded-xl border border-[var(--border)] bg-[var(--bg-subtle)] overflow-hidden">
+              <div class="px-3 py-2 flex items-center justify-between">
+                <span class="font-semibold text-[10px] text-[var(--text-main)] flex items-center gap-1">
+                  <span>🖼️</span> 绑定专属壁纸 (支持多张，打包至主题)
+                </span>
+                <label class="switch" title="开启为该主题包绑定专属壁纸">
+                  <input type="checkbox" id="diy-bundle-wallpaper-toggle">
+                  <span class="switch-slider"></span>
+                </label>
+              </div>
+              <div id="diy-wallpaper-section" class="hidden p-2.5 pt-1.5 border-t border-[var(--border)] space-y-2.5">
+                <!-- 已选壁纸列表 -->
+                <div id="diy-selected-wallpapers-list" class="hidden space-y-1.5">
+                  <div class="flex items-center justify-between text-[10px]">
+                    <span class="text-[var(--text-main)] font-semibold">已选壁纸 <span id="diy-wp-selected-count" class="text-[var(--text-dim)]">(0 张)</span></span>
+                    <span class="text-[var(--text-dim)]">第一张为默认主壁纸</span>
+                  </div>
+                  <div id="diy-selected-wallpapers-chips" class="flex flex-wrap gap-1.5">
+                    <!-- 动态芯片列表 -->
+                  </div>
+                </div>
+
+                <!-- 壁纸来源选择 Tabs -->
+                <div class="flex bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-0.5 text-[10px] w-fit">
+                  <button type="button" data-diy-wp-tab="builtin" class="diy-wp-tab-btn px-2 py-0.5 rounded text-[10px] font-semibold bg-[var(--primary)] text-white transition-all cursor-pointer">内置精选</button>
+                  <button type="button" data-diy-wp-tab="uploaded" class="diy-wp-tab-btn px-2 py-0.5 rounded text-[10px] font-semibold text-[var(--text-muted)] transition-all cursor-pointer">本地上传</button>
+                </div>
+
+                <!-- 内置精选壁纸网格 -->
+                <div id="diy-wp-panel-builtin" class="diy-wp-panel">
+                  <div id="diy-builtin-wallpapers-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+                    <!-- 动态渲染内置壁纸卡片 -->
+                  </div>
+                </div>
+
+                <!-- 本地上传壁纸网格 -->
+                <div id="diy-wp-panel-uploaded" class="diy-wp-panel hidden">
+                  <div id="diy-uploaded-wallpapers-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+                    <!-- 动态渲染已上传壁纸卡片 -->
+                  </div>
+                  <p id="diy-no-uploads-msg" class="hidden text-[10px] text-[var(--text-dim)] text-center py-3">暂无本地上传壁纸，请先在壁纸设置中上传</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- 右栏：实时预览画布 (5 列) -->
+          <div class="md:col-span-5 flex flex-col">
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-semibold text-[11px] text-[var(--text-main)] flex items-center gap-1">
+                <span class="text-emerald-400">✨</span> 实时质感呈现
+              </span>
+              <span class="text-[9px] text-[var(--text-dim)]">全景联动</span>
+            </div>
+            
+            <div id="diy-preview-container" class="flex-1 p-3.5 rounded-2xl border flex flex-col justify-center items-center gap-2.5 transition-all min-h-[240px]" style="background:#0f172a; border-color:#334155;">
+              <!-- 模拟主页美化区 (时钟、日期、座右铭) -->
+              <div class="text-center flex flex-col items-center justify-center py-1 select-none w-full">
+                <div id="diy-preview-clock" class="font-mono text-xl font-bold tracking-tight drop-shadow-xs transition-colors" style="color:#f8fafc;">
+                  10:24:38
+                </div>
+                <div id="diy-preview-date" class="text-[10px] font-medium tracking-wide mt-0.5 transition-colors" style="color:#94a3b8;">
+                  2026年9月1日 星期二
+                </div>
+                <div id="diy-preview-motto" class="inline-flex items-center gap-1 text-[9px] mt-1 transition-colors" style="color:#94a3b8;">
+                  <span id="diy-preview-motto-star" style="color:#6366f1;">✦</span>
+                  <span id="diy-preview-motto-text">Stay hungry, stay foolish.</span>
+                </div>
+              </div>
+
+              <!-- 模拟书签卡片 -->
+              <div id="diy-preview-card" class="w-full p-2.5 rounded-xl border transition-all flex items-center justify-between shadow-sm" style="background:#1e293b; border-color:#334155;">
+                <div class="flex items-center gap-2 min-w-0">
+                  <div id="diy-preview-icon" class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs border" style="background:#0f172a; border-color:#334155; color:#6366f1;">
+                    ⚡
+                  </div>
+                  <div class="min-w-0">
+                    <div id="diy-preview-title" class="font-bold text-xs truncate" style="color:#f8fafc;">示例书签应用</div>
+                    <div id="diy-preview-desc" class="text-[9px] truncate" style="color:#94a3b8;">内网直达 · 延迟 2ms</div>
+                  </div>
+                </div>
+                <span id="diy-preview-badge" class="px-2 py-0.5 rounded-md text-[10px] font-semibold text-white shadow-sm flex-shrink-0" style="background:#6366f1;">
+                  直达
+                </span>
+              </div>
+
+              <!-- 模拟搜索栏胶囊组件 (纯净微缩版) -->
+              <div id="diy-preview-search" class="w-full px-3 py-2 rounded-xl border flex items-center gap-2 text-[10px]" style="background:#1e293b; border-color:#334155;">
+                <span class="text-[11px]">🔍</span>
+                <span id="diy-preview-search-text" class="text-[10px] opacity-30 font-mono" style="color:#94a3b8;">|</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- 底部操作栏：与设置弹窗风格完全一致 -->
+      <div class="px-6 py-3 border-t border-[var(--border)] bg-[var(--bg-subtle)] flex items-center justify-between flex-shrink-0">
+        <button id="diy-theme-export-json" type="button" class="text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] hover:underline flex items-center gap-1.5 cursor-pointer" title="打包导出为完整 .zip 压缩包">
+          <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span>打包导出主题包 (.zip)</span>
+        </button>
+        <div class="flex items-center gap-2">
+          <button id="diy-theme-cancel-btn" type="button" class="px-4 py-1.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs font-medium transition-all cursor-pointer">取消</button>
+          <button id="diy-theme-save-btn" type="button" class="px-5 py-1.5 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-semibold shadow-md transition-all cursor-pointer">保存并应用</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 极简微型调色盘 Popover (与按钮等宽 100% 贴合，0 溢出) -->
+    <div id="diy-color-popover" class="hidden absolute z-60 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl shadow-xl p-1.5 space-y-1.5 text-xs animate-fade-in backdrop-blur-md">
+      <!-- 8 颗极简微型色板 (2 行 × 4 列，完美填满按钮宽度) -->
+      <div id="popover-swatches-grid" class="grid grid-cols-4 gap-1">
+        <!-- 8 颗精致微型色相球 -->
+      </div>
+
+      <!-- 紧凑单行：Hex 输入 + 原生色盘 -->
+      <div class="pt-1 border-t border-[var(--border)] flex items-center justify-between gap-1">
+        <div class="flex items-center gap-0.5 flex-1 min-w-0 bg-[var(--bg-subtle)] border border-[var(--border)] rounded px-1 py-0.5">
+          <span class="text-[9px] text-[var(--text-muted)] font-mono">#</span>
+          <input type="text" id="popover-hex-input" class="w-full bg-transparent font-mono text-[9px] text-[var(--text-main)] uppercase text-center focus:outline-none" maxlength="6" placeholder="HEX">
+        </div>
+
+        <!-- 备选原生色盘入口 -->
+        <label class="p-1 rounded bg-[var(--bg-subtle)] hover:bg-[var(--bg-card-hover)] border border-[var(--border)] transition-colors cursor-pointer flex-shrink-0 relative overflow-hidden block" title="更多调色选项">
+          <span class="text-[9px]">🎨</span>
+          <input type="color" id="popover-native-picker" class="absolute -top-3 -left-3 w-10 h-10 opacity-0 cursor-pointer">
+        </label>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============================================== -->
+  <!-- 模态框 6: 通用主题现代弹窗 (Shadcn Prompt Modal) -->
+  <!-- ============================================== -->
+  <div id="modal-prompt" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+      
+      <!-- 弹窗顶栏 -->
+      <div class="px-6 py-3.5 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-subtle)] flex-shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div id="prompt-modal-icon-container" class="w-7 h-7 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 flex items-center justify-center text-sm shadow-sm">
+            <span id="prompt-modal-icon">🏷️</span>
+          </div>
+          <div>
+            <h3 id="prompt-modal-title" class="font-bold text-sm text-[var(--text-main)]">标题</h3>
+            <p id="prompt-modal-subtitle" class="text-[10px] text-[var(--text-muted)]">辅助说明</p>
+          </div>
+        </div>
+        <button id="prompt-modal-close" type="button" class="text-[var(--text-dim)] hover:text-[var(--text-main)] p-1 rounded-lg hover:bg-[var(--bg-card-hover)] transition-colors cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- 弹窗表单内容 -->
+      <form id="prompt-modal-form" class="p-5 space-y-3.5 text-xs">
+        <div class="space-y-1.5">
+          <label id="prompt-modal-label" class="font-medium text-[var(--text-main)] block">请输入名称</label>
+          <input type="text" id="prompt-modal-input" class="w-full bg-[var(--bg-subtle)] border border-[var(--border)] focus:border-[var(--primary)] rounded-xl px-3.5 py-2 text-xs text-[var(--text-main)] placeholder-[var(--text-dim)] focus:outline-none transition-colors" autocomplete="off">
+          <p id="prompt-modal-tip" class="text-[10px] text-[var(--text-dim)] mt-1"></p>
+        </div>
+
+        <!-- 底部操作栏 -->
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <button type="button" id="prompt-modal-cancel" class="px-4 py-1.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] hover:bg-[var(--bg-card-hover)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs font-medium transition-all cursor-pointer">取消</button>
+          <button type="submit" id="prompt-modal-confirm" class="px-5 py-1.5 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-semibold shadow-md transition-all cursor-pointer">
+            <span>确定</span>
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+
+
+  <!-- ============================================== -->
+  <!-- 模态框 7: 通用主题确认与警告弹窗 (Shadcn Dialog) -->
+  <!-- ============================================== -->
+  <div id="modal-dialog" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+      
+      <!-- 弹窗顶栏 -->
+      <div class="px-6 py-3.5 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-subtle)] flex-shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div id="dialog-icon-container" class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-sm shadow-sm">
+            <span id="dialog-icon">⚠️</span>
+          </div>
+          <div>
+            <h3 id="dialog-title" class="font-bold text-sm text-[var(--text-main)]">提示</h3>
+            <p id="dialog-subtitle" class="text-[10px] text-[var(--text-muted)]"></p>
+          </div>
+        </div>
+        <button id="dialog-close" type="button" class="text-[var(--text-dim)] hover:text-[var(--text-main)] p-1 rounded-lg hover:bg-[var(--bg-card-hover)] transition-colors cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- 弹窗正文内容 -->
+      <div class="p-5 space-y-3 text-xs">
+        <div id="dialog-content" class="text-[var(--text-main)] leading-relaxed space-y-2">
+          <!-- 动态填充提示或保护说明内容 -->
+        </div>
+      </div>
+
+      <!-- 底部操作栏 -->
+      <div class="px-6 py-3 border-t border-[var(--border)] bg-[var(--bg-subtle)] flex items-center justify-end gap-2.5 flex-shrink-0">
+        <button type="button" id="dialog-cancel" class="px-4 py-1.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] hover:bg-[var(--bg-card-hover)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs font-medium transition-all cursor-pointer">
+          取消
+        </button>
+        <button type="button" id="dialog-confirm" class="px-5 py-1.5 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-xs font-semibold shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
+          <span id="dialog-confirm-text">确定</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- =============================== -->
+  <!-- 全局 Toast 提示通知             -->
+  <!-- =============================== -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-main)] px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border-l-4 border-l-[var(--primary)] max-w-md">
+      <div id="toast-icon" class="text-emerald-400 flex-shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      </div>
+      <div>
+        <div id="toast-title" class="font-bold text-xs">通知标题</div>
+        <div id="toast-desc" class="text-[11px] text-[var(--text-muted)] mt-0.5 font-mono break-all"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主控脚本 ES 模块 -->
+  <script type="module" src="./newtab.js"></script>
+</body>
+</html>
