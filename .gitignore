@@ -16,3 +16,13 @@ desktop.ini
 dist/
 node_modules/
 *.crx
+.output/
+.wxt/
+
+# Claude & Agent
+.claude/
+.agents/
+skills-lock.json
+
+
+
