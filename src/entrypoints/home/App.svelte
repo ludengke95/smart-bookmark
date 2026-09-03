@@ -13,12 +13,14 @@
   import SettingsModal from '../../components/modals/SettingsModal.svelte';
   import BackupModal from '../../components/modals/BackupModal.svelte';
   import StatsModal from '../../components/modals/StatsModal.svelte';
+  import AiOrganizeModal from '../../components/modals/AiOrganizeModal.svelte';
 
   let showBookmarkModal = $state(false);
   let showImportModal = $state(false);
   let showSettingsModal = $state(false);
   let showBackupModal = $state(false);
   let showStatsModal = $state(false);
+  let showAiOrganizeModal = $state(false);
 
   let editingBookmark = $state(null);
   let targetDefaultGroupId = $state('');
@@ -52,6 +54,7 @@
   <TopNav
     onOpenAdd={() => handleOpenAddBookmark()}
     onOpenImport={() => (showImportModal = true)}
+    onOpenAiOrganize={() => (showAiOrganizeModal = true)}
     onOpenSettings={() => (showSettingsModal = true)}
     onOpenBackup={() => (showBackupModal = true)}
     onOpenStats={() => (showStatsModal = true)}
@@ -86,6 +89,10 @@
 
   <ImportModal
     bind:open={showImportModal}
+  />
+
+  <AiOrganizeModal
+    bind:open={showAiOrganizeModal}
   />
 
   <SettingsModal

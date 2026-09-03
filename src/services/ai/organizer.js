@@ -393,3 +393,113 @@ export async function analyzeSmartTagging({
     items: allProposedChanges
   };
 }
+
+// ==========================================
+// 3. 外部大模型手动回复解析适配器 (Manual Result Parser)
+// ==========================================
+
+export function parseManualAiResult({
+  rawInput = '',
+  type = 'grouping', // 'grouping' | 'tagging'
+  bookmarks = [],
+  groups = [],
+  options = {}
+}) {
+  if (!rawInput || typeof rawInput !== 'string' || !rawInput.trim()) {
+    throw new Error('输入内容为空，请粘贴大模型回复或上传有效的 JSON 文件');
+  }
+
+  const parsedList = extractAndParseJson(rawInput);
+  if (!parsedList || parsedList.length === 0) {
+    throw new Error('未能从提供的内容中解析出有效的变更列表，请确保大模型输出了符合规范的 JSON 数组');
+  }
+
+  const bookmarkMapById = new Map(bookmarks.map(b => [b.id, b]));
+  const bookmarkMapByName = new Map(bookmarks.map(b => [b.name, b]));
+  const groupMapById = new Map(groups.map(g => [g.id, g.name]));
+
+  const existingCustomGroupNames = groups
+    .filter(g => g.id !== PINNED_GROUP_ID && g.id !== UNGROUPED_GROUP_ID)
+    .map(g => g.name.trim())
+    .filter(Boolean);
+
+  const allProposedChanges = [];
+
+  if (type === 'grouping') {
+    for (const item of parsedList) {
+      if (!item || typeof item !== 'object') continue;
+      const bmId = String(item.bookmarkId || item.id || item.bookmark_id || item.bookmarkID || '').trim();
+      const origBm = bookmarkMapById.get(bmId) || bookmarkMapByName.get(String(item.bookmarkName || item.name || '').trim());
+
+      if (origBm) {
+        const targetName = extractGroupNameFromItem(item);
+        if (!targetName) continue;
+
+        const currentGroupName = groupMapById.get(origBm.groupId) || '未分组';
+        const isNew = !existingCustomGroupNames.some(n => n.toLowerCase() === targetName.toLowerCase());
+
+        allProposedChanges.push({
+          bookmarkId: origBm.id,
+          bookmarkName: origBm.name,
+          urls: (origBm.endpoints || []).map(e => e.url),
+          currentGroupId: origBm.groupId || UNGROUPED_GROUP_ID,
+          currentGroupName,
+          suggestedGroupName: targetName,
+          isNewGroup: item.isNewGroup !== undefined ? Boolean(item.isNewGroup) : isNew,
+          reason: item.reason || '语义相关',
+          selected: currentGroupName !== targetName
+        });
+      }
+    }
+  } else {
+    // tagging
+    const mode = options.mode || 'append';
+    const maxTags = options.maxTagsPerBookmark || 3;
+
+    for (const item of parsedList) {
+      if (!item || typeof item !== 'object') continue;
+      const bmId = String(item.bookmarkId || item.id || item.bookmark_id || item.bookmarkID || '').trim();
+      const origBm = bookmarkMapById.get(bmId) || bookmarkMapByName.get(String(item.bookmarkName || item.name || '').trim());
+
+      if (origBm) {
+        const rawTags = extractTagsFromItem(item, maxTags);
+        if (rawTags.length === 0) continue;
+
+        const existingTags = Array.isArray(origBm.tags) ? origBm.tags : [];
+        let finalTags = [];
+        if (mode === 'replace') {
+          finalTags = rawTags;
+        } else {
+          finalTags = Array.from(new Set([...existingTags, ...rawTags]));
+        }
+
+        const oldTagStr = existingTags.slice().sort().join(',');
+        const newTagStr = finalTags.slice().sort().join(',');
+        const hasChange = oldTagStr !== newTagStr;
+
+        allProposedChanges.push({
+          bookmarkId: origBm.id,
+          bookmarkName: origBm.name,
+          urls: (origBm.endpoints || []).map(e => e.url),
+          currentTags: existingTags,
+          suggestedTags: rawTags,
+          finalMergedTags: finalTags,
+          mode,
+          reason: item.reason || '语义提炼',
+          selected: true
+        });
+      }
+    }
+  }
+
+  if (allProposedChanges.length === 0) {
+    throw new Error('解析成功，但未能匹配到任何当前书签（可能书签 ID 不匹配）');
+  }
+
+  return {
+    success: true,
+    totalParsed: parsedList.length,
+    matchedCount: allProposedChanges.length,
+    items: allProposedChanges
+  };
+}

@@ -277,7 +277,7 @@
       <!-- 头部 -->
       <div class="flex items-center justify-between pb-2 border-b border-border-subtle flex-shrink-0">
         <h2 class="text-sm font-semibold text-text-primary flex items-center gap-2">
-          <span>系统偏好与治理中心</span>
+          <span>系统偏好</span>
         </h2>
         <button
           type="button"
@@ -325,7 +325,7 @@
           type="button"
           onclick={() => (activeTab = 'danger')}
           class="py-1.5 px-2 rounded-md transition-all font-medium text-center {activeTab === 'danger'
-            ? 'bg-status-danger/10 text-status-danger border border-status-danger/20 font-semibold shadow-sm'
+            ? 'bg-surface text-status-danger shadow-sm font-semibold border border-status-danger/40 ring-1 ring-status-danger/20'
             : 'text-text-secondary hover:text-status-danger hover:bg-surface/50'}"
         >
           数据重置
@@ -400,7 +400,7 @@
             </div>
           </div>
 
-        {:else if activeTab === 'groups'}
+        {:else if activeTab === 'groups'}\
           <!-- 分组添加 -->
           <div class="flex items-center gap-2">
             <input

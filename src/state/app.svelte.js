@@ -36,7 +36,8 @@ import { probeAllUrls } from '../services/ping-probe.js';
 import { sortEndpointsByTopology } from '../services/xor-matcher.js';
 import { mcpClient } from '../services/mcp/client.js';
 import { testCustomApiConnection } from '../services/ai/custom-engine.js';
-import { analyzeSmartGrouping, analyzeSmartTagging } from '../services/ai/organizer.js';
+import { analyzeSmartGrouping, analyzeSmartTagging, parseManualAiResult } from '../services/ai/organizer.js';
+import { generateGroupingPromptAndData, generateTaggingPromptAndData } from '../services/ai/prompt-builder.js';
 import {
   DEFAULT_SEARCH_ENGINES,
   THEMES,
@@ -473,6 +474,55 @@ class AppState {
       this.aiRunning = false;
       this.aiProgress = null;
     }
+  }
+
+  /**
+   * 生成智能分组的手动 Prompt 和数据
+   */
+  getManualGroupingPromptData(options = {}) {
+    const scope = options.scope || this.settings.ai?.grouping?.scope || 'ungrouped';
+    const allowNewGroups = options.allowNewGroups !== undefined
+      ? options.allowNewGroups
+      : (this.settings.ai?.grouping?.allowNewGroups !== false);
+
+    return generateGroupingPromptAndData({
+      bookmarks: this.bookmarks,
+      groups: this.groups,
+      scope,
+      allowNewGroups
+    });
+  }
+
+  /**
+   * 生成智能标签的手动 Prompt 和数据
+   */
+  getManualTaggingPromptData(options = {}) {
+    const scope = options.scope || this.settings.ai?.tagging?.scope || 'untagged';
+    const mode = options.mode || this.settings.ai?.tagging?.mode || 'append';
+    const maxTags = options.maxTagsPerBookmark || this.settings.ai?.tagging?.maxTagsPerBookmark || 3;
+
+    return generateTaggingPromptAndData({
+      bookmarks: this.bookmarks,
+      scope,
+      mode,
+      maxTags
+    });
+  }
+
+  /**
+   * 解析用户从外部大模型粘贴或上传的手动结果
+   */
+  parseManualAiResponse(rawInput, type = 'grouping', options = {}) {
+    return parseManualAiResult({
+      rawInput,
+      type,
+      bookmarks: this.bookmarks,
+      groups: this.groups,
+      options: {
+        mode: options.mode || this.settings.ai?.tagging?.mode || 'append',
+        maxTagsPerBookmark: options.maxTagsPerBookmark || this.settings.ai?.tagging?.maxTagsPerBookmark || 3
+      }
+    });
   }
 
   /**

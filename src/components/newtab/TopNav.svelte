@@ -2,7 +2,14 @@
   import { appState } from '../../state/app.svelte.js';
   import { toast } from '../../state/toast.svelte.js';
 
-  let { onOpenAdd = () => {}, onOpenImport = () => {}, onOpenSettings = () => {}, onOpenBackup = () => {}, onOpenStats = () => {} } = $props();
+  let {
+    onOpenAdd = () => {},
+    onOpenImport = () => {},
+    onOpenSettings = () => {},
+    onOpenBackup = () => {},
+    onOpenStats = () => {},
+    onOpenAiOrganize = () => {}
+  } = $props();
 
   let isRefreshing = $state(false);
 
@@ -62,6 +69,16 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
+      </button>
+
+      <!-- AI 智能整理 -->
+      <button
+        onclick={onOpenAiOrganize}
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-accent bg-accent/10 hover:bg-accent/15 border border-accent/20 transition-all shadow-2xs"
+        title="AI 智能分组与智能标签整理"
+      >
+        <span class="text-xs">✨</span>
+        <span>AI 整理</span>
       </button>
 
       <!-- 导入书签 -->
