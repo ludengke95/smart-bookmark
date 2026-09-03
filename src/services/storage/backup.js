@@ -5,18 +5,16 @@ import { getStorageData, setStorageData, STORAGE_KEYS, getSettings } from './bas
 import {
   DEFAULT_BOOKMARKS,
   DEFAULT_GROUPS,
-  DEFAULT_SETTINGS
+  DEFAULT_SETTINGS,
+  DEFAULT_BACKUP_SETTINGS,
+  BACKUP_INTERVAL_MS
 } from '../../constants/index.js';
 import { getBookmarks } from './bookmark.js';
 import { getGroups } from './group.js';
 import { resetAllStats } from './stats.js';
 
-export const DEFAULT_BACKUP_SETTINGS = {
-  autoBackupInterval: 'daily',
-  preActionAutoBackup: true,
-  maxSnapshots: 15,
-  lastAutoBackupTime: 0
-};
+// 保持原有公开 API 兼容：重导出默认备份配置
+export { DEFAULT_BACKUP_SETTINGS };
 
 export async function getBackupSettings() {
   return await getStorageData(STORAGE_KEYS.BACKUP_SETTINGS, DEFAULT_BACKUP_SETTINGS);
@@ -140,13 +138,7 @@ export async function checkDailyAutoBackup() {
 
   const now = Date.now();
   const lastTime = settings.lastAutoBackupTime || 0;
-
-  let intervalMs = 24 * 3600 * 1000;
-  if (settings.autoBackupInterval === '3days') {
-    intervalMs = 3 * 24 * 3600 * 1000;
-  } else if (settings.autoBackupInterval === 'weekly') {
-    intervalMs = 7 * 24 * 3600 * 1000;
-  }
+  const intervalMs = BACKUP_INTERVAL_MS[settings.autoBackupInterval] || BACKUP_INTERVAL_MS.daily;
 
   if (now - lastTime >= intervalMs) {
     const d = new Date(now);

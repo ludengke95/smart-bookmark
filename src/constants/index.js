@@ -5,6 +5,29 @@
 // 连通性探测缓存 TTL 默认 15 分钟 (毫秒)
 export const PROBE_CACHE_TTL_MS = 15 * 60 * 1000;
 
+// 默认 MCP 桥接器主机与端口 (本地 WebSocket)
+export const DEFAULT_MCP_WS_HOST = '127.0.0.1';
+export const DEFAULT_MCP_WS_PORT = 8333;
+
+// 默认 AI 引擎端点 (DeepSeek)
+export const DEFAULT_AI_BASE_URL = 'https://api.deepseek.com/v1';
+export const DEFAULT_AI_MODEL = 'deepseek-chat';
+
+// 默认备份策略配置 (自动备份间隔 / 前置备份 / 快照上限)
+export const DEFAULT_BACKUP_SETTINGS = {
+  autoBackupInterval: 'daily',
+  preActionAutoBackup: true,
+  maxSnapshots: 15,
+  lastAutoBackupTime: 0
+};
+
+// 自动备份间隔映射 (毫秒)
+export const BACKUP_INTERVAL_MS = {
+  daily: 24 * 3600 * 1000,
+  '3days': 3 * 24 * 3600 * 1000,
+  weekly: 7 * 24 * 3600 * 1000
+};
+
 // 系统内置动态常用分组 ID 与固定未分组 ID
 export const PINNED_GROUP_ID = 'group_system_pinned';
 export const UNGROUPED_GROUP_ID = 'group_system_ungrouped';
@@ -111,9 +134,9 @@ export const AI_API_PRESETS = [
 
 // 默认 AI 智能治理配置
 export const DEFAULT_AI_SETTINGS = {
-  baseUrl: 'https://api.deepseek.com/v1',
+  baseUrl: DEFAULT_AI_BASE_URL,
   apiKey: '',
-  model: 'deepseek-chat',
+  model: DEFAULT_AI_MODEL,
   preset: 'deepseek',
   grouping: {
     scope: 'ungrouped', // 'ungrouped' (仅未分组) | 'all' (全部书签)
@@ -129,8 +152,8 @@ export const DEFAULT_AI_SETTINGS = {
 // 默认 MCP 外部协同协议配置 (默认关闭，默认本地 127.0.0.1:8333)
 export const DEFAULT_MCP_SETTINGS = {
   enabled: false,
-  wsHost: '127.0.0.1',
-  wsPort: 8333,
+  wsHost: DEFAULT_MCP_WS_HOST,
+  wsPort: DEFAULT_MCP_WS_PORT,
   autoReconnect: false
 };
 

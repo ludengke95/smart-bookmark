@@ -6,7 +6,11 @@
     UNGROUPED_GROUP_ID,
     AI_API_PRESETS,
     DEFAULT_AI_SETTINGS,
-    DEFAULT_MCP_SETTINGS
+    DEFAULT_MCP_SETTINGS,
+    DEFAULT_MCP_WS_HOST,
+    DEFAULT_MCP_WS_PORT,
+    DEFAULT_AI_BASE_URL,
+    DEFAULT_AI_MODEL
   } from '../../../constants/index.js';
   import AiResultModal from '../AiResultModal.svelte';
 
@@ -72,7 +76,7 @@
     const updated = { ...current, ...partial };
     appState.updateSettings({ mcp: updated });
     if (updated.enabled === true) {
-      appState.reconnectMcp(updated.wsHost || '127.0.0.1', updated.wsPort || 8333);
+      appState.reconnectMcp(updated.wsHost || DEFAULT_MCP_WS_HOST, updated.wsPort || DEFAULT_MCP_WS_PORT);
     } else {
       appState.disconnectMcp();
     }
@@ -143,11 +147,11 @@
 
   // 复制 MCP 配置片段
   function copyConfig(type) {
-    const host = appState.settings.mcp?.wsHost || '127.0.0.1';
-    const port = appState.settings.mcp?.wsPort || 8333;
+    const host = appState.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST;
+    const port = appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT;
     const extraArgs = [];
-    if (host !== '127.0.0.1') extraArgs.push('--host', host);
-    if (port !== 8333) extraArgs.push('--port', String(port));
+    if (host !== DEFAULT_MCP_WS_HOST) extraArgs.push('--host', host);
+    if (port !== DEFAULT_MCP_WS_PORT) extraArgs.push('--port', String(port));
 
     let snippet = '';
 
@@ -219,9 +223,9 @@
         <input
           id="ai-base-url"
           type="text"
-          value={appState.settings.ai?.baseUrl || 'https://api.deepseek.com/v1'}
+          value={appState.settings.ai?.baseUrl || DEFAULT_AI_BASE_URL}
           onchange={(e) => updateAiSettings({ baseUrl: e.target.value.trim() })}
-          placeholder="https://api.deepseek.com/v1"
+          placeholder={DEFAULT_AI_BASE_URL}
           class="w-full px-2.5 py-1.5 rounded-lg bg-subtle border border-border-subtle outline-none text-text-primary text-[11px]"
         />
       </div>
@@ -230,7 +234,7 @@
         <input
           id="ai-model"
           type="text"
-          value={appState.settings.ai?.model || 'deepseek-chat'}
+          value={appState.settings.ai?.model || DEFAULT_AI_MODEL}
           onchange={(e) => updateAiSettings({ model: e.target.value.trim() })}
           placeholder="deepseek-chat / gpt-4o-mini / qwen2.5:7b"
           class="w-full px-2.5 py-1.5 rounded-lg bg-subtle border border-border-subtle outline-none text-text-primary text-[11px]"
@@ -451,7 +455,7 @@
       <span class="w-2 h-2 rounded-full flex-shrink-0 {appState.mcpStatus.isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-status-danger'}"></span>
       <span class="font-medium text-text-primary text-[11px] truncate">
         {appState.mcpStatus.isConnected
-          ? t('mcp.connected', { url: `ws://${appState.settings.mcp?.wsHost || '127.0.0.1'}:${appState.settings.mcp?.wsPort || 8333}` })
+          ? t('mcp.connected', { url: `ws://${appState.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST}:${appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT}` })
           : t('mcp.offline')}
       </span>
     </div>
@@ -461,9 +465,9 @@
         <span class="text-[10px] text-text-tertiary">{t('mcp.hostLabel')}</span>
         <input
           type="text"
-          value={appState.settings.mcp?.wsHost || '127.0.0.1'}
-          onchange={(e) => updateMcpSettings({ wsHost: e.target.value.trim() || '127.0.0.1' })}
-          placeholder="127.0.0.1"
+          value={appState.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST}
+          onchange={(e) => updateMcpSettings({ wsHost: e.target.value.trim() || DEFAULT_MCP_WS_HOST })}
+          placeholder={DEFAULT_MCP_WS_HOST}
           class="w-24 px-1.5 py-0.5 rounded bg-surface border border-border-subtle text-[11px] text-text-primary font-mono outline-none"
         />
       </div>
@@ -471,8 +475,8 @@
         <span class="text-[10px] text-text-tertiary">{t('mcp.portLabel')}</span>
         <input
           type="number"
-          value={appState.settings.mcp?.wsPort || 8333}
-          onchange={(e) => updateMcpSettings({ wsPort: parseInt(e.target.value, 10) || 8333 })}
+          value={appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT}
+          onchange={(e) => updateMcpSettings({ wsPort: parseInt(e.target.value, 10) || DEFAULT_MCP_WS_PORT })}
           class="w-16 px-1.5 py-0.5 rounded bg-surface border border-border-subtle text-center text-[11px] text-text-primary font-mono outline-none"
         />
       </div>
@@ -484,8 +488,8 @@
     <div class="flex items-center justify-between text-[11px]">
       <span class="text-text-secondary font-medium">{t('mcp.step1Bridge')}</span>
       <code class="px-2 py-0.5 rounded bg-subtle text-accent font-mono text-[10px] border border-border-subtle">
-        {(appState.settings.mcp?.wsHost && appState.settings.mcp?.wsHost !== '127.0.0.1') || (appState.settings.mcp?.wsPort && appState.settings.mcp?.wsPort !== 8333)
-          ? `node scripts/mcp-bridge.js${appState.settings.mcp?.wsHost !== '127.0.0.1' ? ` --host ${appState.settings.mcp?.wsHost}` : ''}${appState.settings.mcp?.wsPort !== 8333 ? ` --port ${appState.settings.mcp?.wsPort}` : ''}`
+        {(appState.settings.mcp?.wsHost && appState.settings.mcp?.wsHost !== DEFAULT_MCP_WS_HOST) || (appState.settings.mcp?.wsPort && appState.settings.mcp?.wsPort !== DEFAULT_MCP_WS_PORT)
+          ? `node scripts/mcp-bridge.js${appState.settings.mcp?.wsHost !== DEFAULT_MCP_WS_HOST ? ` --host ${appState.settings.mcp?.wsHost}` : ''}${appState.settings.mcp?.wsPort !== DEFAULT_MCP_WS_PORT ? ` --port ${appState.settings.mcp?.wsPort}` : ''}`
           : 'npm run mcp'}
       </code>
     </div>

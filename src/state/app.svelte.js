@@ -45,7 +45,9 @@ import {
   PINNED_GROUP_ID,
   UNGROUPED_GROUP_ID,
   DEFAULT_SETTINGS,
-  PROBE_CACHE_TTL_MS
+  PROBE_CACHE_TTL_MS,
+  DEFAULT_MCP_WS_HOST,
+  DEFAULT_MCP_WS_PORT
 } from '../constants/index.js';
 import { i18n } from '../i18n/index.svelte.js';
 
@@ -216,7 +218,7 @@ class AppState {
       this.mcpStatus = status;
     });
     if (this.settings.mcp?.enabled === true) {
-      mcpClient.connect(this.settings.mcp?.wsHost || '127.0.0.1', this.settings.mcp?.wsPort || 8333);
+      mcpClient.connect(this.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST, this.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT);
     }
 
     // 智能连通性探测 (若命中 15 分钟内的有效缓存且有数据则跳过，避免重复 Ping 消耗网络资源)
@@ -595,8 +597,8 @@ class AppState {
   // ==========================================
 
   reconnectMcp(host, port) {
-    const targetHost = host || this.settings.mcp?.wsHost || '127.0.0.1';
-    const targetPort = port || this.settings.mcp?.wsPort || 8333;
+    const targetHost = host || this.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST;
+    const targetPort = port || this.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT;
     mcpClient.connect(targetHost, targetPort);
   }
 

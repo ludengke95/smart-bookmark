@@ -1,6 +1,7 @@
 import { defineBackground } from 'wxt/utils/define-background';
 import { getBookmarks, getSettings } from '../services/storage.js';
 import { mcpClient } from '../services/mcp/client.js';
+import { DEFAULT_MCP_WS_PORT } from '../constants/index.js';
 
 export default defineBackground(() => {
   console.log('[Background] Smart Bookmark service worker active');
@@ -8,7 +9,7 @@ export default defineBackground(() => {
   // 初始化 MCP 外部服务连接 (若用户开启了 MCP)
   getSettings().then(settings => {
     if (settings?.mcp?.enabled !== false) {
-      mcpClient.connect(settings?.mcp?.wsPort || 8333);
+      mcpClient.connect(settings?.mcp?.wsPort || DEFAULT_MCP_WS_PORT);
     }
   }).catch(() => {});
 

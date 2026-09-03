@@ -1,7 +1,7 @@
 <script>
   import { appState } from '../../state/app.svelte.js';
   import { toast } from '../../state/toast.svelte.js';
-  import { UNGROUPED_GROUP_ID } from '../../constants/index.js';
+  import { UNGROUPED_GROUP_ID, DEFAULT_AI_MODEL } from '../../constants/index.js';
   import { t } from '../../i18n/index.svelte.js';
   import AiResultModal from './AiResultModal.svelte';
   import ModalShell from '../common/ModalShell.svelte';
@@ -507,7 +507,7 @@
               <div class="flex items-center gap-2">
                 <span class="text-text-tertiary">接口地址:</span>
                 <span class="font-mono font-medium text-text-primary">{appState.settings.ai?.baseUrl || '未设置'}</span>
-                <span class="px-1.5 py-0.5 rounded bg-surface text-[10px] text-text-secondary border border-border-subtle font-mono">{appState.settings.ai?.model || 'deepseek-chat'}</span>
+                <span class="px-1.5 py-0.5 rounded bg-surface text-[10px] text-text-secondary border border-border-subtle font-mono">{appState.settings.ai?.model || DEFAULT_AI_MODEL}</span>
               </div>
               <span class="text-[10px] text-text-tertiary">可在偏好设置中修改 API Key</span>
             </div>

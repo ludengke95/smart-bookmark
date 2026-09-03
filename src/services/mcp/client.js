@@ -16,7 +16,7 @@ import {
   importFullBackupJson,
   createSnapshot
 } from '../storage.js';
-import { DEFAULT_MCP_SETTINGS, UNGROUPED_GROUP_ID } from '../../constants/index.js';
+import { DEFAULT_MCP_SETTINGS, DEFAULT_MCP_WS_HOST, DEFAULT_MCP_WS_PORT, UNGROUPED_GROUP_ID } from '../../constants/index.js';
 
 class McpClient {
   constructor() {
@@ -24,8 +24,8 @@ class McpClient {
     this.isConnected = false;
     this.isConnecting = false;
     this.lastError = null;
-    this.host = DEFAULT_MCP_SETTINGS.wsHost || '127.0.0.1';
-    this.port = DEFAULT_MCP_SETTINGS.wsPort || 8333;
+    this.host = DEFAULT_MCP_SETTINGS.wsHost || DEFAULT_MCP_WS_HOST;
+    this.port = DEFAULT_MCP_SETTINGS.wsPort || DEFAULT_MCP_WS_PORT;
     this.autoReconnect = false;
     this.reconnectTimer = null;
     this.listeners = new Set();
@@ -56,10 +56,10 @@ class McpClient {
   connect(host = this.host, port = this.port) {
     if (typeof host === 'number') {
       this.port = host;
-      this.host = '127.0.0.1';
+      this.host = DEFAULT_MCP_WS_HOST;
     } else if (typeof host === 'string') {
-      this.host = host.trim() || '127.0.0.1';
-      this.port = port || this.port || 8333;
+      this.host = host.trim() || DEFAULT_MCP_WS_HOST;
+      this.port = port || this.port || DEFAULT_MCP_WS_PORT;
     }
 
     this.autoReconnect = true;
