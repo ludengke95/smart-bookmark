@@ -2,6 +2,9 @@
  * Smart Bookmark 极简设计系统常量与默认配置
  */
 
+// 连通性探测缓存 TTL 默认 15 分钟 (毫秒)
+export const PROBE_CACHE_TTL_MS = 15 * 60 * 1000;
+
 // 系统内置动态常用分组 ID 与固定未分组 ID
 export const PINNED_GROUP_ID = 'group_system_pinned';
 export const UNGROUPED_GROUP_ID = 'group_system_ungrouped';
@@ -17,28 +20,28 @@ export const DEFAULT_SEARCH_ENGINES = [
 // 3 套高质感极简主题定义 (严格符合 doc/前端设计规范.md)
 export const THEMES = [
   {
-    id: 'ceramic-light',
-    name: '陶瓷素白 (Ceramic Light)',
-    isDark: false,
-    previewBg: '#FAFAFA',
-    previewBorder: '#18181B',
-    desc: '极简浅色，温润通透'
-  },
-  {
-    id: 'obsidian-dark',
-    name: '深曜黑 (Obsidian Dark)',
-    isDark: true,
-    previewBg: '#09090B',
-    previewBorder: '#FAFAFA',
-    desc: '极简深色，黑曜沉静'
-  },
-  {
     id: 'paper-sand',
     name: '纸本暖沙 (Paper Sand)',
     isDark: false,
     previewBg: '#F5F2EB',
     previewBorder: '#3A5A40',
     desc: '质朴墨色，温和护眼'
+  },
+  {
+    id: 'ceramic-light',
+    name: '陶瓷素白 (Ceramic Light)',
+    isDark: false,
+    previewBg: '#F6F7F9',
+    previewBorder: '#1E293B',
+    desc: '温润骨瓷，柔和浅色'
+  },
+  {
+    id: 'obsidian-dark',
+    name: '深曜黑 (Obsidian Dark)',
+    isDark: true,
+    previewBg: '#14161A',
+    previewBorder: '#E2E7F0',
+    desc: '深空石墨，沉静暗夜'
   }
 ];
 
@@ -133,7 +136,7 @@ export const DEFAULT_MCP_SETTINGS = {
 
 // 默认全局设置
 export const DEFAULT_SETTINGS = {
-  theme: 'obsidian-dark',
+  theme: 'paper-sand',
   clockFormat: '24',
   showSeconds: false,
   defaultSearchEngine: 'baidu',

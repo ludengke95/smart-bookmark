@@ -31,7 +31,7 @@ import {
   resetToDefaultData as storageResetDefaultData,
   clearAllData as storageClearAll
 } from '../services/storage.js';
-import { detectLocalIp } from '../services/ip-detector.js';
+import { detectAllLocalIps } from '../services/ip-detector.js';
 import { probeAllUrls } from '../services/ping-probe.js';
 import { sortEndpointsByTopology } from '../services/xor-matcher.js';
 import { mcpClient } from '../services/mcp/client.js';
@@ -43,7 +43,8 @@ import {
   THEMES,
   PINNED_GROUP_ID,
   UNGROUPED_GROUP_ID,
-  DEFAULT_SETTINGS
+  DEFAULT_SETTINGS,
+  PROBE_CACHE_TTL_MS
 } from '../constants/index.js';
 
 class AppState {
@@ -54,6 +55,8 @@ class AppState {
   activeTag = $state('all');
   searchQuery = $state('');
   currentLocalIp = $state('');
+  allLocalIps = $state([]);
+  networkInterfaces = $state([]);
   probeResults = $state({});
   clickStats = $state({});
   detailedStats = $state({ totalClicksMap: {}, sevenDaysMap: {}, lastClickedMap: {} });
@@ -202,12 +205,15 @@ class AppState {
     this.collapsedGroups = initCollapsed;
 
     // 应用当前主题到 DOM
-    this.applyThemeToDOM(this.settings.theme || 'obsidian-dark');
+    this.applyThemeToDOM(this.settings.theme || 'paper-sand');
 
     // 读取网络探测缓存
     const cache = await getProbeCache();
     if (cache.results) {
       this.probeResults = cache.results;
+    }
+    if (cache.localIp) {
+      this.currentLocalIp = cache.localIp;
     }
 
     this.isLoaded = true;
@@ -220,13 +226,18 @@ class AppState {
       mcpClient.connect(this.settings.mcp?.wsHost || '127.0.0.1', this.settings.mcp?.wsPort || 8333);
     }
 
-    // 异步后台探测局域网 IP 与 URL 连通性
-    this.refreshNetwork();
+    // 智能连通性探测 (若命中 15 分钟内的有效缓存且有数据则跳过，避免重复 Ping 消耗网络资源)
+    const isCacheFresh = cache.timestamp && (Date.now() - cache.timestamp < PROBE_CACHE_TTL_MS);
+    const hasCachedResults = cache.results && Object.keys(cache.results).length > 0;
+
+    if (!isCacheFresh || !hasCachedResults) {
+      this.refreshNetwork();
+    }
   }
 
   applyThemeToDOM(themeId) {
     const valid = THEMES.some(t => t.id === themeId);
-    const target = valid ? themeId : 'obsidian-dark';
+    const target = valid ? themeId : 'paper-sand';
     document.documentElement.setAttribute('data-theme', target);
   }
 
@@ -250,10 +261,21 @@ class AppState {
     }
   }
 
-  async refreshNetwork() {
+  async refreshNetwork(force = false) {
     try {
-      const ip = await detectLocalIp(1200);
-      this.currentLocalIp = ip || '';
+      const { primaryIp, allIps, interfaces } = await detectAllLocalIps(1200);
+      const prevIp = this.currentLocalIp;
+      this.currentLocalIp = primaryIp || '';
+      this.allLocalIps = allIps || [];
+      this.networkInterfaces = interfaces || [];
+
+      // 如果未指定强制刷新，且已由缓存初始化了相同 IP 与探测结果，且在 TTL 内，则无需重复全量 Ping
+      const cache = await getProbeCache();
+      const isCacheFresh = cache.timestamp && (Date.now() - cache.timestamp < PROBE_CACHE_TTL_MS);
+      const isIpSame = (!prevIp && !this.currentLocalIp) || (prevIp === this.currentLocalIp);
+      if (!force && isCacheFresh && isIpSame && Object.keys(this.probeResults || {}).length > 0) {
+        return;
+      }
 
       // 提取全部 URL 进行批量轻量探测
       const allUrls = [];

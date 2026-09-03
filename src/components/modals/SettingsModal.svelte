@@ -292,41 +292,41 @@
         </button>
       </div>
 
-      <!-- 标签页导航 (4个均分等宽分段胶囊) -->
+      <!-- 标签页导航 (4个均分等宽分段胶囊，显式锁定 h-8 保持绝对空间稳定性) -->
       <div class="grid grid-cols-4 gap-1 bg-subtle p-1 rounded-lg text-xs flex-shrink-0">
         <button
           type="button"
           onclick={() => (activeTab = 'general')}
-          class="py-1.5 px-2 rounded-md transition-all font-medium text-center {activeTab === 'general'
+          class="h-8 px-2 rounded-md transition-all font-medium text-center flex items-center justify-center {activeTab === 'general'
             ? 'bg-surface text-text-primary shadow-sm font-semibold border border-border-subtle/60'
-            : 'text-text-secondary hover:text-text-primary hover:bg-surface/50'}"
+            : 'text-text-secondary hover:text-text-primary hover:bg-surface/50 border border-transparent'}"
         >
           常规偏好
         </button>
         <button
           type="button"
           onclick={() => (activeTab = 'groups')}
-          class="py-1.5 px-2 rounded-md transition-all font-medium text-center {activeTab === 'groups'
+          class="h-8 px-2 rounded-md transition-all font-medium text-center flex items-center justify-center {activeTab === 'groups'
             ? 'bg-surface text-text-primary shadow-sm font-semibold border border-border-subtle/60'
-            : 'text-text-secondary hover:text-text-primary hover:bg-surface/50'}"
+            : 'text-text-secondary hover:text-text-primary hover:bg-surface/50 border border-transparent'}"
         >
           分组管理
         </button>
         <button
           type="button"
           onclick={() => (activeTab = 'ai')}
-          class="py-1.5 px-2 rounded-md transition-all font-medium text-center flex items-center justify-center gap-1 {activeTab === 'ai'
+          class="h-8 px-2 rounded-md transition-all font-medium text-center flex items-center justify-center gap-1 {activeTab === 'ai'
             ? 'bg-surface text-accent shadow-sm font-semibold border border-accent/30 ring-1 ring-accent/20'
-            : 'text-text-secondary hover:text-accent hover:bg-surface/50'}"
+            : 'text-text-secondary hover:text-accent hover:bg-surface/50 border border-transparent'}"
         >
           <span>✨ AI 与 MCP</span>
         </button>
         <button
           type="button"
           onclick={() => (activeTab = 'danger')}
-          class="py-1.5 px-2 rounded-md transition-all font-medium text-center {activeTab === 'danger'
+          class="h-8 px-2 rounded-md transition-all font-medium text-center flex items-center justify-center {activeTab === 'danger'
             ? 'bg-surface text-status-danger shadow-sm font-semibold border border-status-danger/40 ring-1 ring-status-danger/20'
-            : 'text-text-secondary hover:text-status-danger hover:bg-surface/50'}"
+            : 'text-text-secondary hover:text-status-danger hover:bg-surface/50 border border-transparent'}"
         >
           数据重置
         </button>

@@ -12,11 +12,12 @@
   } = $props();
 
   let isRefreshing = $state(false);
+  let showIpPopover = $state(false);
 
   async function handleRefreshNetwork() {
     isRefreshing = true;
     toast.show('正在重新探测局域网拓扑与入口延迟...');
-    await appState.refreshNetwork();
+    await appState.refreshNetwork(true);
     isRefreshing = false;
     toast.show(appState.currentLocalIp ? `已发现本机内网 IP: ${appState.currentLocalIp}` : '当前未处于私有局域网网段');
   }
@@ -35,15 +36,84 @@
       <div class="flex items-center gap-2">
         <span class="font-semibold text-sm tracking-tight text-text-primary">Smart Bookmark</span>
 
-        <!-- 本机 IP 状态微标 (点击触发重新探测) -->
-        <button
-          onclick={handleRefreshNetwork}
-          class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-subtle border border-border-subtle text-[11px] font-mono text-text-secondary hover:text-text-primary hover:border-border-focus transition-all"
-          title="点击重新探测网络环境"
+        <!-- 本机 IP 状态微标与定制悬浮面板 -->
+        <div
+          class="relative flex items-center"
+          role="region"
+          aria-label="网络状态"
+          onmouseenter={() => (showIpPopover = true)}
+          onmouseleave={() => (showIpPopover = false)}
         >
-          <span class="w-1.5 h-1.5 rounded-full {appState.currentLocalIp ? 'bg-status-intranet' : 'bg-text-tertiary'} {isRefreshing ? 'animate-pulse' : ''}"></span>
-          <span>{appState.currentLocalIp || '外网环境'}</span>
-        </button>
+          <button
+            type="button"
+            onclick={handleRefreshNetwork}
+            class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-subtle border border-border-subtle text-[11px] font-mono text-text-secondary hover:text-text-primary hover:border-border-focus transition-all"
+            aria-label="本机网络状态，点击重新探测"
+          >
+            <span class="w-1.5 h-1.5 rounded-full {appState.currentLocalIp ? 'bg-status-intranet shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-text-tertiary'} {isRefreshing ? 'animate-pulse' : ''}"></span>
+            <span>{appState.currentLocalIp || '外网环境'}</span>
+            {#if appState.allLocalIps.length > 1}
+              <span class="px-1 py-0.2 text-[9px] font-sans font-semibold rounded bg-surface border border-border-subtle text-text-tertiary">+{appState.allLocalIps.length - 1}</span>
+            {/if}
+          </button>
+
+          <!-- 优雅悬浮卡片 (符合主题规范，带平滑渐入效果) -->
+          {#if showIpPopover}
+            <div class="absolute left-0 top-full pt-2 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+              <div class="w-64 p-3 rounded-xl bg-surface border border-border-subtle shadow-popover backdrop-blur-xl text-xs space-y-2.5">
+                <!-- 头部 -->
+                <div class="flex items-center justify-between border-b border-border-subtle/60 pb-2">
+                  <span class="text-[11px] font-semibold text-text-primary flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full {appState.currentLocalIp ? 'bg-status-intranet' : 'bg-text-tertiary'}"></span>
+                    网络拓扑感知
+                  </span>
+                  <span class="text-[10px] text-text-tertiary">
+                    {appState.allLocalIps.length > 0 ? `已发现 ${appState.allLocalIps.length} 个内网` : '无私网地址'}
+                  </span>
+                </div>
+
+                <!-- 网卡 IP 列表 -->
+                <div class="space-y-1.5">
+                  {#if appState.allLocalIps.length > 0}
+                    {#each appState.allLocalIps as ip, idx}
+                      <div class="flex items-center justify-between p-1.5 rounded-lg {idx === 0 ? 'bg-subtle/80 border border-border-subtle/50' : 'hover:bg-subtle/40'} transition-colors">
+                        <div class="flex items-center gap-2">
+                          <span class="w-1 h-1 rounded-full {idx === 0 ? 'bg-status-intranet' : 'bg-text-tertiary'}"></span>
+                          <span class="font-mono text-[11px] {idx === 0 ? 'text-text-primary font-medium' : 'text-text-secondary'}">{ip}</span>
+                        </div>
+                        {#if idx === 0}
+                          <span class="text-[9px] px-1.5 py-0.5 rounded bg-status-intranet/10 text-status-intranet border border-status-intranet/20 font-medium">主网卡</span>
+                        {:else if ip.startsWith('198.18.')}
+                          <span class="text-[9px] text-text-tertiary">TUN 代理</span>
+                        {:else if ip.startsWith('172.')}
+                          <span class="text-[9px] text-text-tertiary">虚拟网卡</span>
+                        {:else if ip.startsWith('10.')}
+                          <span class="text-[9px] text-text-tertiary">VPN / 专网</span>
+                        {/if}
+                      </div>
+                    {/each}
+                  {:else}
+                    <div class="p-2 text-center text-text-tertiary text-[11px]">
+                      当前未处于任何局域网 / 私有网段
+                    </div>
+                  {/if}
+                </div>
+
+                <!-- 底部提示 -->
+                <div class="pt-2 border-t border-border-subtle/60 flex items-center justify-between text-[10px] text-text-tertiary">
+                  <span>拓扑最长前缀寻径基准</span>
+                  <button
+                    type="button"
+                    class="text-accent cursor-pointer hover:underline text-[10px] bg-transparent border-0 p-0"
+                    onclick={handleRefreshNetwork}
+                  >
+                    点击刷新
+                  </button>
+                </div>
+              </div>
+            </div>
+          {/if}
+        </div>
       </div>
     </div>
 

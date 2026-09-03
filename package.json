@@ -1,5 +1,5 @@
 {
-  "name": "newtab",
+  "name": "smart-bookmark",
   "version": "1.0.0",
   "description": "> 基于客户端网络拓扑智能寻径的多入口 Chrome 扩展（Manifest V3）。解决同一个应用内网/外网入口不同，每次都需要手动判断该点哪个地址的问题。",
   "type": "module",

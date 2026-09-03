@@ -4,31 +4,31 @@
 
 @layer base {
   :root, [data-theme="obsidian-dark"] {
-    --bg-canvas: #09090b;
-    --bg-surface: #121215;
-    --bg-surface-hover: #1c1c21;
-    --bg-subtle: #18181b;
-    --bg-input: #121215;
+    --bg-canvas: #14161a;
+    --bg-surface: #1c1e24;
+    --bg-surface-hover: #252830;
+    --bg-subtle: #21242c;
+    --bg-input: #1c1e24;
 
-    --border-subtle: #27272a;
-    --border-focus: #52525b;
+    --border-subtle: #2b2f3a;
+    --border-focus: #545b6d;
 
-    --text-primary: #f4f4f5;
-    --text-secondary: #a1a1aa;
-    --text-tertiary: #52525b;
+    --text-primary: #dce0e8;
+    --text-secondary: #8c93a1;
+    --text-tertiary: #5c6374;
 
-    --accent: #f4f4f5;
-    --accent-fg: #09090b;
-    --accent-hover: #e4e4e7;
+    --accent: #e2e7f0;
+    --accent-fg: #14161a;
+    --accent-hover: #cbd5e1;
 
     --status-intranet: #22c55e;
     --status-extranet: #38bdf8;
     --status-warn: #fbbf24;
     --status-danger: #f87171;
 
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-    --shadow-md: 0 4px 12px 0 rgb(0 0 0 / 0.4);
-    --shadow-popover: 0 12px 32px -4px rgb(0 0 0 / 0.6);
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.25);
+    --shadow-md: 0 4px 12px 0 rgb(0 0 0 / 0.35);
+    --shadow-popover: 0 12px 32px -4px rgb(0 0 0 / 0.5);
 
     --radius-sm: 6px;
     --radius-md: 8px;
@@ -37,22 +37,22 @@
   }
 
   [data-theme="ceramic-light"] {
-    --bg-canvas: #fafafa;
+    --bg-canvas: #f6f7f9;
     --bg-surface: #ffffff;
-    --bg-surface-hover: #f4f4f5;
-    --bg-subtle: #f4f4f5;
+    --bg-surface-hover: #f0f2f5;
+    --bg-subtle: #edf0f4;
     --bg-input: #ffffff;
 
-    --border-subtle: #e4e4e7;
-    --border-focus: #a1a1aa;
+    --border-subtle: #e2e5ea;
+    --border-focus: #9499a3;
 
-    --text-primary: #18181b;
-    --text-secondary: #71717a;
-    --text-tertiary: #a1a1aa;
+    --text-primary: #272a30;
+    --text-secondary: #6b7280;
+    --text-tertiary: #9ca3af;
 
-    --accent: #18181b;
+    --accent: #1e293b;
     --accent-fg: #ffffff;
-    --accent-hover: #27272a;
+    --accent-hover: #334155;
 
     --status-intranet: #16a34a;
     --status-extranet: #2563eb;

@@ -20,7 +20,14 @@ export function ipToUint32(ipStr) {
 }
 
 /**
- * 判断是否属于私有内网 IP 地址段
+ * 判断是否属于局域网/私有内网 IP 地址段
+ * 涵盖：
+ * 1. 10.0.0.0/8 (RFC 1918)
+ * 2. 172.16.0.0/12 (RFC 1918)
+ * 3. 192.168.0.0/16 (RFC 1918)
+ * 4. 100.64.0.0/10 (RFC 6598 CGNAT / Tailscale)
+ * 5. 198.18.0.0/15 (RFC 2544 基准网络 / 常见 Clash/Sing-box/Meta TUN 虚拟网卡)
+ * 6. 127.0.0.0/8 (回环地址)
  */
 export function isPrivateIp(ipStr) {
   const ipNum = ipToUint32(ipStr);
@@ -32,6 +39,8 @@ export function isPrivateIp(ipStr) {
   if (octet1 === 10) return true;
   if (octet1 === 172 && (octet2 >= 16 && octet2 <= 31)) return true;
   if (octet1 === 192 && octet2 === 168) return true;
+  if (octet1 === 100 && (octet2 >= 64 && octet2 <= 127)) return true;
+  if (octet1 === 198 && (octet2 === 18 || octet2 === 19)) return true;
   if (octet1 === 127) return true;
 
   return false;
