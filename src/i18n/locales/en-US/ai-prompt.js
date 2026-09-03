@@ -49,7 +49,7 @@ Task: Given the bookmark data list below (each item has an ID, name, current gro
 [Classification rules]
 1. Prefer the available groups listed above.
 2. {rule}
-3. Output a strict JSON array (wrapping it in a \`\`\`json code block is acceptable). Do not add extra chit-chat or explanations.
+3. Output a strict JSON array (wrapping it in a json code block is acceptable). Do not add extra chit-chat or explanations.
 
 [Expected JSON format]
 [
