@@ -2,8 +2,8 @@
  * Smart Bookmark 响应式 i18n 引擎 (Svelte 5 Runes 驱动)
  * 纯轻量设计，无外部重型依赖，支持模板参数替换与深层键解析
  */
-import zhCN from './locales/zh-CN.js';
-import enUS from './locales/en-US.js';
+import zhCN from './locales/zh-CN/index.js';
+import enUS from './locales/en-US/index.js';
 
 const LOCALES = {
   'zh-CN': zhCN,
