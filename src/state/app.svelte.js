@@ -46,6 +46,7 @@ import {
   DEFAULT_SETTINGS,
   PROBE_CACHE_TTL_MS
 } from '../constants/index.js';
+import { i18n } from '../i18n/index.svelte.js';
 
 class AppState {
   bookmarks = $state([]);
@@ -191,6 +192,10 @@ class AppState {
   async init() {
     await initStorage();
     this.settings = await getSettings();
+
+    // 初始化多语言偏好设置
+    i18n.init(this.settings.language || 'auto');
+
     this.groups = await getGroups();
     this.bookmarks = await getBookmarks();
     this.clickStats = await getClickStats('30d');
@@ -255,6 +260,9 @@ class AppState {
   }
 
   async updateSettings(partial) {
+    if (partial.language !== undefined) {
+      i18n.setLocale(partial.language);
+    }
     this.settings = await storageSaveSettings(partial);
     if (partial.theme) {
       this.applyThemeToDOM(partial.theme);

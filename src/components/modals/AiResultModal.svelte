@@ -1,5 +1,6 @@
 <script>
   import { toast } from '../../state/toast.svelte.js';
+  import { t } from '../../i18n/index.svelte.js';
 
   let {
     open = $bindable(false),
@@ -38,7 +39,7 @@
   async function handleConfirmApply() {
     const selectedItems = items.filter(i => i.selected);
     if (selectedItems.length === 0) {
-      toast.show('请至少选择一项要应用的变更');
+      toast.show(t('ai.result.selectAtLeastOne'));
       return;
     }
 
@@ -47,7 +48,7 @@
       await onApply(selectedItems);
       open = false;
     } catch (err) {
-      toast.show(`应用失败: ${err.message}`);
+      toast.show(t('ai.result.applyFailed', { error: err.message }));
     } finally {
       isApplying = false;
     }
@@ -69,12 +70,12 @@
         <div>
           <h2 class="text-sm font-semibold text-text-primary flex items-center gap-2">
             {#if type === 'grouping'}
-              <span>✨ AI 智能分组分析建议</span>
+              <span>✨ {t('ai.result.titleGrouping')}</span>
             {:else}
-              <span>🏷️ AI 智能标签提炼建议</span>
+              <span>🏷️ {t('ai.result.titleTagging')}</span>
             {/if}
             <span class="text-xs font-normal text-text-tertiary">
-              (共分析 {items.length} 项，已选中 {selectedCount} 项)
+              {t('ai.result.analyzedCount', { total: items.length, selected: selectedCount })}
             </span>
           </h2>
         </div>
@@ -83,7 +84,7 @@
           disabled={isApplying}
           onclick={() => (open = false)}
           class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors disabled:opacity-40"
-          aria-label="关闭"
+          aria-label={t('common.close')}
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -100,7 +101,7 @@
             onchange={handleToggleAll}
             class="rounded border-border-subtle text-accent"
           />
-          <span>全选所有 ({items.length})</span>
+          <span>{t('ai.result.selectAll', { count: items.length })}</span>
         </label>
 
         <label class="flex items-center gap-1.5 cursor-pointer text-text-secondary select-none">
@@ -109,7 +110,7 @@
             bind:checked={onlyShowChanged}
             class="rounded border-border-subtle text-accent"
           />
-          <span>仅查看有变动的项</span>
+          <span>{t('ai.result.onlyChanged')}</span>
         </label>
       </div>
 
@@ -117,7 +118,7 @@
       <div class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs">
         {#if displayItems.length === 0}
           <div class="h-48 flex flex-col items-center justify-center text-text-tertiary space-y-1">
-            <p>暂无符合条件的建议变更</p>
+            <p>{t('ai.result.noChanges')}</p>
           </div>
         {:else}
           {#each displayItems as item (item.bookmarkId)}
@@ -152,16 +153,16 @@
                     <span class="font-medium text-accent px-2 py-0.5 rounded bg-accent/10 border border-accent/20 flex items-center gap-1">
                       {item.suggestedGroupName}
                       {#if item.isNewGroup}
-                        <span class="text-[9px] px-1 rounded bg-accent text-accent-fg">新分组</span>
+                        <span class="text-[9px] px-1 rounded bg-accent text-accent-fg">{t('ai.result.newGroup')}</span>
                       {/if}
                     </span>
                   </div>
                 {:else}
                   <!-- 标签前后对比 -->
                   <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
-                    <span class="text-text-tertiary">原标签:</span>
+                    <span class="text-text-tertiary">{t('ai.result.originalTags')}</span>
                     {#if !item.currentTags || item.currentTags.length === 0}
-                      <span class="text-text-tertiary italic text-[10px]">(无)</span>
+                      <span class="text-text-tertiary italic text-[10px]">{t('ai.result.none')}</span>
                     {:else}
                       {#each item.currentTags as tag}
                         <span class="px-1.5 py-0.2 rounded bg-subtle text-text-secondary text-[10px] border border-border-subtle/40">{tag}</span>
@@ -170,7 +171,7 @@
 
                     <span class="text-text-tertiary mx-1">➔</span>
 
-                    <span class="text-text-tertiary">AI 建议:</span>
+                    <span class="text-text-tertiary">{t('ai.result.aiSuggested')}</span>
                     {#each (item.finalMergedTags || item.suggestedTags || []) as tag}
                       <span class="px-1.5 py-0.2 rounded bg-accent/10 text-accent font-medium text-[10px] border border-accent/20">
                         +{tag}
@@ -190,7 +191,7 @@
           <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
           </svg>
-          <span>应用前系统将自动生成安全快照备份</span>
+          <span>{t('ai.result.snapshotHint')}</span>
         </div>
 
         <div class="flex items-center gap-2">
@@ -200,7 +201,7 @@
             onclick={() => (open = false)}
             class="px-3.5 py-1.5 rounded-lg border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-subtle transition-colors"
           >
-            取消
+            {t('ai.result.cancel')}
           </button>
           <button
             type="button"
@@ -210,9 +211,9 @@
           >
             {#if isApplying}
               <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-              <span>正在应用...</span>
+              <span>{t('ai.result.applying')}</span>
             {:else}
-              <span>一键应用变更 ({selectedCount})</span>
+              <span>{t('ai.result.applyButton', { count: selectedCount })}</span>
             {/if}
           </button>
         </div>

@@ -6,6 +6,8 @@
   import { BRAND_ICONS } from '../../services/icons-library.js';
   import { toast } from '../../state/toast.svelte.js';
   import { PINNED_GROUP_ID, UNGROUPED_GROUP_ID } from '../../constants/index.js';
+  import { t } from '../../i18n/index.svelte.js';
+  import { getGroupName } from '../../i18n/utils.js';
   import IconRender from '../common/IconRender.svelte';
   import Select from '../common/Select.svelte';
 
@@ -28,7 +30,7 @@
   const groupOptions = $derived(
     selectableGroups.map(g => ({
       value: g.id,
-      label: g.name,
+      label: getGroupName(g),
       iconText: g.id === UNGROUPED_GROUP_ID ? '📄' : '📁'
     }))
   );
@@ -143,7 +145,7 @@
     };
 
     await appState.saveBookmark(payload);
-    toast.show(editBookmark ? '已保存书签修改' : '已添加新书签');
+    toast.show(editBookmark ? t('bookmark.toastSaved') : t('bookmark.toastAdded'));
     open = false;
   }
 </script>
@@ -162,14 +164,14 @@
       <!-- 头部 -->
       <div class="flex items-center justify-between pb-2 border-b border-border-subtle flex-shrink-0">
         <h2 class="text-sm font-semibold text-text-primary">
-          {editBookmark ? '编辑书签' : '添加新书签'}
+          {editBookmark ? t('bookmark.editTitle') : t('bookmark.addTitle')}
         </h2>
         <button
           type="button"
           onclick={() => (open = false)}
           class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
-          aria-label="关闭对话框"
-          title="关闭"
+          aria-label={t('common.close')}
+          title={t('common.close')}
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -188,21 +190,21 @@
                 type="button"
                 onclick={() => (showIconPicker = !showIconPicker)}
                 class="w-10 h-10 rounded-lg bg-subtle border border-border-subtle hover:border-border-focus flex items-center justify-center transition-colors overflow-hidden"
-                title="点击更换图标"
+                title={t('bookmark.changeIcon')}
               >
                 <IconRender {iconKey} customIcon={customIconBase64} size={32} />
               </button>
-              <span class="text-[10px] text-text-tertiary">换图标</span>
+              <span class="text-[10px] text-text-tertiary">{t('bookmark.changeIcon')}</span>
             </div>
 
             <!-- 书签名称 -->
             <div class="flex-1 space-y-1">
-              <label for="bm-modal-name" class="block font-medium text-text-secondary">书签名称 *</label>
+              <label for="bm-modal-name" class="block font-medium text-text-secondary">{t('bookmark.nameRequired')}</label>
               <input
                 id="bm-modal-name"
                 type="text"
                 bind:value={name}
-                placeholder="如：GitLab 代码平台"
+                placeholder={t('bookmark.namePlaceholder')}
                 class="w-full px-3 py-2 rounded-lg bg-subtle border border-border-subtle focus:border-border-focus outline-none text-text-primary"
                 required
               />
@@ -213,13 +215,13 @@
           {#if showIconPicker}
             <div class="p-3 rounded-lg bg-subtle border border-border-subtle space-y-2">
               <div class="flex items-center justify-between text-[11px] text-text-secondary">
-                <span>选择品牌图标</span>
+                <span>{t('bookmark.selectBrandIcon')}</span>
                 <button
                   type="button"
                   onclick={() => { iconKey = ''; customIconBase64 = ''; showIconPicker = false; }}
                   class="text-accent underline"
                 >
-                  使用默认
+                  {t('bookmark.useDefault')}
                 </button>
               </div>
               <div class="grid grid-cols-6 gap-2">
@@ -243,7 +245,7 @@
           <!-- 所属分组与标签 -->
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-1">
-              <span class="block font-medium text-text-secondary">所属分组</span>
+              <span class="block font-medium text-text-secondary">{t('bookmark.group')}</span>
               <Select
                 options={groupOptions}
                 bind:value={groupId}
@@ -251,12 +253,12 @@
             </div>
 
             <div class="space-y-1">
-              <label for="bm-modal-tags" class="block font-medium text-text-secondary">标签 (逗号分隔)</label>
+              <label for="bm-modal-tags" class="block font-medium text-text-secondary">{t('bookmark.tags')}</label>
               <input
                 id="bm-modal-tags"
                 type="text"
                 bind:value={tagsInput}
-                placeholder="如：代码仓库, CI/CD"
+                placeholder={t('bookmark.tagsPlaceholder')}
                 class="w-full px-3 py-2 rounded-lg bg-subtle border border-border-subtle focus:border-border-focus outline-none text-text-primary"
               />
             </div>
@@ -265,13 +267,13 @@
           <!-- 多访问入口 (Endpoints) -->
           <div class="space-y-2 pt-2">
             <div class="flex items-center justify-between">
-              <span class="font-medium text-text-secondary">访问入口列表 (多地址智能寻径)</span>
+              <span class="font-medium text-text-secondary">{t('bookmark.endpointsTitle')}</span>
               <button
                 type="button"
                 onclick={addEndpoint}
                 class="text-xs text-accent font-medium hover:underline flex items-center gap-1"
               >
-                <span>+ 添加入口</span>
+                <span>{t('bookmark.addEndpoint')}</span>
               </button>
             </div>
 
@@ -285,7 +287,7 @@
                       ? 'bg-status-intranet/10 text-status-intranet border border-status-intranet/20'
                       : 'bg-status-extranet/10 text-status-extranet border border-status-extranet/20'}"
                   >
-                    {classification.isIntranet ? '内网' : '外网'}
+                    {classification.isIntranet ? t('bookmark.intranetBadge') : t('bookmark.extranetBadge')}
                   </span>
 
                   <!-- URL 输入框 -->
@@ -293,7 +295,7 @@
                     type="text"
                     bind:value={ep.url}
                     onblur={() => handleUrlBlur(idx)}
-                    placeholder="如: http://192.168.10.50:8080"
+                    placeholder={t('bookmark.urlPlaceholder')}
                     class="flex-1 px-3 py-1.5 rounded-lg bg-subtle border border-border-subtle focus:border-border-focus outline-none font-mono text-xs text-text-primary"
                   />
 
@@ -302,9 +304,9 @@
                     type="button"
                     onclick={() => testProbe(ep.url)}
                     class="px-2 py-1 rounded border border-border-subtle hover:bg-subtle text-[10px] font-mono text-text-secondary flex-shrink-0"
-                    title="测试该入口当前延迟"
+                    title={t('bookmark.probeTooltip')}
                   >
-                    {isProbing[ep.url] || '测速'}
+                    {isProbing[ep.url] || t('bookmark.probeTest')}
                   </button>
 
                   <!-- 删除入口行 -->
@@ -312,7 +314,7 @@
                     type="button"
                     onclick={() => removeEndpoint(idx)}
                     class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-status-danger transition-colors flex-shrink-0"
-                    title="删除该行"
+                    title={t('common.delete')}
                   >
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -331,13 +333,13 @@
             onclick={() => (open = false)}
             class="px-4 py-2 rounded-lg border border-border-subtle hover:bg-subtle font-medium text-text-secondary transition-colors"
           >
-            取消
+            {t('common.cancel')}
           </button>
           <button
             type="submit"
             class="px-4 py-2 rounded-lg bg-accent text-accent-fg font-medium shadow-sm hover:opacity-90 transition-opacity"
           >
-            保存书签
+            {t('common.save')}
           </button>
         </div>
       </form>

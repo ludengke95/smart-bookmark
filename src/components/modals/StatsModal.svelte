@@ -1,6 +1,7 @@
 <script>
   import { appState } from '../../state/app.svelte.js';
   import { toast } from '../../state/toast.svelte.js';
+  import { t } from '../../i18n/index.svelte.js';
   import IconRender from '../common/IconRender.svelte';
 
   let { open = $bindable(false) } = $props();
@@ -42,21 +43,21 @@
   });
 
   function formatRelativeTime(ts) {
-    if (!ts) return '从未访问';
+    if (!ts) return t('stats.neverVisited');
     const diff = Date.now() - ts;
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return '刚刚';
-    if (mins < 60) return `${mins} 分钟前`;
+    if (mins < 1) return t('stats.justNow');
+    if (mins < 60) return t('stats.minsAgo', { mins });
     const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours} 小时前`;
+    if (hours < 24) return t('stats.hoursAgo', { hours });
     const days = Math.floor(hours / 24);
-    return `${days} 天前`;
+    return t('stats.daysAgo', { days });
   }
 
   async function handleClearStats() {
-    if (confirm('确定要清空所有书签的访问统计数据吗？')) {
+    if (confirm(t('stats.clearConfirm'))) {
       await appState.clearStats();
-      toast.show('访问统计已清空');
+      toast.show(t('stats.cleared'));
     }
   }
 </script>
@@ -73,13 +74,13 @@
     <div class="w-full max-w-xl h-[530px] bg-surface border border-border-subtle rounded-xl shadow-popover p-5 space-y-4 flex flex-col">
       <!-- 头部 -->
       <div class="flex items-center justify-between pb-2 border-b border-border-subtle flex-shrink-0">
-        <h2 class="text-sm font-semibold text-text-primary">访问热度与统计分析</h2>
+        <h2 class="text-sm font-semibold text-text-primary">{t('stats.modalTitle')}</h2>
         <button
           type="button"
           onclick={() => (open = false)}
           class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
-          aria-label="关闭对话框"
-          title="关闭"
+          aria-label={t('common.close')}
+          title={t('common.close')}
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -90,15 +91,15 @@
       <!-- 核心指标卡片 -->
       <div class="grid grid-cols-3 gap-3 flex-shrink-0">
         <div class="p-3 rounded-xl bg-subtle border border-border-subtle text-center">
-          <div class="text-[11px] text-text-tertiary">总书签数</div>
+          <div class="text-[11px] text-text-tertiary">{t('stats.totalBookmarks')}</div>
           <div class="text-xl font-semibold font-mono text-text-primary mt-0.5">{appState.bookmarks.length}</div>
         </div>
         <div class="p-3 rounded-xl bg-subtle border border-border-subtle text-center">
-          <div class="text-[11px] text-text-tertiary">总分组数</div>
+          <div class="text-[11px] text-text-tertiary">{t('stats.totalGroups')}</div>
           <div class="text-xl font-semibold font-mono text-text-primary mt-0.5">{appState.groups.length}</div>
         </div>
         <div class="p-3 rounded-xl bg-subtle border border-border-subtle text-center">
-          <div class="text-[11px] text-text-tertiary">累计点击直达</div>
+          <div class="text-[11px] text-text-tertiary">{t('stats.totalClicksDirect')}</div>
           <div class="text-xl font-semibold font-mono text-accent mt-0.5">{totalClicks}</div>
         </div>
       </div>
@@ -106,13 +107,13 @@
       <!-- 访问排行榜 -->
       <div class="flex-1 overflow-y-auto space-y-2 text-xs">
         <div class="flex items-center justify-between text-text-tertiary text-[11px] px-1">
-          <span>书签访问频次排行</span>
+          <span>{t('stats.rankingTitle')}</span>
           <button
             type="button"
             onclick={handleClearStats}
             class="text-text-tertiary hover:text-status-danger transition-colors underline"
           >
-            清空统计
+            {t('stats.clearStats')}
           </button>
         </div>
 
@@ -130,16 +131,16 @@
                 <div class="min-w-0 flex-1 truncate">
                   <span class="font-medium text-text-primary block truncate">{bm.name}</span>
                   <span class="text-[10px] text-text-tertiary block font-mono">
-                    最后访问: {formatRelativeTime(bm.lastClicked)}
+                    {t('stats.lastVisit')}: {formatRelativeTime(bm.lastClicked)}
                   </span>
                 </div>
               </div>
 
               <!-- 统计数值 -->
               <div class="flex items-center gap-3 font-mono text-xs flex-shrink-0">
-                <span class="text-text-tertiary text-[11px]">近7天: {bm.recentClicks}次</span>
+                <span class="text-text-tertiary text-[11px]">{t('stats.recent7Days', { count: bm.recentClicks })}</span>
                 <span class="font-semibold text-text-primary px-2 py-0.5 rounded bg-subtle">
-                  总计 {bm.totalClicks} 次
+                  {t('stats.totalTimes', { count: bm.totalClicks })}
                 </span>
               </div>
             </div>
@@ -154,7 +155,7 @@
           onclick={() => (open = false)}
           class="px-4 py-2 rounded-lg bg-subtle hover:bg-surface border border-border-subtle text-text-primary text-xs font-medium transition-colors"
         >
-          关闭
+          {t('common.close')}
         </button>
       </div>
     </div>

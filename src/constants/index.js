@@ -136,6 +136,7 @@ export const DEFAULT_MCP_SETTINGS = {
 
 // 默认全局设置
 export const DEFAULT_SETTINGS = {
+  language: 'auto',
   theme: 'paper-sand',
   clockFormat: '24',
   showSeconds: false,

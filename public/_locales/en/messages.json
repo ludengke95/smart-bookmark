@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Smart Bookmark - Intelligent Route Selector",
+    "description": "Extension display name"
+  },
+  "extDescription": {
+    "message": "Smart multi-endpoint bookmark Chrome extension based on network topology sensing. Auto-detects intranet/extranet and jumps with optimal latency.",
+    "description": "Extension functional description"
+  },
+  "actionTitle": {
+    "message": "Open Smart Bookmark Quick Panel",
+    "description": "Extension action icon tooltip"
+  }
+}

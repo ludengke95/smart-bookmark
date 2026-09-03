@@ -1,6 +1,8 @@
 <script>
   import { appState } from '../../state/app.svelte.js';
   import { toast } from '../../state/toast.svelte.js';
+  import { t } from '../../i18n/index.svelte.js';
+  import { getGroupName } from '../../i18n/utils.js';
   import {
     THEMES,
     PINNED_GROUP_ID,
@@ -25,10 +27,16 @@
   let aiResultType = $state('grouping'); // 'grouping' | 'tagging'
   let aiResultItems = $state([]);
 
-  const clockFormatOptions = [
-    { value: '24', label: '24 小时制 (14:30)' },
-    { value: '12', label: '12 小时制 (02:30)' }
-  ];
+  const languageOptions = $derived([
+    { value: 'auto', label: t('settings.languageAuto'), iconText: '🌐' },
+    { value: 'zh-CN', label: t('settings.languageZh'), iconText: '🇨🇳' },
+    { value: 'en-US', label: t('settings.languageEn'), iconText: '🇺🇸' }
+  ]);
+
+  const clockFormatOptions = $derived([
+    { value: '24', label: t('settings.clock24') },
+    { value: '12', label: t('settings.clock12') }
+  ]);
 
   // 派生统计
   let ungroupedBookmarksCount = $derived(
@@ -47,12 +55,12 @@
   function handleAddGroup() {
     const name = newGroupName.trim();
     if (!name) {
-      toast.show('请输入分组名称');
+      toast.show(t('groups.groupNamePlaceholder'));
       return;
     }
     appState.saveGroup({ name });
     newGroupName = '';
-    toast.show('分组已创建');
+    toast.show(t('groups.created'));
   }
 
   function handleStartEditGroup(group) {
@@ -65,16 +73,16 @@
     appState.saveGroup({ id: editingGroupId, name: editingGroupName.trim() });
     editingGroupId = null;
     editingGroupName = '';
-    toast.show('分组已重命名');
+    toast.show(t('groups.renamed'));
   }
 
   async function handleDeleteGroup(groupId) {
     if (groupId === PINNED_GROUP_ID || groupId === UNGROUPED_GROUP_ID) {
-      toast.show('内置系统分组不可删除');
+      toast.show(t('groups.builtinNoDelete'));
       return;
     }
     await appState.deleteGroup(groupId);
-    toast.show('分组已删除');
+    toast.show(t('groups.deleted'));
   }
 
   async function handleMoveGroup(groupId, direction) {
@@ -92,7 +100,7 @@
 
     const orderedIds = newCustom.map(g => g.id);
     await appState.reorderGroups(orderedIds);
-    toast.show('分组排序已更新');
+    toast.show(t('groups.orderUpdated'));
   }
 
   async function handleResetData() {
@@ -113,22 +121,22 @@
       baseUrl: preset.baseUrl,
       model: preset.model || appState.settings.ai?.model || 'gpt-4o-mini'
     });
-    toast.show(`已切换为 ${preset.name} 预设`);
+    toast.show(t('ai.presetSwitched', { name: preset.name }));
   }
 
   async function handleTestApi() {
     const aiConfig = appState.settings.ai || DEFAULT_AI_SETTINGS;
     if (!aiConfig.baseUrl) {
-      toast.show('请填写 API 地址 (Base URL)');
+      toast.show(t('ai.testNoEndpoint'));
       return;
     }
     isTestingApi = true;
-    toast.show('正在测试大模型 API 连通性...');
+    toast.show(t('ai.testing'));
     try {
       const res = await appState.testCustomApiConfig(aiConfig);
-      toast.show(`✅ API 连通成功！模型: ${res.model}`);
+      toast.show(t('ai.testSuccess', { model: res.model }));
     } catch (e) {
-      toast.show(`❌ 连接失败: ${e.message}`);
+      toast.show(t('ai.testFailed', { error: e.message }));
     } finally {
       isTestingApi = false;
     }
@@ -164,41 +172,41 @@
 
   async function handleStartSmartGrouping() {
     if (appState.bookmarks.length === 0) {
-      toast.show('当前书签库为空，请先添加或导入书签');
+      toast.show(t('ai.bookmarksEmpty'));
       return;
     }
 
     try {
       const result = await appState.runSmartGrouping();
       if (!result.success || !result.items || result.items.length === 0) {
-        toast.show(result.message || '没有发现需要迁移分组的书签');
+        toast.show(result.message || t('ai.noGroupingChanges'));
         return;
       }
       aiResultType = 'grouping';
       aiResultItems = result.items;
       showAiResultModal = true;
     } catch (err) {
-      toast.show(`AI 分组分析失败: ${err.message}`);
+      toast.show(t('ai.groupingAnalysisFailed', { error: err.message }));
     }
   }
 
   async function handleStartSmartTagging() {
     if (appState.bookmarks.length === 0) {
-      toast.show('当前书签库为空，请先添加或导入书签');
+      toast.show(t('ai.bookmarksEmpty'));
       return;
     }
 
     try {
       const result = await appState.runSmartTagging();
       if (!result.success || !result.items || result.items.length === 0) {
-        toast.show(result.message || '没有发现需要提炼标签的书签');
+        toast.show(result.message || t('ai.noTaggingChanges'));
         return;
       }
       aiResultType = 'tagging';
       aiResultItems = result.items;
       showAiResultModal = true;
     } catch (err) {
-      toast.show(`AI 标签提炼失败: ${err.message}`);
+      toast.show(t('ai.taggingAnalysisFailed', { error: err.message }));
     }
   }
 
@@ -210,7 +218,10 @@
         isNewGroup: item.isNewGroup
       }));
       const res = await appState.applyAiGroupChanges(plan);
-      toast.show(`✅ 已成功迁移 ${res.modifiedCount} 项书签${res.newGroupsCreated ? `，新建 ${res.newGroupsCreated} 个分组` : ''}`);
+      const newGroupsSuffix = res.newGroupsCreated
+        ? t('ai.groupingAppliedNewGroups', { newGroups: res.newGroupsCreated })
+        : '';
+      toast.show(t('ai.groupingApplied', { count: res.modifiedCount, newGroups: newGroupsSuffix }));
     } else {
       const plan = selectedItems.map(item => ({
         bookmarkId: item.bookmarkId,
@@ -218,7 +229,7 @@
       }));
       const mode = appState.settings.ai?.tagging?.mode || 'append';
       const res = await appState.applyAiTagChanges(plan, mode);
-      toast.show(`✅ 已成功更新 ${res.modifiedCount} 项书签的标签`);
+      toast.show(t('ai.taggingApplied', { count: res.modifiedCount }));
     }
   }
 
@@ -257,9 +268,9 @@
     }
 
     navigator.clipboard.writeText(snippet).then(() => {
-      toast.show('已复制 MCP 配置片段到剪贴板');
+      toast.show(t('mcp.copiedToast'));
     }).catch(() => {
-      toast.show('复制失败，请手动复制');
+      toast.show(t('mcp.copyFailedToast'));
     });
   }
 </script>
@@ -277,14 +288,14 @@
       <!-- 头部 -->
       <div class="flex items-center justify-between pb-2 border-b border-border-subtle flex-shrink-0">
         <h2 class="text-sm font-semibold text-text-primary flex items-center gap-2">
-          <span>系统偏好</span>
+          <span>{t('settings.title')}</span>
         </h2>
         <button
           type="button"
           onclick={() => (open = false)}
           class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
-          aria-label="关闭对话框"
-          title="关闭"
+          aria-label={t('common.close')}
+          title={t('common.close')}
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -301,7 +312,7 @@
             ? 'bg-surface text-text-primary shadow-sm font-semibold border border-border-subtle/60'
             : 'text-text-secondary hover:text-text-primary hover:bg-surface/50 border border-transparent'}"
         >
-          常规偏好
+          {t('settings.tabs.general')}
         </button>
         <button
           type="button"
@@ -310,7 +321,7 @@
             ? 'bg-surface text-text-primary shadow-sm font-semibold border border-border-subtle/60'
             : 'text-text-secondary hover:text-text-primary hover:bg-surface/50 border border-transparent'}"
         >
-          分组管理
+          {t('settings.tabs.groups')}
         </button>
         <button
           type="button"
@@ -319,7 +330,7 @@
             ? 'bg-surface text-accent shadow-sm font-semibold border border-accent/30 ring-1 ring-accent/20'
             : 'text-text-secondary hover:text-accent hover:bg-surface/50 border border-transparent'}"
         >
-          <span>✨ AI 与 MCP</span>
+          <span>{t('settings.tabs.ai')}</span>
         </button>
         <button
           type="button"
@@ -328,15 +339,29 @@
             ? 'bg-surface text-status-danger shadow-sm font-semibold border border-status-danger/40 ring-1 ring-status-danger/20'
             : 'text-text-secondary hover:text-status-danger hover:bg-surface/50 border border-transparent'}"
         >
-          数据重置
+          {t('settings.tabs.danger')}
         </button>
       </div>
 
       <!-- 标签页内容 (统一高度与滚动区) -->
       <div class="flex-1 overflow-y-auto space-y-4 text-xs pr-1">
         {#if activeTab === 'general'}
+          <!-- 语言选择 (使用统一规范 Select 组件) -->
+          <div class="space-y-1.5">
+            <span class="block font-medium text-text-secondary">{t('settings.language')}</span>
+            <Select
+              options={languageOptions}
+              value={appState.settings.language || 'auto'}
+              onchange={(val) => {
+                appState.updateSettings({ language: val });
+                toast.show(t('common.success'));
+              }}
+            />
+          </div>
+
           <!-- 3款极简主题切换 -->
-          <div class="space-y-2">
+          <div class="space-y-2 pt-2 border-t border-border-subtle">
+            <span class="block font-medium text-text-secondary">{t('settings.theme')}</span>
             <span class="block font-medium text-text-secondary">视觉风格 (3款极简主题)</span>
             <div class="grid grid-cols-3 gap-2.5">
               {#each THEMES as theme}
@@ -366,7 +391,7 @@
           <!-- 时钟与座右铭 -->
           <div class="space-y-3 pt-2 border-t border-border-subtle">
             <div class="space-y-1">
-              <span class="block font-medium text-text-secondary">时钟格式</span>
+              <span class="block font-medium text-text-secondary">{t('settings.clockFormat')}</span>
               <Select
                 options={clockFormatOptions}
                 value={appState.settings.clockFormat}
@@ -383,30 +408,30 @@
                 class="rounded border-border-subtle text-accent"
               />
               <label for="show-seconds" class="text-text-secondary cursor-pointer">
-                显示秒数跳动
+                {t('settings.showSeconds')}
               </label>
             </div>
 
             <div class="space-y-1">
-              <label for="set-motto" class="block font-medium text-text-secondary">自定义座右铭 / 标语</label>
+              <label for="set-motto" class="block font-medium text-text-secondary">{t('settings.motto')}</label>
               <input
                 id="set-motto"
                 type="text"
                 value={appState.settings.motto}
                 onchange={(e) => appState.updateSettings({ motto: e.target.value })}
-                placeholder="Stay focused, stay humble."
+                placeholder={t('settings.mottoPlaceholder')}
                 class="w-full px-3 py-2 rounded-lg bg-subtle border border-border-subtle outline-none text-text-primary"
               />
             </div>
           </div>
 
-        {:else if activeTab === 'groups'}\
+        {:else if activeTab === 'groups'}
           <!-- 分组添加 -->
           <div class="flex items-center gap-2">
             <input
               type="text"
               bind:value={newGroupName}
-              placeholder="输入新分组名称..."
+              placeholder={t('groups.groupNamePlaceholder')}
               class="flex-1 px-3 py-2 rounded-lg bg-subtle border border-border-subtle outline-none text-text-primary"
             />
             <button
@@ -414,7 +439,7 @@
               onclick={handleAddGroup}
               class="px-3 py-2 rounded-lg bg-accent text-accent-fg font-medium hover:opacity-90 transition-opacity"
             >
-              添加分组
+              {t('groups.addGroup')}
             </button>
           </div>
 
@@ -452,9 +477,9 @@
                     {#if g.id === PINNED_GROUP_ID}
                       <span class="text-amber-500">★</span>
                     {/if}
-                    {g.name}
+                    {getGroupName(g)}
                     {#if g.id === PINNED_GROUP_ID || g.id === UNGROUPED_GROUP_ID}
-                      <span class="text-[10px] text-text-tertiary font-mono">(系统内置)</span>
+                      <span class="text-[10px] text-text-tertiary font-mono">({t('common.systemBuiltin')})</span>
                     {/if}
                   </span>
                 {/if}
@@ -518,14 +543,14 @@
           <div class="p-3.5 rounded-xl border border-border-subtle bg-surface space-y-3">
             <div class="flex items-center justify-between">
               <span class="font-semibold text-text-primary flex items-center gap-1.5">
-                <span>🤖 AI 大模型接口配置</span>
+                <span>🤖 {t('ai.apiConfigTitle')}</span>
               </span>
-              <span class="text-[10px] text-text-tertiary">标准 OpenAI 兼容协议</span>
+              <span class="text-[10px] text-text-tertiary">{t('ai.apiConfigDesc')}</span>
             </div>
 
             <!-- 快捷预设按钮组 -->
             <div class="space-y-1.5">
-              <span class="text-[11px] font-medium text-text-secondary block">服务商预设:</span>
+              <span class="text-[11px] font-medium text-text-secondary block">{t('ai.presetsTitle')}</span>
               <div class="grid grid-cols-4 gap-1.5">
                 {#each AI_API_PRESETS as p}
                   <button
@@ -536,7 +561,7 @@
                       : 'border-border-subtle bg-subtle/50 hover:bg-subtle text-text-secondary'}"
                   >
                     <div class="text-[11px] font-semibold">{p.name}</div>
-                    <div class="text-[9px] text-text-tertiary truncate mt-0.5">{p.desc}</div>
+                    <div class="text-[9px] text-text-tertiary truncate mt-0.5">{t('ai.presets.' + p.id + 'Desc', {}, p.desc)}</div>
                   </button>
                 {/each}
               </div>
@@ -546,7 +571,7 @@
             <div class="space-y-2.5 pt-1 border-t border-border-subtle/60">
               <div class="grid grid-cols-2 gap-2">
                 <div class="space-y-1">
-                  <label for="ai-base-url" class="block font-medium text-text-secondary text-[11px]">API 接口端点 (Base URL)</label>
+                  <label for="ai-base-url" class="block font-medium text-text-secondary text-[11px]">{t('ai.baseUrlLabel')}</label>
                   <input
                     id="ai-base-url"
                     type="text"
@@ -557,7 +582,7 @@
                   />
                 </div>
                 <div class="space-y-1">
-                  <label for="ai-model" class="block font-medium text-text-secondary text-[11px]">模型名称 (Model)</label>
+                  <label for="ai-model" class="block font-medium text-text-secondary text-[11px]">{t('ai.modelLabel')}</label>
                   <input
                     id="ai-model"
                     type="text"
@@ -570,7 +595,7 @@
               </div>
 
               <div class="space-y-1">
-                <label for="ai-key" class="block font-medium text-text-secondary text-[11px]">API Key (本地 Ollama 可留空)</label>
+                <label for="ai-key" class="block font-medium text-text-secondary text-[11px]">{t('ai.apiKeyLabel')}</label>
                 <div class="flex items-center gap-2">
                   <input
                     id="ai-key"
@@ -586,7 +611,7 @@
                     onclick={handleTestApi}
                     class="px-3 py-1.5 rounded-lg border border-border-subtle hover:bg-subtle text-text-secondary hover:text-text-primary transition-colors text-[11px] disabled:opacity-40"
                   >
-                    {isTestingApi ? '测试中...' : '测试连通'}
+                    {isTestingApi ? t('ai.testing') : t('ai.testConnect')}
                   </button>
                 </div>
               </div>
@@ -600,12 +625,12 @@
               <div class="space-y-2">
                 <div class="flex items-center justify-between">
                   <span class="font-semibold text-text-primary flex items-center gap-1.5">
-                    <span>✨ 智能分组治理</span>
+                    <span>✨ {t('ai.groupingTitle')}</span>
                   </span>
-                  <span class="text-[10px] text-text-tertiary">未分组: {ungroupedBookmarksCount}</span>
+                  <span class="text-[10px] text-text-tertiary">{t('ai.ungroupedCount', { count: ungroupedBookmarksCount })}</span>
                 </div>
                 <p class="text-[11px] text-text-secondary leading-relaxed">
-                  语义解析书签内容与内网拓扑，智能提议归类或创建新分类。
+                  {t('ai.groupingDesc')}
                 </p>
 
                 <div class="space-y-1.5 pt-1 text-[11px]">
@@ -619,7 +644,7 @@
                       class="text-accent"
                     />
                     <label for="scope-ungrouped" class="text-text-secondary cursor-pointer">
-                      仅治理未分组 ({ungroupedBookmarksCount} 项)
+                      {t('ai.scopeUngrouped', { count: ungroupedBookmarksCount })}
                     </label>
                   </div>
                   <div class="flex items-center gap-2">
@@ -632,7 +657,7 @@
                       class="text-accent"
                     />
                     <label for="scope-all" class="text-text-secondary cursor-pointer">
-                      重新整理全部 ({appState.bookmarks.length} 项)
+                      {t('ai.scopeAll', { count: appState.bookmarks.length })}
                     </label>
                   </div>
 
@@ -645,7 +670,7 @@
                       class="rounded border-border-subtle text-accent"
                     />
                     <label for="allow-new-groups" class="text-text-tertiary cursor-pointer text-[10px]">
-                      允许 AI 提议创建语义新分组
+                      {t('ai.allowNewGroups')}
                     </label>
                   </div>
                 </div>
@@ -661,7 +686,7 @@
                   <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                   <span>{appState.aiProgress.message}</span>
                 {:else}
-                  <span>🚀 开始 AI 智能分组分析</span>
+                  <span>🚀 {t('ai.startGrouping')}</span>
                 {/if}
               </button>
             </div>
@@ -671,12 +696,12 @@
               <div class="space-y-2">
                 <div class="flex items-center justify-between">
                   <span class="font-semibold text-text-primary flex items-center gap-1.5">
-                    <span>🏷️ 智能标签提炼</span>
+                    <span>🏷️ {t('ai.taggingTitle')}</span>
                   </span>
-                  <span class="text-[10px] text-text-tertiary">无标签: {untaggedBookmarksCount}</span>
+                  <span class="text-[10px] text-text-tertiary">{t('ai.untaggedCount', { count: untaggedBookmarksCount })}</span>
                 </div>
                 <p class="text-[11px] text-text-secondary leading-relaxed">
-                  提炼技术栈、业务类别与网络属性等高质量高概括性标签。
+                  {t('ai.taggingDesc')}
                 </p>
 
                 <div class="space-y-1.5 pt-1 text-[11px]">
@@ -690,7 +715,7 @@
                       class="text-accent"
                     />
                     <label for="scope-untagged" class="text-text-secondary cursor-pointer">
-                      仅为无标签提取 ({untaggedBookmarksCount} 项)
+                      {t('ai.scopeUntagged', { count: untaggedBookmarksCount })}
                     </label>
                   </div>
                   <div class="flex items-center gap-2">
@@ -703,12 +728,12 @@
                       class="text-accent"
                     />
                     <label for="scope-tag-all" class="text-text-secondary cursor-pointer">
-                      优化全部标签 ({appState.bookmarks.length} 项)
+                      {t('ai.scopeTagAll', { count: appState.bookmarks.length })}
                     </label>
                   </div>
 
                   <div class="flex items-center justify-between pt-1 text-[10px] text-text-tertiary">
-                    <span>合并方式:</span>
+                    <span>{t('ai.mergeMode')}</span>
                     <div class="flex items-center gap-2">
                       <label class="cursor-pointer">
                         <input
@@ -717,7 +742,7 @@
                           checked={appState.settings.ai?.tagging?.mode !== 'replace'}
                           onchange={() => updateAiSettings({ tagging: { mode: 'append' } })}
                           class="text-accent mr-0.5"
-                        /> 增量追加
+                        /> {t('ai.modeAppend')}
                       </label>
                       <label class="cursor-pointer">
                         <input
@@ -726,7 +751,7 @@
                           checked={appState.settings.ai?.tagging?.mode === 'replace'}
                           onchange={() => updateAiSettings({ tagging: { mode: 'replace' } })}
                           class="text-accent mr-0.5"
-                        /> 重构覆盖
+                        /> {t('ai.modeReplace')}
                       </label>
                     </div>
                   </div>
@@ -743,7 +768,7 @@
                   <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                   <span>{appState.aiProgress.message}</span>
                 {:else}
-                  <span>🏷️ 开始 AI 标签提炼</span>
+                  <span>🏷️ {t('ai.startTagging')}</span>
                 {/if}
               </button>
             </div>
@@ -753,8 +778,8 @@
           <div class="p-3.5 rounded-xl border border-border-subtle bg-surface space-y-3">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <span class="font-semibold text-text-primary">🔌 MCP (Model Context Protocol) 开放生态</span>
-                <span class="text-[10px] px-1.5 py-0.5 rounded bg-subtle text-text-tertiary font-mono">标准协议</span>
+                <span class="font-semibold text-text-primary">🔌 {t('mcp.title')}</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-subtle text-text-tertiary font-mono">{t('mcp.badge')}</span>
               </div>
 
               <!-- MCP 开关 -->
@@ -767,13 +792,13 @@
                   class="rounded border-border-subtle text-accent"
                 />
                 <label for="mcp-enabled" class="text-text-secondary cursor-pointer text-[11px]">
-                  启用 MCP 外部协同
+                  {t('mcp.enable')}
                 </label>
               </div>
             </div>
 
             <p class="text-[11px] text-text-secondary leading-relaxed">
-              将插件封装为 MCP Server，允许 Cursor、Claude Desktop 等外部高智商大模型跨进程直接读写、分类和治理书签。
+              {t('mcp.desc')}
             </p>
 
             <!-- 状态与主机/端口设置 -->
@@ -781,13 +806,15 @@
               <div class="flex items-center gap-2 min-w-0">
                 <span class="w-2 h-2 rounded-full flex-shrink-0 {appState.mcpStatus.isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-status-danger'}"></span>
                 <span class="font-medium text-text-primary text-[11px] truncate">
-                  {appState.mcpStatus.isConnected ? `MCP 桥接已连通 (ws://${appState.settings.mcp?.wsHost || '127.0.0.1'}:${appState.settings.mcp?.wsPort || 8333})` : 'MCP 桥接未连接 (离线)'}
+                  {appState.mcpStatus.isConnected
+                    ? t('mcp.connected', { url: `ws://${appState.settings.mcp?.wsHost || '127.0.0.1'}:${appState.settings.mcp?.wsPort || 8333}` })
+                    : t('mcp.offline')}
                 </span>
               </div>
 
               <div class="flex items-center gap-2 text-[11px] flex-shrink-0">
                 <div class="flex items-center gap-1">
-                  <span class="text-[10px] text-text-tertiary">IP/主机:</span>
+                  <span class="text-[10px] text-text-tertiary">{t('mcp.hostLabel')}</span>
                   <input
                     type="text"
                     value={appState.settings.mcp?.wsHost || '127.0.0.1'}
@@ -797,7 +824,7 @@
                   />
                 </div>
                 <div class="flex items-center gap-1">
-                  <span class="text-[10px] text-text-tertiary">端口:</span>
+                  <span class="text-[10px] text-text-tertiary">{t('mcp.portLabel')}</span>
                   <input
                     type="number"
                     value={appState.settings.mcp?.wsPort || 8333}
@@ -811,7 +838,7 @@
             <!-- 启动指令与一键配置复制 -->
             <div class="space-y-2 pt-1">
               <div class="flex items-center justify-between text-[11px]">
-                <span class="text-text-secondary font-medium">1. 本地启动桥接中转:</span>
+                <span class="text-text-secondary font-medium">{t('mcp.step1Bridge')}</span>
                 <code class="px-2 py-0.5 rounded bg-subtle text-accent font-mono text-[10px] border border-border-subtle">
                   {(appState.settings.mcp?.wsHost && appState.settings.mcp?.wsHost !== '127.0.0.1') || (appState.settings.mcp?.wsPort && appState.settings.mcp?.wsPort !== 8333)
                     ? `node scripts/mcp-bridge.js${appState.settings.mcp?.wsHost !== '127.0.0.1' ? ` --host ${appState.settings.mcp?.wsHost}` : ''}${appState.settings.mcp?.wsPort !== 8333 ? ` --port ${appState.settings.mcp?.wsPort}` : ''}`
@@ -820,21 +847,21 @@
               </div>
 
               <div class="flex items-center justify-between text-[11px]">
-                <span class="text-text-secondary font-medium">2. 外部大模型配置:</span>
+                <span class="text-text-secondary font-medium">{t('mcp.step2Config')}</span>
                 <div class="flex items-center gap-2">
                   <button
                     type="button"
                     onclick={() => copyConfig('cursor')}
                     class="px-2 py-1 rounded bg-subtle hover:bg-surface border border-border-subtle text-text-secondary hover:text-text-primary text-[10px] transition-colors"
                   >
-                    复制 Cursor 配置
+                    {t('mcp.copyCursor')}
                   </button>
                   <button
                     type="button"
                     onclick={() => copyConfig('claude')}
                     class="px-2 py-1 rounded bg-subtle hover:bg-surface border border-border-subtle text-text-secondary hover:text-text-primary text-[10px] transition-colors"
                   >
-                    复制 Claude Desktop 配置
+                    {t('mcp.copyClaude')}
                   </button>
                 </div>
               </div>
@@ -843,17 +870,16 @@
 
         {:else if activeTab === 'danger'}
           <div class="p-4 rounded-xl border border-status-danger/30 bg-status-danger/5 space-y-3">
-            <h3 class="font-medium text-status-danger text-sm">危险区域：重置数据</h3>
+            <h3 class="font-medium text-status-danger text-sm">{t('settings.tabs.danger')}</h3>
             <p class="text-text-secondary leading-relaxed">
-              重置将清除您当前添加的所有自定义书签与分组配置，并恢复为默认空白初始状态。
-              重置前系统会自动创建一份快照备份，以便随时回退。
+              {t('settings.resetWarning')}
             </p>
             <button
               type="button"
               onclick={handleResetData}
               class="px-4 py-2 rounded-lg bg-status-danger text-white font-medium hover:opacity-90 transition-opacity"
             >
-              恢复出厂初始数据
+              {t('settings.resetBtn')}
             </button>
           </div>
         {/if}
@@ -866,7 +892,7 @@
           onclick={() => (open = false)}
           class="px-4 py-2 rounded-lg bg-accent text-accent-fg font-medium hover:opacity-90 transition-opacity"
         >
-          完成设置
+          {t('common.close')}
         </button>
       </div>
     </div>

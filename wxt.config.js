@@ -4,8 +4,12 @@ export default defineConfig({
   srcDir: 'src',
   modules: ['@wxt-dev/module-svelte'],
   manifest: {
-    name: 'Smart Bookmark 智能书签',
-    description: '基于网络拓扑智能寻径的多入口书签 Chrome 插件，自动识别内网/外网并在最优地址间极速跳转。',
+    default_locale: 'zh_CN',
+    name: '__MSG_extName__',
+    description: '__MSG_extDescription__',
+    action: {
+      default_title: '__MSG_actionTitle__'
+    },
     version: '1.0.0',
     permissions: [
       'storage',

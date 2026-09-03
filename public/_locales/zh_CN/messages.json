@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Smart Bookmark 智能书签",
+    "description": "扩展显示名称"
+  },
+  "extDescription": {
+    "message": "基于网络拓扑智能寻径的多入口书签 Chrome 插件，自动识别内网/外网并在最优地址间极速跳转。",
+    "description": "扩展功能描述"
+  },
+  "actionTitle": {
+    "message": "打开 Smart Bookmark 快捷窗口",
+    "description": "扩展图标悬浮气泡提示"
+  }
+}

@@ -2,17 +2,22 @@
   import { appState } from '../../state/app.svelte.js';
   import { BOOKMARK_SORT_OPTIONS } from '../../constants/index.js';
   import { toast } from '../../state/toast.svelte.js';
+  import { t } from '../../i18n/index.svelte.js';
 
   let showSortMenu = $state(false);
   let currentSort = $derived(
     BOOKMARK_SORT_OPTIONS.find(opt => opt.value === (appState.settings.bookmarkSortOrder || 'custom')) || BOOKMARK_SORT_OPTIONS[0]
   );
 
+  function getSortLabel(value) {
+    return t(`sort.${value}`, {}, currentSort.label);
+  }
+
   function handleSelectSort(sortVal) {
     appState.setBookmarkSortOrder(sortVal);
     showSortMenu = false;
-    const opt = BOOKMARK_SORT_OPTIONS.find(o => o.value === sortVal);
-    toast.show(`已按「${opt?.label || sortVal}」排序`);
+    const label = getSortLabel(sortVal);
+    toast.show(t('sort.toastSorted', { label }));
   }
 </script>
 
@@ -27,7 +32,7 @@
           ? 'bg-accent text-accent-fg font-medium shadow-sm'
           : 'text-text-secondary hover:text-text-primary hover:bg-subtle'}"
       >
-        全部 ({appState.bookmarks.length})
+        {t('common.all')} ({appState.bookmarks.length})
       </button>
 
       {#each appState.allTags as tag}
@@ -50,10 +55,10 @@
         type="button"
         onclick={() => (showSortMenu = !showSortMenu)}
         class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border-subtle bg-surface hover:bg-subtle text-xs text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
-        title="切换书签排序方式"
+        title={t('sort.tooltip')}
       >
         <span class="text-xs">{currentSort.iconText}</span>
-        <span class="font-medium text-[11px]">{currentSort.label}</span>
+        <span class="font-medium text-[11px]">{getSortLabel(currentSort.value)}</span>
         <svg class="w-3 h-3 text-text-tertiary transition-transform duration-200 {showSortMenu ? 'rotate-180 text-text-primary' : ''}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
@@ -70,7 +75,7 @@
         ></div>
 
         <div class="absolute right-0 top-full mt-1.5 w-36 bg-surface border border-border-subtle rounded-xl shadow-popover p-1 z-50 text-xs space-y-0.5">
-          <div class="px-2 py-1 text-[10px] text-text-tertiary font-medium border-b border-border-subtle/50 mb-0.5">书签排序规则</div>
+          <div class="px-2 py-1 text-[10px] text-text-tertiary font-medium border-b border-border-subtle/50 mb-0.5">{t('settings.sortOrder')}</div>
           {#each BOOKMARK_SORT_OPTIONS as opt}
             {@const isSelected = opt.value === (appState.settings.bookmarkSortOrder || 'custom')}
             <button
@@ -80,7 +85,7 @@
             >
               <div class="flex items-center gap-1.5">
                 <span>{opt.iconText}</span>
-                <span class="text-[11px]">{opt.label}</span>
+                <span class="text-[11px]">{getSortLabel(opt.value)}</span>
               </div>
               {#if isSelected}
                 <svg class="w-3 h-3 text-accent" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">

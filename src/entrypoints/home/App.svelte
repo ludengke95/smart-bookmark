@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { appState } from '../../state/app.svelte.js';
   import { toast } from '../../state/toast.svelte.js';
+  import { t } from '../../i18n/index.svelte.js';
   import TopNav from '../../components/newtab/TopNav.svelte';
   import HeroSearch from '../../components/newtab/HeroSearch.svelte';
   import TagPills from '../../components/newtab/TagPills.svelte';
@@ -42,9 +43,9 @@
   }
 
   async function handleDeleteBookmark(bm) {
-    if (confirm(`确定要删除书签 "${bm.name}" 吗？`)) {
+    if (confirm(t('bookmark.deleteConfirm', { name: bm.name }))) {
       await appState.deleteBookmark(bm.id);
-      toast.show('书签已删除');
+      toast.show(t('bookmark.toastDeleted'));
     }
   }
 </script>

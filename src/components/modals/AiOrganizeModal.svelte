@@ -2,6 +2,7 @@
   import { appState } from '../../state/app.svelte.js';
   import { toast } from '../../state/toast.svelte.js';
   import { UNGROUPED_GROUP_ID } from '../../constants/index.js';
+  import { t } from '../../i18n/index.svelte.js';
   import AiResultModal from './AiResultModal.svelte';
 
   let { open = $bindable(false) } = $props();
@@ -225,7 +226,7 @@
             ✨
           </div>
           <div>
-            <h2 class="text-sm font-semibold text-text-primary">AI 智能书签整理</h2>
+            <h2 class="text-sm font-semibold text-text-primary">{t('ai.dialogTitle')}</h2>
           </div>
         </div>
         <button
@@ -233,7 +234,8 @@
           disabled={isParsing || appState.aiRunning}
           onclick={() => (open = false)}
           class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors disabled:opacity-40"
-          aria-label="关闭对话框"
+          aria-label={t('common.close')}
+          title={t('common.close')}
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -250,8 +252,8 @@
             ? 'bg-surface text-text-primary shadow-sm font-semibold border border-border-subtle/60'
             : 'text-text-secondary hover:text-text-primary hover:bg-surface/50 border border-transparent'}"
         >
-          <span>💬 网页模型对话 (免Key)</span>
-          <span class="text-[9px] px-1 py-0.2 rounded font-sans font-medium bg-status-intranet/10 text-status-intranet border border-status-intranet/20">推荐</span>
+          <span>{t('ai.manualTab')}</span>
+          <span class="text-[9px] px-1 py-0.2 rounded font-sans font-medium bg-status-intranet/10 text-status-intranet border border-status-intranet/20">{t('ai.manualTabBadge')}</span>
         </button>
         <button
           type="button"
@@ -260,7 +262,7 @@
             ? 'bg-surface text-text-primary shadow-sm font-semibold border border-border-subtle/60'
             : 'text-text-secondary hover:text-text-primary hover:bg-surface/50 border border-transparent'}"
         >
-          <span>⚡ API 自动化直连</span>
+          <span>{t('ai.apiTab')}</span>
         </button>
       </div>
 
@@ -280,12 +282,12 @@
               <div class="flex items-center gap-2">
                 <span class="text-sm">📁</span>
                 <div>
-                  <div class="font-medium text-text-primary text-[11px]">智能分类分组</div>
-                  <div class="text-[10px] text-text-tertiary">语义归纳目录层级</div>
+                  <div class="font-medium text-text-primary text-[11px]">{t('ai.groupingCardTitle')}</div>
+                  <div class="text-[10px] text-text-tertiary">{t('ai.groupingCardDesc')}</div>
                 </div>
               </div>
               <span class="text-[10px] px-1.5 py-0.5 rounded font-mono bg-surface border border-border-subtle text-text-secondary">
-                {ungroupedCount} 未分组
+                {t('ai.ungroupedCount', { count: ungroupedCount })}
               </span>
             </button>
             <button
@@ -298,12 +300,12 @@
               <div class="flex items-center gap-2">
                 <span class="text-sm">🏷️</span>
                 <div>
-                  <div class="font-medium text-text-primary text-[11px]">智能标签提炼</div>
-                  <div class="text-[10px] text-text-tertiary">提炼技术/业务标签</div>
+                  <div class="font-medium text-text-primary text-[11px]">{t('ai.taggingCardTitle')}</div>
+                  <div class="text-[10px] text-text-tertiary">{t('ai.taggingCardDesc')}</div>
                 </div>
               </div>
               <span class="text-[10px] px-1.5 py-0.5 rounded font-mono bg-surface border border-border-subtle text-text-secondary">
-                {untaggedCount} 无标签
+                {t('ai.untaggedCount', { count: untaggedCount })}
               </span>
             </button>
           </div>
@@ -313,7 +315,7 @@
             <div class="flex items-center justify-between">
               <span class="font-semibold text-text-primary text-[11px] flex items-center gap-1.5">
                 <span class="w-4 h-4 rounded-full bg-accent/10 text-accent flex items-center justify-center text-[10px] font-bold font-mono">1</span>
-                <span>配置范围并获取提示词与数据</span>
+                <span>{t('ai.step1Title')}</span>
               </span>
             </div>
 

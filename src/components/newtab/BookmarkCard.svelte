@@ -1,6 +1,7 @@
 <script>
   import { appState } from '../../state/app.svelte.js';
   import { toast } from '../../state/toast.svelte.js';
+  import { t } from '../../i18n/index.svelte.js';
   import IconRender from '../common/IconRender.svelte';
 
   let {
@@ -26,19 +27,19 @@
     if (e.target.closest('.no-jump')) return;
 
     if (!optimal?.url) {
-      toast.show('该书签暂未配置有效访问入口');
+      toast.show(t('bookmark.noValidEndpointToast'));
       return;
     }
 
     appState.recordClick(bookmark.id);
     const latInfo = optimal?.latency ? ` (${optimal.latency}ms)` : '';
-    toast.show(`⚡ 寻径直达: ${optimal.targetIp || optimal.host || optimal.url}${latInfo}`);
+    toast.show(t('bookmark.directJumpToast', { target: `${optimal.targetIp || optimal.host || optimal.url}${latInfo}` }));
     window.open(optimal.url, '_blank');
   }
 
   function handleEndpointClick(ep) {
     appState.recordClick(bookmark.id);
-    toast.show(`直达入口: ${ep.url}`);
+    toast.show(t('bookmark.directEndpointToast', { url: ep.url }));
     window.open(ep.url, '_blank');
   }
 </script>
@@ -87,7 +88,7 @@
           type="button"
           onclick={() => (showEndpoints = !showEndpoints)}
           class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
-          title="展开全部入口 ({bookmark.endpoints.length})"
+          title={t('bookmark.allEndpoints', { count: bookmark.endpoints.length })}
         >
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -99,7 +100,7 @@
         type="button"
         onclick={() => onEdit(bookmark)}
         class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
-        title="编辑书签"
+        title={t('common.edit')}
       >
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -110,7 +111,7 @@
         type="button"
         onclick={() => onDelete(bookmark)}
         class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-status-danger transition-colors"
-        title="删除书签"
+        title={t('common.delete')}
       >
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -123,10 +124,10 @@
   <div class="mt-2.5 flex items-center justify-between gap-2 text-[11px] font-mono">
     {#if optimal?.url}
       {@const dotTip = optimal.latency
-        ? `${optimal.latency}ms · ${optimal.isIntranet ? '内网直达' : '公网直达'}`
+        ? `${optimal.latency}ms · ${optimal.isIntranet ? t('bookmark.intranetBadge') : t('bookmark.extranetBadge')}`
         : (optimal.reachable === false
-          ? (optimal.probeError === 'timeout' ? '响应超时' : '网络离线')
-          : (optimal.isIntranet ? '内网直达' : '公网直达'))}
+          ? (optimal.probeError === 'timeout' ? t('latency.timeout') : t('latency.offline'))
+          : (optimal.isIntranet ? t('bookmark.intranetBadge') : t('bookmark.extranetBadge')))}
       <div class="flex items-center gap-1.5 min-w-0 text-text-secondary truncate">
         <!-- 网络拓扑与测速状态指示点 (悬停显示延迟与网络类型) -->
         <span
@@ -138,12 +139,12 @@
           title={dotTip}
         ></span>
         <span class="truncate">
-          {optimal.targetIp || optimal.host || optimal.url || '直达地址'}
+          {optimal.targetIp || optimal.host || optimal.url || t('bookmark.directAddress')}
         </span>
       </div>
     {:else}
       <div class="flex items-center gap-1.5 min-w-0 text-text-secondary truncate">
-        <span class="text-text-tertiary">未配置入口</span>
+        <span class="text-text-tertiary">{t('bookmark.noEndpointsConfigured')}</span>
       </div>
     {/if}
   </div>
@@ -151,13 +152,13 @@
   <!-- 多入口展开抽屉面板 -->
   {#if showEndpoints && (bookmark.endpoints || []).length > 1}
     <div class="no-jump absolute left-0 right-0 top-full mt-1 bg-surface border border-border-subtle rounded-lg shadow-popover p-1.5 z-30 text-xs space-y-1">
-      <div class="px-2 py-1 text-[10px] text-text-tertiary font-medium">全部访问入口 ({bookmark.endpoints.length})</div>
+      <div class="px-2 py-1 text-[10px] text-text-tertiary font-medium">{t('bookmark.allEndpoints', { count: bookmark.endpoints.length })}</div>
       {#each route.sorted as ep}
         {@const epDotTip = ep.latency
-          ? `${ep.latency}ms · ${ep.isIntranet ? '内网' : '公网'}`
+          ? `${ep.latency}ms · ${ep.isIntranet ? t('bookmark.intranetBadge') : t('bookmark.extranetBadge')}`
           : (ep.reachable === false
-            ? (ep.probeError === 'timeout' ? '响应超时' : '网络离线')
-            : (ep.isIntranet ? '内网' : '公网'))}
+            ? (ep.probeError === 'timeout' ? t('latency.timeout') : t('latency.offline'))
+            : (ep.isIntranet ? t('bookmark.intranetBadge') : t('bookmark.extranetBadge')))}
         <button
           type="button"
           onclick={() => handleEndpointClick(ep)}
@@ -172,7 +173,7 @@
           </div>
           {#if ep === optimal}
             <div class="flex items-center flex-shrink-0 text-[10px] font-mono">
-              <span class="text-status-intranet font-medium">最优</span>
+              <span class="text-status-intranet font-medium">{t('bookmark.optimal')}</span>
             </div>
           {/if}
         </button>

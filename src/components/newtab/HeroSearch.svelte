@@ -3,6 +3,7 @@
   import { appState } from '../../state/app.svelte.js';
   import { DEFAULT_SEARCH_ENGINES } from '../../constants/index.js';
   import { toast } from '../../state/toast.svelte.js';
+  import { t, i18n } from '../../i18n/index.svelte.js';
 
   let currentTimeStr = $state('--:--');
   let currentDateStr = $state('');
@@ -25,13 +26,18 @@
 
     currentTimeStr = showSec ? `${hh} : ${mm} : ${ss}` : `${hh} : ${mm}`;
 
-    const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-    const Y = now.getFullYear();
-    const M = now.getMonth() + 1;
-    const D = now.getDate();
-    const dayStr = days[now.getDay()];
-
-    currentDateStr = `${Y}年${M}月${D}日 ${dayStr}`;
+    const isEn = i18n.currentLocale === 'en-US';
+    if (isEn) {
+      const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
+      currentDateStr = now.toLocaleDateString('en-US', options);
+    } else {
+      const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+      const Y = now.getFullYear();
+      const M = now.getMonth() + 1;
+      const D = now.getDate();
+      const dayStr = days[now.getDay()];
+      currentDateStr = `${Y}年${M}月${D}日 ${dayStr}`;
+    }
   }
 
   onMount(() => {
@@ -146,7 +152,7 @@
         bind:this={searchInputEl}
         type="text"
         bind:value={appState.searchQuery}
-        placeholder="搜索书签或回车使用 {appState.selectedEngine.name} 检索..."
+        placeholder={t('search.placeholder')}
         class="flex-1 bg-transparent border-0 outline-none px-3 text-xs sm:text-sm text-text-primary placeholder:text-text-tertiary min-w-0"
         autocomplete="off"
       />

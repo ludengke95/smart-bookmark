@@ -2,6 +2,8 @@
   import { appState } from '../../state/app.svelte.js';
   import { toast } from '../../state/toast.svelte.js';
   import { PINNED_GROUP_ID, UNGROUPED_GROUP_ID } from '../../constants/index.js';
+  import { t } from '../../i18n/index.svelte.js';
+  import { getGroupName } from '../../i18n/utils.js';
   import BookmarkCard from './BookmarkCard.svelte';
 
   let { onEditBookmark = () => {}, onDeleteBookmark = () => {}, onAddBookmarkToGroup = () => {}, onOpenImport = () => {} } = $props();
@@ -85,9 +87,9 @@
         🔖
       </div>
       <div class="space-y-1">
-        <h3 class="text-sm font-medium text-text-primary">开启你的智能书签</h3>
+        <h3 class="text-sm font-medium text-text-primary">{t('bookmark.addTitle')}</h3>
         <p class="text-xs text-text-tertiary leading-relaxed">
-          当前暂无书签数据。你可以直接导入浏览器书签，或手动添加第一个书签。
+          {t('bookmark.noBookmarks')}
         </p>
       </div>
       <div class="flex items-center justify-center gap-3 pt-2">
@@ -96,14 +98,14 @@
           onclick={() => onAddBookmarkToGroup('')}
           class="px-3.5 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium shadow-sm hover:opacity-90 transition-opacity"
         >
-          + 新增书签
+          + {t('bookmark.addTitle')}
         </button>
         <button
           type="button"
           onclick={() => onOpenImport()}
           class="px-3.5 py-1.5 rounded-lg bg-subtle border border-border-subtle hover:bg-surface text-text-primary text-xs font-medium transition-colors"
         >
-          导入书签
+          {t('nav.importBookmarks')}
         </button>
       </div>
     </div>
@@ -114,7 +116,7 @@
         <div class="flex items-center gap-3">
           <div class="flex items-center gap-1.5 text-xs font-semibold text-text-primary">
             <span class="text-amber-500">★</span>
-            <span>常用推荐</span>
+            <span>{t('groups.pinned')}</span>
           </div>
           <div class="flex-1 h-[1px] bg-border-subtle/60"></div>
         </div>
@@ -153,7 +155,7 @@
                 >
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
-                <span>{group.name}</span>
+                <span>{getGroupName(group)}</span>
               </button>
               <span class="text-[11px] font-mono text-text-tertiary">
                 ({bookmarks.length})
