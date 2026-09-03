@@ -85,34 +85,63 @@ npm run zip
 
 ## 📂 项目工程架构
 
+> 代码按「纯函数服务层 → 全局响应式状态 → UI 组件」分层；大文件均按关注点拆分并保持公开 API 兼容，UI 文案与 AI 提示词统一走 `i18n` 语言包。
+
 ```
 newtab/
 ├── .output/                     # WXT 构建产物
 ├── doc/                         # 项目文档
-│   ├── 产品介绍.md               # 产品定位、解决痛点与架构亮点
-│   ├── 用户使用手册.md           # 详尽的图文级用户实操手册
-│   ├── 前端设计规范.md           # 极简设计系统色度与排版基准
-│   └── 书签应用-需求文档.md       # 业务逻辑与详细功能规格说明
+│   ├── 产品介绍.md / 用户使用手册.md / 前端设计规范.md / 书签应用-需求文档.md
+│   ├── spec/                    # 设计规范拆分章节（色彩/字阶/布局原型）
+│   └── en/                      # 英文精简版文档
 ├── public/                      # 静态资源与扩展图标 (16/32/48/128px)
 ├── src/
 │   ├── app.css                  # Tailwind CSS 与 3 套极简主题 CSS Tokens
-│   ├── constants/               # 默认配置、搜索引擎、主题与排序选项定义
+│   ├── constants/               # 默认配置、搜索引擎、AI/MCP/备份策略与主题定义
 │   ├── services/                # 纯函数业务核心服务
+│   │   ├── errors.js            # 结构化错误码工厂 (serviceError)
+│   │   ├── bookmark-sort.js     # 书签排序比较器纯函数
 │   │   ├── xor-matcher.js       # 32 位二进制 XOR 前缀寻径与拓扑分类
 │   │   ├── ip-detector.js       # WebRTC 本地内网 IP 嗅探
 │   │   ├── ping-probe.js        # 并发可达性探针与延迟测速
 │   │   ├── favicon-fetcher.js   # 站点图标抓取与 Base64 处理
-│   │   ├── storage.js           # 存储层、快照管理与 JSON 导入导出
-│   │   ├── icons-library.js     # 技术品牌离线矢量图标库 (Simple / Lucide)
-│   │   ├── ai/                  # AI 智能整理服务 (Prompt 构造、API 驱动)
+│   │   ├── icons-library.js     # 技术品牌离线矢量图标库
+│   │   ├── storage/             # 存储层按功能域拆分
+│   │   │   ├── base.js          #   存储原语 + 初始化 + 设置
+│   │   │   ├── bookmark.js      #   书签 CRUD（含清空前快照保护）
+│   │   │   ├── group.js         #   分组 CRUD + 批量导入
+│   │   │   ├── stats.js         #   点击统计 + 网络探测缓存
+│   │   │   ├── backup.js        #   快照 / 自动备份 / JSON 导入导出
+│   │   │   ├── ai.js            #   AI 批量治理落地
+│   │   │   └── index.js         #   barrel 聚合
+│   │   ├── storage.js           # 兼容转发入口（旧 import 路径不变）
+│   │   ├── ai/                  # AI 智能整理
+│   │   │   ├── organizer.js     #   分组/标签分析流水线编排
+│   │   │   ├── prompt-builder.js#   手动模式提示词与精简数据生成
+│   │   │   └── custom-engine.js #   兼容 OpenAI/DeepSeek/Ollama 的 API 驱动
 │   │   └── mcp/                 # MCP 协议客户端通信
 │   ├── state/                   # Svelte 5 全局响应式状态系统 (Runes)
 │   │   ├── app.svelte.js        # 核心单例全局 Store ($state / $derived)
 │   │   └── toast.svelte.js      # 轻量 Toast 反馈系统
-│   ├── components/              # 极简 UI 组件库
-│   │   ├── common/              # 通用组件 (IconRender, Select, Toast)
+│   ├── i18n/                    # 多语言引擎（Runes 驱动，随界面语言即时切换）
+│   │   ├── index.svelte.js      # i18n 引擎与响应式 t()
+│   │   ├── utils.js             # 语义化分组名 / 延迟标签 / 错误与快照文案
+│   │   └── locales/             # zh-CN | en-US
+│   │       ├── common.js        #   通用 / 书签 / 分组 / 错误文案
+│   │       ├── modals.js        #   弹窗 / 设置 / AI / MCP / 快照文案
+│   │       ├── newtab.js        #   新标签页视图文案
+│   │       ├── ai-prompt.js     #   发送给大模型的指令模板
+│   │       └── index.js         #   语言包聚合入口
+│   ├── components/
+│   │   ├── common/              # 通用组件库（统一弹窗外壳与表单单元）
+│   │   │   ├── ModalShell.svelte / ConfirmModal.svelte / Toast.svelte
+│   │   │   ├── ToggleRow.svelte / SelectRow.svelte / Select.svelte
+│   │   │   ├── ActionButton.svelte / EmptyState.svelte / IconRender.svelte
 │   │   ├── newtab/              # 新标签页视图 (TopNav, HeroSearch, BookmarkGrid, TagPills, BookmarkCard...)
-│   │   └── modals/              # 模态弹窗 (BookmarkModal, ImportModal, SettingsModal, AiOrganizeModal, BackupModal...)
+│   │   └── modals/              # 模态弹窗（统一由 ModalShell 承载外壳）
+│   │       ├── BookmarkModal / ImportModal / AiOrganizeModal / AiResultModal
+│   │       ├── StatsModal / BackupModal / SettingsModal
+│   │       └── settings/        # 设置弹窗按 Tab 拆分（Appearance/Ai/Groups/Data）
 │   └── entrypoints/             # WXT 扩展入口
 │       ├── background.js        # 后台 Service Worker
 │       ├── home/                # 新标签页 (index.html, main.js, App.svelte)

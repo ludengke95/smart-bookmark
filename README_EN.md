@@ -93,6 +93,39 @@ npm run zip
 
 ---
 
+## 📂 Project Structure
+
+> Layered as "pure service layer → global reactive store → UI components". Large files are split by concern while keeping their public APIs compatible; all UI copy and LLM prompts are centralized in the `i18n` language packs.
+
+```
+src/
+├── app.css                  # Tailwind CSS & 3 minimalist theme tokens
+├── constants/               # Defaults: engines, themes, AI/MCP/backup policy
+├── services/                # Pure business logic
+│   ├── errors.js            # serviceError() structured error codes
+│   ├── bookmark-sort.js     # Sorting comparator pure functions
+│   ├── xor-matcher.js       # 32-bit XOR longest-prefix routing engine
+│   ├── ip-detector.js       # WebRTC LAN IP sniffing
+│   ├── ping-probe.js        # Concurrent reachability probe & latency
+│   ├── favicon-fetcher.js / icons-library.js
+│   ├── storage/             # Storage layer by domain (base/bookmark/group/
+│   │                        #   stats/backup/ai + barrel), storage.js = compat entry
+│   ├── ai/                  # organizer.js (pipelines) / prompt-builder.js /
+│   │                        #   custom-engine.js (OpenAI-compatible driver)
+│   └── mcp/client.js        # MCP protocol client
+├── state/                   # Svelte 5 global stores (app.svelte.js, toast.svelte.js)
+├── i18n/                    # Runes-driven i18n engine (t + utils)
+│   └── locales/             # zh-CN | en-US × {common, modals, newtab, ai-prompt}
+├── components/
+│   ├── common/              # ModalShell / ConfirmModal / ToggleRow / SelectRow /
+│   │                        #   ActionButton / EmptyState / Select / Toast / IconRender
+│   ├── newtab/              # TopNav, HeroSearch, BookmarkGrid, TagPills, BookmarkCard...
+│   └── modals/              # All dialogs on ModalShell; settings/ holds per-tab components
+└── entrypoints/             # background.js (SW) / home (new tab) / popup
+```
+
+---
+
 ## 📚 Documentation
 
 - [Product Overview (English)](./doc/en/product-overview.md) | [产品介绍 (中文)](./doc/产品介绍.md)
