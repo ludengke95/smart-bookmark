@@ -2,6 +2,7 @@
  * 自定义大模型 API 适配器 (兼容 OpenAI / DeepSeek / Ollama / vLLM 标准格式)
  */
 import { serviceError } from '../errors.js';
+import { t } from '../../i18n/index.svelte.js';
 
 /**
  * 测试自定义 API 连通性
@@ -53,19 +54,18 @@ export async function testCustomApiConnection(config) {
 
 /**
  * 执行自定义大模型 API 调用
+ * 指令文本（默认专家身份 + JSON 硬约束）来自 aiPrompt.* 语言包，随当前界面语言渲染
  * @param {object} params
  * @param {object} params.config - { baseUrl, apiKey, model }
  * @param {string} params.systemPrompt
  * @param {string} params.prompt
  * @param {object} [params.schema]
- * @param {string} [params.lang='zh-CN'] - 指令语言，用于生成默认 systemPrompt / JSON 约束后缀
  * @returns {Promise<string>}
  */
-export async function runCustomApiPrompt({ config, systemPrompt, prompt, schema, lang = 'zh-CN' }) {
+export async function runCustomApiPrompt({ config, systemPrompt, prompt, schema }) {
   const baseUrl = (config.baseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
   const apiKey = config.apiKey || '';
   const model = config.model || 'gpt-4o-mini';
-  const isZh = String(lang || 'zh-CN').toLowerCase().startsWith('zh');
 
   const url = `${baseUrl}/chat/completions`;
 
@@ -81,11 +81,7 @@ export async function runCustomApiPrompt({ config, systemPrompt, prompt, schema,
     messages: [
       {
         role: 'system',
-        content: isZh
-          ? (systemPrompt || '你是一个专业的数据分类和书签整理专家。') +
-            '\n【必须输出严格的 JSON 格式】：直接输出 JSON 数组，严禁包含任何 Markdown 标记（如 ```json 等代码块标签），严禁包含任何开场白或结尾解释。'
-          : (systemPrompt || 'You are a professional assistant for data classification and bookmark organization.') +
-            '\n[Strict JSON output]: Return only a plain JSON array. Do NOT wrap it in Markdown code fences (e.g. ```json), and do not add any preamble or closing remarks.'
+        content: `${systemPrompt || t('aiPrompt.defaultExpert')}\n${t('aiPrompt.jsonConstraint')}`
       },
       { role: 'user', content: prompt }
     ],

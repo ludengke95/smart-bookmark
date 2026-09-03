@@ -4,9 +4,11 @@
 import common from './common.js';
 import modals from './modals.js';
 import newtab from './newtab.js';
+import aiPrompt from './ai-prompt.js';
 
 export default {
   ...common,
   ...modals,
-  ...newtab
+  ...newtab,
+  ...aiPrompt
 };
