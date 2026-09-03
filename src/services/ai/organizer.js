@@ -157,7 +157,8 @@ export async function analyzeSmartGrouping({
   bookmarks = [],
   groups = [],
   aiSettings = {},
-  onProgress = () => {}
+  onProgress = () => {},
+  lang = 'zh-CN'
 }) {
   const groupingConfig = aiSettings?.grouping || { scope: 'ungrouped', allowNewGroups: true };
   const scope = groupingConfig.scope || 'ungrouped';
@@ -192,16 +193,37 @@ export async function analyzeSmartGrouping({
   const totalChunks = chunks.length;
   const allProposedChanges = [];
 
-  const systemPrompt = `你是一个专业的浏览器书签语义分析与分类整理助手。
+  const isZh = String(lang || 'zh-CN').toLowerCase().startsWith('zh');
+  const ungroupedLabel = isZh ? '未分组' : 'Ungrouped';
+  const newGroupRule = isZh
+    ? allowNewGroups
+      ? '若现有分组明显不合适，可提议创建简短准确的新分类分组（如"前端开发"、"内网服务"、"设计素材"、"效率办公"、"AI工具"、"学习资料"等，字数2-6字）。'
+      : '严禁创建新分组，必须且只能从上述现有分组中挑选最接近的一个。'
+    : allowNewGroups
+      ? 'If no existing group fits well, you may propose a concise new group (2-6 chars), e.g. "Frontend", "Intranet Ops", "Design Assets", "Productivity", "AI Tools", "References".'
+      : 'Never create new groups; always pick the closest existing group from the list above.';
+
+  const systemPrompt = isZh
+    ? `你是一个专业的浏览器书签语义分析与分类整理助手。
 任务：根据用户提供的书签列表（包含ID、名称、URL及端点），为每个书签推荐最合适的分类分组。
 规则：
 1. 优先归入现有的分类分组列表：[${existingCustomGroupNames.join(', ')}]
-2. ${allowNewGroups ? '若现有分组明显不合适，可提议创建简短准确的新分类分组（如"前端开发"、"内网服务"、"设计素材"、"效率办公"、"AI工具"、"学习资料"等，字数2-6字）。' : '严禁创建新分组，必须且只能从上述现有分组中挑选最接近的一个。'}
+2. ${newGroupRule}
 3. 必须输出严格的 JSON 数组，每个元素包含：
    - bookmarkId: 对应的书签ID (字符串)
    - targetGroupName: 推荐的目标分组名称 (字符串)
    - isNewGroup: 是否为新建分组 (布尔值)
-   - reason: 简明归类依据 (10字以内)`;
+   - reason: 简明归类依据 (10字以内)`
+    : `You are a professional browser-bookmark semantic analysis and categorization assistant.
+Task: Given the user's bookmark list (each item has an ID, name, URL and endpoints), recommend the best target group for every bookmark.
+Rules:
+1. Prefer the existing groups when possible: [${existingCustomGroupNames.join(', ')}]
+2. ${newGroupRule}
+3. Output a strict JSON array; each element must contain:
+   - bookmarkId: the corresponding bookmark ID (string)
+   - targetGroupName: the recommended target group name (string)
+   - isNewGroup: whether this requires creating a new group (boolean)
+   - reason: a brief categorization note (within 10 characters/words)`;
 
   for (let i = 0; i < totalChunks; i++) {
     const chunk = chunks[i];
@@ -215,17 +237,20 @@ export async function analyzeSmartGrouping({
     const simplifiedInput = chunk.map(b => ({
       id: b.id,
       name: b.name,
-      currentGroup: groupMapById.get(b.groupId) || '未分组',
+      currentGroup: groupMapById.get(b.groupId) || ungroupedLabel,
       urls: (b.endpoints || []).map(ep => ep.url).slice(0, 2)
     }));
 
-    const userPrompt = `请对以下 ${chunk.length} 个书签进行分类整理并输出 JSON 数组：\n${JSON.stringify(simplifiedInput, null, 2)}`;
+    const userPrompt = isZh
+      ? `请对以下 ${chunk.length} 个书签进行分类整理并输出 JSON 数组：\n${JSON.stringify(simplifiedInput, null, 2)}`
+      : `Classify the following ${chunk.length} bookmarks into groups and output a JSON array:\n${JSON.stringify(simplifiedInput, null, 2)}`;
 
     try {
       const rawOutput = await runCustomApiPrompt({
         config: aiSettings,
         systemPrompt,
-        prompt: userPrompt
+        prompt: userPrompt,
+        lang
       });
 
       const parsedList = extractAndParseJson(rawOutput);
@@ -276,7 +301,8 @@ export async function analyzeSmartGrouping({
 export async function analyzeSmartTagging({
   bookmarks = [],
   aiSettings = {},
-  onProgress = () => {}
+  onProgress = () => {},
+  lang = 'zh-CN'
 }) {
   const taggingConfig = aiSettings?.tagging || { scope: 'untagged', mode: 'append', maxTagsPerBookmark: 3 };
   const scope = taggingConfig.scope || 'untagged';
@@ -304,7 +330,9 @@ export async function analyzeSmartTagging({
   const totalChunks = chunks.length;
   const allProposedChanges = [];
 
-  const systemPrompt = `你是一个专业的浏览器书签元数据提炼专家。
+  const isZh = String(lang || 'zh-CN').toLowerCase().startsWith('zh');
+  const systemPrompt = isZh
+    ? `你是一个专业的浏览器书签元数据提炼专家。
 任务：根据书签的名称、URL、内网/外网端点特征，为每个书签提取 1 到 ${maxTags} 个高质量、高概括性的中文标签。
 标签提取规则：
 1. 标签应涵盖技术栈、业务类别、网络属性或工具属性（如"Vue"、"文档"、"内网运维"、"设计"、"GitHub"、"云原生"等）。
@@ -312,7 +340,17 @@ export async function analyzeSmartTagging({
 3. 必须输出严格的 JSON 数组，每个元素包含：
    - bookmarkId: 对应的书签ID (字符串)
    - suggestedTags: 提炼出的标签字符串数组 (如 ["前端", "工具", "Vue"])
-   - reason: 提炼依据 (10字以内)`;
+   - reason: 提炼依据 (10字以内)`
+    : `You are a professional browser-bookmark metadata extraction expert.
+Task: Based on each bookmark's name, URL and intranet/extranet endpoint features, extract 1 to ${maxTags} high-quality, highly concise tags.
+Tag extraction rules:
+1. Tags should cover tech stack, business category, network attribute, or tool attribute (e.g. "Vue", "Docs", "Intranet Ops", "Design", "GitHub", "Cloud Native").
+2. Keep tags short and concise (2-6 characters), and drop meaningless filler words.
+3. Use the language of each bookmark's name for its tags (Chinese bookmarks keep Chinese tags, English ones keep English tags).
+4. Output a strict JSON array; each element must contain:
+   - bookmarkId: the corresponding bookmark ID (string)
+   - suggestedTags: an array of extracted tag strings (e.g. ["frontend", "tool", "Vue"])
+   - reason: a brief extraction note (within 10 characters/words)`;
 
   for (let i = 0; i < totalChunks; i++) {
     const chunk = chunks[i];
@@ -330,13 +368,16 @@ export async function analyzeSmartTagging({
       urls: (b.endpoints || []).map(ep => ep.url).slice(0, 2)
     }));
 
-    const userPrompt = `请为以下 ${chunk.length} 个书签提取标签并输出 JSON 数组：\n${JSON.stringify(simplifiedInput, null, 2)}`;
+    const userPrompt = isZh
+      ? `请为以下 ${chunk.length} 个书签提取标签并输出 JSON 数组：\n${JSON.stringify(simplifiedInput, null, 2)}`
+      : `Extract tags for the following ${chunk.length} bookmarks and output a JSON array:\n${JSON.stringify(simplifiedInput, null, 2)}`;
 
     try {
       const rawOutput = await runCustomApiPrompt({
         config: aiSettings,
         systemPrompt,
-        prompt: userPrompt
+        prompt: userPrompt,
+        lang
       });
 
       const parsedList = extractAndParseJson(rawOutput);

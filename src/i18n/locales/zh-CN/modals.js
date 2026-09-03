@@ -214,7 +214,15 @@ export default {
     itemSummary: '{bookmarks} 个书签 · {groups} 个分组',
     snapshotName: '快照说明',
     restore: '恢复此快照',
-    restoreConfirm: '确定要回滚到该快照版本吗？当前未备份的修改将被覆盖。'
+    restoreConfirm: '确定要回滚到该快照版本吗？当前未备份的修改将被覆盖。',
+    reasonAiGroup: '[AI 治理] 智能分组执行前自动快照',
+    reasonAiTag: '[AI 治理] 智能标签执行前自动快照',
+    reasonPreImport: '[批量导入] 导入操作前自动快照',
+    reasonPreClear: '[清空数据] 清空操作前自动快照',
+    reasonPreRollback: '[版本回滚] 回滚操作前自动快照',
+    reasonDaily: '[定时任务] 定时自动备份快照',
+    reasonPreReset: '[恢复出厂] 重置前自动快照',
+    reasonMcp: '[MCP] 外部治理执行前自动快照'
   },
   import: {
     title: '导入与迁移书签',

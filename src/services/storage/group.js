@@ -91,7 +91,7 @@ export async function batchImportData({ newGroups = [], newBookmarks = [] }) {
   const backupSettings = await getBackupSettings();
   if (backupSettings.preActionAutoBackup) {
     try {
-      await createSnapshot(`[导入前自动备份] 导入 ${newBookmarks.length} 项前快照`, 'auto_preimport');
+      await createSnapshot(null, 'auto_preimport');
     } catch (e) {
       console.warn('Pre-import snapshot failed:', e);
     }

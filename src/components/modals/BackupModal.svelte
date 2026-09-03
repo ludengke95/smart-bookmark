@@ -2,6 +2,7 @@
   import { appState } from '../../state/app.svelte.js';
   import { toast } from '../../state/toast.svelte.js';
   import { t } from '../../i18n/index.svelte.js';
+  import { formatSnapshotReason } from '../../i18n/utils.js';
   import { exportFullBackupJson, importFullBackupJson } from '../../services/storage.js';
   import ModalShell from '../common/ModalShell.svelte';
   import ConfirmModal from '../common/ConfirmModal.svelte';
@@ -148,7 +149,7 @@
               <div class="p-3 flex items-center justify-between gap-3">
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2">
-                    <span class="font-medium text-text-primary truncate">{snap.reason || t('backup.autoSnapshot')}</span>
+                    <span class="font-medium text-text-primary truncate">{formatSnapshotReason(snap)}</span>
                     {#if snap.locked}
                       <span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20 font-medium">{t('backup.locked')}</span>
                     {/if}

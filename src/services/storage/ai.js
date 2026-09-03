@@ -44,8 +44,8 @@ export async function batchUpdateBookmarks(updates = []) {
 export async function batchApplyAiGroups(plan = []) {
   if (!Array.isArray(plan) || plan.length === 0) return { modifiedCount: 0 };
 
-  // 1. 执行前安全快照备份
-  await createSnapshot(`[AI智能分组前备份] 治理 ${plan.length} 项书签前`, 'auto_ai_group');
+  // 1. 执行前安全快照备份 (reason 按 type 由 UI 本地化渲染)
+  await createSnapshot(null, 'auto_ai_group');
 
   const currentGroups = await getGroups();
   const currentBookmarks = await getBookmarks();
@@ -128,8 +128,8 @@ export async function batchApplyAiGroups(plan = []) {
 export async function batchApplyAiTags(plan = [], mode = 'append') {
   if (!Array.isArray(plan) || plan.length === 0) return { modifiedCount: 0 };
 
-  // 1. 执行前安全快照备份
-  await createSnapshot(`[AI智能标签前备份] 提炼 ${plan.length} 项书签标签前`, 'auto_ai_tag');
+  // 1. 执行前安全快照备份 (reason 按 type 由 UI 本地化渲染)
+  await createSnapshot(null, 'auto_ai_tag');
 
   const currentBookmarks = await getBookmarks();
   const planMap = new Map(plan.map(p => [p.bookmarkId, p]));

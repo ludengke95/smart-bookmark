@@ -496,7 +496,8 @@ class AppState {
         aiSettings: this.settings.ai,
         onProgress: (prog) => {
           this.aiProgress = this.buildAiProgress(prog);
-        }
+        },
+        lang: i18n.currentLocale
       });
       return result;
     } finally {
@@ -518,7 +519,8 @@ class AppState {
         aiSettings: this.settings.ai,
         onProgress: (prog) => {
           this.aiProgress = this.buildAiProgress(prog);
-        }
+        },
+        lang: i18n.currentLocale
       });
       return result;
     } finally {
@@ -540,7 +542,8 @@ class AppState {
       bookmarks: this.bookmarks,
       groups: this.groups,
       scope,
-      allowNewGroups
+      allowNewGroups,
+      lang: i18n.currentLocale
     });
   }
 
@@ -556,7 +559,8 @@ class AppState {
       bookmarks: this.bookmarks,
       scope,
       mode,
-      maxTags
+      maxTags,
+      lang: i18n.currentLocale
     });
   }
 

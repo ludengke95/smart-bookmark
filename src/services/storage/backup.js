@@ -43,7 +43,7 @@ function formatSnapshotTime(ts) {
   return `${Y}-${M}-${D} ${h}:${m}:${s}`;
 }
 
-export async function createSnapshot(reason = '手动快照', type = 'manual', isLocked = false) {
+export async function createSnapshot(reason = '', type = 'manual', isLocked = false) {
   const bookmarks = await getBookmarks();
   const groups = await getGroups();
   const settings = await getSettings();
@@ -118,7 +118,7 @@ export async function rollbackToSnapshot(snapshotId) {
   }
 
   const curBms = await getBookmarks();
-  await createSnapshot(`[回滚前自动保护] 恢复至 ${target.timeStr} 前 (共 ${curBms.length} 项)`, 'auto_prerollback');
+  await createSnapshot(null, 'auto_prerollback');
 
   if (target.data.bookmarks) {
     await setStorageData(STORAGE_KEYS.BOOKMARKS, target.data.bookmarks);
@@ -142,9 +142,7 @@ export async function checkDailyAutoBackup() {
   const intervalMs = BACKUP_INTERVAL_MS[settings.autoBackupInterval] || BACKUP_INTERVAL_MS.daily;
 
   if (now - lastTime >= intervalMs) {
-    const d = new Date(now);
-    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    await createSnapshot(`[定时自动备份] ${dateStr} 启动快照`, 'auto_daily');
+    await createSnapshot(null, 'auto_daily');
     await saveBackupSettings({ lastAutoBackupTime: now });
   }
 }
@@ -202,7 +200,7 @@ export async function importFullBackupJson(jsonString) {
 export async function resetToDefaultData() {
   const currentBms = await getBookmarks();
   if (currentBms.length > 0) {
-    await createSnapshot(`[恢复出厂前备份] 备份当前 ${currentBms.length} 个书签`, 'auto_prereset');
+    await createSnapshot(null, 'auto_prereset');
   }
   await setStorageData(STORAGE_KEYS.BOOKMARKS, DEFAULT_BOOKMARKS);
   await setStorageData(STORAGE_KEYS.GROUPS, DEFAULT_GROUPS);

@@ -46,7 +46,7 @@ export function formatLatencyI18n(latency, reachable = true, error = '') {
 }
 
 /**
- * 将服务层抛出的结构化错误（带 err.code）本地化为用户可读文案。
+ * 服务层抛出的结构化错误（带 err.code）本地化为用户可读文案。
  * 命中 errors.* 字典则返回翻译；否则回退 err.message（中性技术消息）。
  */
 export function formatServiceError(err, fallback = '') {
@@ -59,4 +59,37 @@ export function formatServiceError(err, fallback = '') {
     }
   }
   return err?.message || fallback;
+}
+
+/**
+ * 快照类型 → 本地化 reason 的 i18n key 映射。
+ * 自动快照在 storage 层不再写入本地化文本，仅记录稳定的 type，
+ * 展示时统一按当前语言翻译（顺带将旧版本写入的中文 reason 一并本地化）。
+ * 'manual'（含旧数据）与未知 type 回退到快照自带 reason 文本。
+ */
+const SNAPSHOT_REASON_KEYS = {
+  auto_ai_group: 'backup.reasonAiGroup',
+  auto_ai_tag: 'backup.reasonAiTag',
+  auto_preimport: 'backup.reasonPreImport',
+  auto_preclear: 'backup.reasonPreClear',
+  auto_prerollback: 'backup.reasonPreRollback',
+  auto_daily: 'backup.reasonDaily',
+  auto_prereset: 'backup.reasonPreReset',
+  auto_mcp: 'backup.reasonMcp'
+};
+
+/**
+ * 生成快照列表展示的说明文案
+ * @param {object} snap - 快照对象（storage 原始结构：type/reason/counts 或旧版扁平字段）
+ */
+export function formatSnapshotReason(snap) {
+  if (!snap) return '';
+  const key = SNAPSHOT_REASON_KEYS[snap.type];
+  if (key) {
+    return t(key, {
+      count: snap.counts?.bookmarks ?? snap.bookmarks?.length ?? 0
+    });
+  }
+  // manual / 未知类型：使用快照自身 reason（手动输入或历史数据）
+  return snap.reason || t('backup.autoSnapshot');
 }

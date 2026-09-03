@@ -214,7 +214,15 @@ export default {
     itemSummary: '{bookmarks} bookmarks · {groups} groups',
     snapshotName: 'Snapshot description',
     restore: 'Restore Snapshot',
-    restoreConfirm: 'Are you sure you want to rollback to this snapshot? Current unbacked changes will be overwritten.'
+    restoreConfirm: 'Are you sure you want to rollback to this snapshot? Current unbacked changes will be overwritten.',
+    reasonAiGroup: '[AI] Auto snapshot before smart grouping',
+    reasonAiTag: '[AI] Auto snapshot before smart tagging',
+    reasonPreImport: '[Import] Auto snapshot before bulk import',
+    reasonPreClear: '[Clear] Auto snapshot before clearing data',
+    reasonPreRollback: '[Rollback] Auto snapshot before restore',
+    reasonDaily: '[Schedule] Scheduled auto backup',
+    reasonPreReset: '[Reset] Auto snapshot before factory reset',
+    reasonMcp: '[MCP] Auto snapshot before external governance'
   },
   import: {
     title: 'Import & Migrate Bookmarks',

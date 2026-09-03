@@ -139,7 +139,7 @@ export async function clearAllData() {
   const hasCustomGroups = currentGroups.some(g => g.id !== PINNED_GROUP_ID && g.id !== UNGROUPED_GROUP_ID);
   if (backupSettings.preActionAutoBackup && (currentBookmarks.length > 0 || hasCustomGroups)) {
     try {
-      await createSnapshot(`[清空前自动保护] 清空全部数据前 (共 ${currentBookmarks.length} 项)`, 'auto_preimport');
+      await createSnapshot(null, 'auto_preclear');
     } catch (e) {
       console.warn('Pre-clear auto snapshot failed:', e);
     }

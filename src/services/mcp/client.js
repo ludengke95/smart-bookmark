@@ -220,36 +220,36 @@ class McpClient {
     return [
       {
         name: 'list_bookmarks',
-        description: '查询当前 Chrome 插件中存储的所有书签，支持按关键词、分组ID、标签进行过滤',
+        description: 'List all bookmarks stored in this extension, optionally filtered by keyword, group ID, or tag',
         inputSchema: {
           type: 'object',
           properties: {
-            keyword: { type: 'string', description: '搜索关键词' },
-            groupId: { type: 'string', description: '指定分组ID过滤' },
-            tag: { type: 'string', description: '指定标签过滤' }
+            keyword: { type: 'string', description: 'Search keyword' },
+            groupId: { type: 'string', description: 'Filter by group ID' },
+            tag: { type: 'string', description: 'Filter by tag' }
           }
         }
       },
       {
         name: 'get_groups',
-        description: '获取所有自定义和系统内置的分组列表',
+        description: 'List all custom and built-in bookmark groups',
         inputSchema: { type: 'object', properties: {} }
       },
       {
         name: 'get_tags',
-        description: '获取所有已使用的标签清单及其使用频次和热度统计',
+        description: 'List all tags in use with their usage counts and popularity',
         inputSchema: { type: 'object', properties: {} }
       },
       {
         name: 'create_bookmark',
-        description: '在插件中新建一个书签',
+        description: 'Create a new bookmark in the extension',
         inputSchema: {
           type: 'object',
           properties: {
-            name: { type: 'string', description: '书签名称' },
-            url: { type: 'string', description: '书签主访问 URL' },
-            groupId: { type: 'string', description: '所属分组ID (可选)' },
-            tags: { type: 'array', items: { type: 'string' }, description: '标签列表' },
+            name: { type: 'string', description: 'Bookmark name' },
+            url: { type: 'string', description: 'Primary access URL of the bookmark' },
+            groupId: { type: 'string', description: 'Target group ID (optional)' },
+            tags: { type: 'array', items: { type: 'string' }, description: 'Tag list' },
             endpoints: {
               type: 'array',
               items: {
@@ -260,7 +260,7 @@ class McpClient {
                 },
                 required: ['url']
               },
-              description: '多入口端点配置'
+              description: 'Multi-endpoint routing configuration'
             }
           },
           required: ['name', 'url']
@@ -268,43 +268,43 @@ class McpClient {
       },
       {
         name: 'update_bookmark',
-        description: '更新指定书签的名称、分组、标签或端点地址',
+        description: 'Update the name, group, tags, or endpoint URLs of an existing bookmark',
         inputSchema: {
           type: 'object',
           properties: {
-            id: { type: 'string', description: '待更新书签的唯一ID' },
-            name: { type: 'string', description: '新名称' },
-            groupId: { type: 'string', description: '新分组ID' },
-            tags: { type: 'array', items: { type: 'string' }, description: '新标签列表' }
+            id: { type: 'string', description: 'Unique ID of the bookmark to update' },
+            name: { type: 'string', description: 'New name' },
+            groupId: { type: 'string', description: 'New group ID' },
+            tags: { type: 'array', items: { type: 'string' }, description: 'New tag list' }
           },
           required: ['id']
         }
       },
       {
         name: 'delete_bookmark',
-        description: '删除指定书签',
+        description: 'Delete an existing bookmark',
         inputSchema: {
           type: 'object',
           properties: {
-            id: { type: 'string', description: '要删除的书签ID' }
+            id: { type: 'string', description: 'ID of the bookmark to delete' }
           },
           required: ['id']
         }
       },
       {
         name: 'create_group',
-        description: '创建新的书签分组',
+        description: 'Create a new bookmark group',
         inputSchema: {
           type: 'object',
           properties: {
-            name: { type: 'string', description: '分组名称' }
+            name: { type: 'string', description: 'Group name' }
           },
           required: ['name']
         }
       },
       {
         name: 'batch_organize_bookmarks',
-        description: '大模型一键重构治理书签：批量更新书签分组与标签（执行前会自动触发安全快照保护）',
+        description: 'Batch-refactor bookmarks: update bookmark groups and tags in bulk (a safety snapshot is created automatically before execution)',
         inputSchema: {
           type: 'object',
           properties: {
@@ -318,7 +318,7 @@ class McpClient {
                 },
                 required: ['bookmarkId', 'targetGroupName']
               },
-              description: '分组迁移方案'
+              description: 'Group migration plan'
             },
             tagPlan: {
               type: 'array',
@@ -330,19 +330,19 @@ class McpClient {
                 },
                 required: ['bookmarkId', 'suggestedTags']
               },
-              description: '标签更新方案'
+              description: 'Tag update plan'
             }
           }
         }
       },
       {
         name: 'get_network_topology',
-        description: '获取当前插件检测到的网络拓扑（内网IP及历史测速缓存）',
+        description: 'Get the network topology detected by this extension (LAN IPs and cached latency history)',
         inputSchema: { type: 'object', properties: {} }
       },
       {
         name: 'export_full_data',
-        description: '导出插件全部书签、分组与设置的完整备份 JSON 数据',
+        description: 'Export a complete JSON backup of all bookmarks, groups, and settings',
         inputSchema: { type: 'object', properties: {} }
       }
     ];
