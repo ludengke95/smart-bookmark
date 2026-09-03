@@ -12,6 +12,7 @@ import {
 import { getBookmarks } from './bookmark.js';
 import { getGroups } from './group.js';
 import { resetAllStats } from './stats.js';
+import { serviceError } from '../errors.js';
 
 // 保持原有公开 API 兼容：重导出默认备份配置
 export { DEFAULT_BACKUP_SETTINGS };
@@ -113,7 +114,7 @@ export async function rollbackToSnapshot(snapshotId) {
   const snapshots = await getSnapshots();
   const target = snapshots.find(s => s.id === snapshotId);
   if (!target || !target.data) {
-    throw new Error('未找到目标快照数据');
+    throw serviceError('snapshotNotFound', 'Target snapshot data not found');
   }
 
   const curBms = await getBookmarks();

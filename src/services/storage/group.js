@@ -10,6 +10,7 @@ import {
 import { getBookmarks } from './bookmark.js';
 import { getBackupSettings, createSnapshot } from './backup.js';
 import { getClickStats } from './stats.js';
+import { serviceError } from '../errors.js';
 
 export async function getGroups() {
   let groups = await getStorageData(STORAGE_KEYS.GROUPS, DEFAULT_GROUPS);
@@ -175,7 +176,7 @@ export async function batchImportData({ newGroups = [], newBookmarks = [] }) {
 
 export async function deleteGroup(groupId) {
   if (groupId === PINNED_GROUP_ID || groupId === UNGROUPED_GROUP_ID) {
-    throw new Error('系统内置固定分组（常用 / 未分组）不可删除');
+    throw serviceError('builtinGroupNoDelete', 'System built-in groups cannot be deleted');
   }
   let groups = await getGroups();
   groups = groups.filter(g => g.id !== groupId);

@@ -4,6 +4,7 @@
  */
 import { runCustomApiPrompt } from './custom-engine.js';
 import { PINNED_GROUP_ID, UNGROUPED_GROUP_ID } from '../../constants/index.js';
+import { serviceError } from '../errors.js';
 
 /**
  * 尝试从解析后的对象中提取数组列表
@@ -173,9 +174,6 @@ export async function analyzeSmartGrouping({
   if (targetBookmarks.length === 0) {
     return {
       success: true,
-      message: scope === 'ungrouped'
-        ? '当前未分组书签为空。如需重新整理全部书签，请在设置中选择「重新整理全部」范围。'
-        : '书签列表为空，请先添加或导入书签。',
       items: []
     };
   }
@@ -211,8 +209,7 @@ export async function analyzeSmartGrouping({
       phase: 'grouping',
       current: i + 1,
       total: totalChunks,
-      percent: Math.round(((i + 1) / totalChunks) * 100),
-      message: `正在进行智能分组分析 (${i + 1}/${totalChunks} 批次)...`
+      percent: Math.round(((i + 1) / totalChunks) * 100)
     });
 
     const simplifiedInput = chunk.map(b => ({
@@ -242,7 +239,7 @@ export async function analyzeSmartGrouping({
           const targetName = extractGroupNameFromItem(item);
           if (!targetName) continue;
 
-          const currentGroupName = groupMapById.get(origBm.groupId) || '未分组';
+          const currentGroupName = groupMapById.get(origBm.groupId) || '';
           const isNew = !existingCustomGroupNames.some(n => n.toLowerCase() === targetName.toLowerCase());
 
           allProposedChanges.push({
@@ -253,14 +250,15 @@ export async function analyzeSmartGrouping({
             currentGroupName,
             suggestedGroupName: targetName,
             isNewGroup: isNew,
-            reason: item.reason || '语义相关',
+            reason: item.reason || '',
             selected: currentGroupName !== targetName
           });
         }
       }
     } catch (err) {
-      console.error(`第 ${i + 1} 批次智能分组分析失败:`, err);
-      throw new Error(`AI 分析中断 (${i + 1}/${totalChunks} 批次): ${err.message}`);
+      console.error(`Grouping analysis interrupted at chunk ${i + 1}/${totalChunks}:`, err);
+      if (err?.code) throw err;
+      throw serviceError('aiAnalysisFailed', 'AI grouping analysis interrupted', {}, String(err?.message || err));
     }
   }
 
@@ -296,9 +294,6 @@ export async function analyzeSmartTagging({
   if (targetBookmarks.length === 0) {
     return {
       success: true,
-      message: scope === 'untagged'
-        ? '当前所有书签均已存在标签。如需优化现有标签，请在设置中勾选「优化全部标签」范围。'
-        : '书签列表为空，请先添加或导入书签。',
       items: []
     };
   }
@@ -325,8 +320,7 @@ export async function analyzeSmartTagging({
       phase: 'tagging',
       current: i + 1,
       total: totalChunks,
-      percent: Math.round(((i + 1) / totalChunks) * 100),
-      message: `正在进行智能标签提炼 (${i + 1}/${totalChunks} 批次)...`
+      percent: Math.round(((i + 1) / totalChunks) * 100)
     });
 
     const simplifiedInput = chunk.map(b => ({
@@ -376,14 +370,15 @@ export async function analyzeSmartTagging({
             suggestedTags: rawTags,
             finalMergedTags: finalTags,
             mode,
-            reason: item.reason || '语义提炼',
+            reason: item.reason || '',
             selected: true
           });
         }
       }
     } catch (err) {
-      console.error(`第 ${i + 1} 批次智能标签分析失败:`, err);
-      throw new Error(`AI 标签分析中断 (${i + 1}/${totalChunks} 批次): ${err.message}`);
+      console.error(`Tag refinement interrupted at chunk ${i + 1}/${totalChunks}:`, err);
+      if (err?.code) throw err;
+      throw serviceError('aiAnalysisFailed', 'AI tag refinement interrupted', {}, String(err?.message || err));
     }
   }
 
@@ -406,12 +401,12 @@ export function parseManualAiResult({
   options = {}
 }) {
   if (!rawInput || typeof rawInput !== 'string' || !rawInput.trim()) {
-    throw new Error('输入内容为空，请粘贴大模型回复或上传有效的 JSON 文件');
+    throw serviceError('aiEmptyInput', 'Empty input');
   }
 
   const parsedList = extractAndParseJson(rawInput);
   if (!parsedList || parsedList.length === 0) {
-    throw new Error('未能从提供的内容中解析出有效的变更列表，请确保大模型输出了符合规范的 JSON 数组');
+    throw serviceError('aiParseInvalid', 'No valid change list parsed from LLM output');
   }
 
   const bookmarkMapById = new Map(bookmarks.map(b => [b.id, b]));
@@ -435,7 +430,7 @@ export function parseManualAiResult({
         const targetName = extractGroupNameFromItem(item);
         if (!targetName) continue;
 
-        const currentGroupName = groupMapById.get(origBm.groupId) || '未分组';
+        const currentGroupName = groupMapById.get(origBm.groupId) || '';
         const isNew = !existingCustomGroupNames.some(n => n.toLowerCase() === targetName.toLowerCase());
 
         allProposedChanges.push({
@@ -446,7 +441,7 @@ export function parseManualAiResult({
           currentGroupName,
           suggestedGroupName: targetName,
           isNewGroup: item.isNewGroup !== undefined ? Boolean(item.isNewGroup) : isNew,
-          reason: item.reason || '语义相关',
+          reason: item.reason || '',
           selected: currentGroupName !== targetName
         });
       }
@@ -485,7 +480,7 @@ export function parseManualAiResult({
           suggestedTags: rawTags,
           finalMergedTags: finalTags,
           mode,
-          reason: item.reason || '语义提炼',
+          reason: item.reason || '',
           selected: true
         });
       }
@@ -493,7 +488,7 @@ export function parseManualAiResult({
   }
 
   if (allProposedChanges.length === 0) {
-    throw new Error('解析成功，但未能匹配到任何当前书签（可能书签 ID 不匹配）');
+    throw serviceError('aiNoMatch', 'Parsed OK but no current bookmark matched');
   }
 
   return {

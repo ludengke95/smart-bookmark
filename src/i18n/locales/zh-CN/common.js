@@ -110,5 +110,17 @@ export default {
     paperSand: '纸本暖沙 (Paper Sand)',
     ceramicLight: '陶瓷素白 (Ceramic Light)',
     obsidianDark: '深曜黑 (Obsidian Dark)'
+  },
+  errors: {
+    apiHttpError: '接口返回错误 (HTTP {status})',
+    apiEmptyResponse: '模型未返回有效内容',
+    aiEmptyInput: '请先粘贴大模型回复或上传有效的 JSON 文件',
+    aiParseInvalid: '未能从大模型返回内容中解析出有效的变更列表',
+    aiNoMatch: '未能匹配到任何当前书签（可能书签 ID 不匹配）',
+    aiAnalysisFailed: '智能分析过程被中断，请稍后重试',
+    snapshotNotFound: '未找到目标快照数据',
+    builtinGroupNoDelete: '系统内置固定分组不可删除',
+    mcpBookmarkNotFound: '未找到 ID 为 {id} 的书签',
+    mcpUnknownTool: '未知的工具名称: {name}'
   }
 };

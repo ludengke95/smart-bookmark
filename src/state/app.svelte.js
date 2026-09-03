@@ -307,7 +307,7 @@ class AppState {
   // 获取单个书签的智能寻径分析结果 (全量防御性校验)
   getBookmarkRoute(bookmark) {
     if (!bookmark || typeof bookmark !== 'object') {
-      return { optimal: null, sorted: [], reason: '无书签数据' };
+      return { optimal: null, sorted: [], reason: 'no-bookmark' };
     }
     const endpoints = Array.isArray(bookmark.endpoints) && bookmark.endpoints.length > 0
       ? bookmark.endpoints
@@ -473,12 +473,21 @@ class AppState {
     return await testCustomApiConnection(config);
   }
 
+  // 组装 AI 进度（message 按当前语言生成，service 层不再返回本地化文案）
+  buildAiProgress(prog) {
+    const labelKey = prog.phase === 'grouping' ? 'ai.progressGrouping' : 'ai.progressTagging';
+    return {
+      ...prog,
+      message: i18n.t(labelKey, { current: prog.current, total: prog.total })
+    };
+  }
+
   /**
    * 启动智能分组分析流水线
    */
   async runSmartGrouping() {
     this.aiRunning = true;
-    this.aiProgress = { phase: 'grouping', current: 0, total: 0, percent: 0, message: '正在准备书签数据...' };
+    this.aiProgress = { phase: 'grouping', current: 0, total: 0, percent: 0, message: i18n.t('ai.preparingData') };
 
     try {
       const result = await analyzeSmartGrouping({
@@ -486,7 +495,7 @@ class AppState {
         groups: this.groups,
         aiSettings: this.settings.ai,
         onProgress: (prog) => {
-          this.aiProgress = prog;
+          this.aiProgress = this.buildAiProgress(prog);
         }
       });
       return result;
@@ -501,14 +510,14 @@ class AppState {
    */
   async runSmartTagging() {
     this.aiRunning = true;
-    this.aiProgress = { phase: 'tagging', current: 0, total: 0, percent: 0, message: '正在准备书签数据...' };
+    this.aiProgress = { phase: 'tagging', current: 0, total: 0, percent: 0, message: i18n.t('ai.preparingData') };
 
     try {
       const result = await analyzeSmartTagging({
         bookmarks: this.bookmarks,
         aiSettings: this.settings.ai,
         onProgress: (prog) => {
-          this.aiProgress = prog;
+          this.aiProgress = this.buildAiProgress(prog);
         }
       });
       return result;

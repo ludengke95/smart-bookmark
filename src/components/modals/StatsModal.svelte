@@ -4,8 +4,10 @@
   import { t } from '../../i18n/index.svelte.js';
   import IconRender from '../common/IconRender.svelte';
   import ModalShell from '../common/ModalShell.svelte';
+  import ConfirmModal from '../common/ConfirmModal.svelte';
 
   let { open = $bindable(false) } = $props();
+  let clearConfirmOpen = $state(false);
 
   // 累计点击直达（历史总点击数求和）
   let totalClicks = $derived.by(() => {
@@ -55,11 +57,13 @@
     return t('stats.daysAgo', { days });
   }
 
-  async function handleClearStats() {
-    if (confirm(t('stats.clearConfirm'))) {
-      await appState.clearStats();
-      toast.show(t('stats.cleared'));
-    }
+  function handleClearStats() {
+    clearConfirmOpen = true;
+  }
+
+  async function performClearStats() {
+    await appState.clearStats();
+    toast.show(t('stats.cleared'));
   }
 </script>
 
@@ -135,3 +139,12 @@
         </button>
       </div>
 </ModalShell>
+
+<ConfirmModal
+  bind:open={clearConfirmOpen}
+  title={t('stats.clearStats')}
+  message={t('stats.clearConfirm')}
+  confirmLabel={t('stats.clearStats')}
+  danger
+  onconfirm={performClearStats}
+/>

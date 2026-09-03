@@ -2,15 +2,19 @@
   import { appState } from '../../../state/app.svelte.js';
   import { toast } from '../../../state/toast.svelte.js';
   import { t } from '../../../i18n/index.svelte.js';
+  import ConfirmModal from '../../common/ConfirmModal.svelte';
 
   let { onClose = () => {} } = $props();
+  let resetConfirmOpen = $state(false);
 
-  async function handleResetData() {
-    if (confirm(t('settings.resetWarning'))) {
-      await appState.resetDefaultData();
-      toast.show(t('settings.resetDone'));
-      onClose();
-    }
+  function handleResetData() {
+    resetConfirmOpen = true;
+  }
+
+  async function performReset() {
+    await appState.resetDefaultData();
+    toast.show(t('settings.resetDone'));
+    onClose();
   }
 </script>
 
@@ -27,3 +31,12 @@
     {t('settings.resetBtn')}
   </button>
 </div>
+
+<ConfirmModal
+  bind:open={resetConfirmOpen}
+  title={t('settings.tabs.danger')}
+  message={t('settings.resetWarning')}
+  confirmLabel={t('settings.resetBtn')}
+  danger
+  onconfirm={performReset}
+/>

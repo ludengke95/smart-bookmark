@@ -8,6 +8,7 @@
   import TagPills from '../../components/newtab/TagPills.svelte';
   import BookmarkGrid from '../../components/newtab/BookmarkGrid.svelte';
   import Toast from '../../components/common/Toast.svelte';
+  import ConfirmModal from '../../components/common/ConfirmModal.svelte';
 
   import BookmarkModal from '../../components/modals/BookmarkModal.svelte';
   import ImportModal from '../../components/modals/ImportModal.svelte';
@@ -25,6 +26,7 @@
 
   let editingBookmark = $state(null);
   let targetDefaultGroupId = $state('');
+  let deleteTarget = $state({ open: false, bookmark: null });
 
   onMount(async () => {
     await appState.init();
@@ -42,11 +44,14 @@
     showBookmarkModal = true;
   }
 
-  async function handleDeleteBookmark(bm) {
-    if (confirm(t('bookmark.deleteConfirm', { name: bm.name }))) {
-      await appState.deleteBookmark(bm.id);
-      toast.show(t('bookmark.toastDeleted'));
-    }
+  function handleOpenDeleteBookmark(bm) {
+    deleteTarget = { open: true, bookmark: bm };
+  }
+
+  async function performDeleteBookmark() {
+    if (!deleteTarget.bookmark) return;
+    await appState.deleteBookmark(deleteTarget.bookmark.id);
+    toast.show(t('bookmark.toastDeleted'));
   }
 </script>
 
@@ -72,7 +77,7 @@
     <!-- 书签瀑布流分组网格 -->
     <BookmarkGrid
       onEditBookmark={handleOpenEditBookmark}
-      onDeleteBookmark={handleDeleteBookmark}
+      onDeleteBookmark={handleOpenDeleteBookmark}
       onAddBookmarkToGroup={(gid) => handleOpenAddBookmark(gid)}
       onOpenImport={() => (showImportModal = true)}
     />
@@ -108,3 +113,13 @@
     bind:open={showStatsModal}
   />
 </div>
+
+<!-- 删除书签确认弹窗 -->
+<ConfirmModal
+  bind:open={deleteTarget.open}
+  title={t('bookmark.editTitle')}
+  message={deleteTarget.bookmark ? t('bookmark.deleteConfirm', { name: deleteTarget.bookmark.name }) : ''}
+  confirmLabel={t('common.delete')}
+  danger
+  onconfirm={performDeleteBookmark}
+/>

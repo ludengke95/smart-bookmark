@@ -117,7 +117,7 @@ export function getCommonPrefixBits(clientIpStr, targetIpStr) {
  */
 export function sortEndpointsByTopology(endpoints, clientIp = '', probeResults = {}) {
   if (!endpoints || !Array.isArray(endpoints) || endpoints.length === 0) {
-    return { optimal: null, sorted: [], reason: '无配置入口' };
+    return { optimal: null, sorted: [], reason: 'no-endpoints' };
   }
 
   // 严格过滤并规范化有效入口列表 (支持 string 或包含 url 的对象)
@@ -135,7 +135,7 @@ export function sortEndpointsByTopology(endpoints, clientIp = '', probeResults =
   });
 
   if (validList.length === 0) {
-    return { optimal: null, sorted: [], reason: '无配置入口' };
+    return { optimal: null, sorted: [], reason: 'no-endpoints' };
   }
 
   const enhancedList = validList.map((ep, idx) => {

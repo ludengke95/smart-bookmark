@@ -387,13 +387,13 @@ class McpClient {
           endpoints: args.endpoints || [{ url: args.url, type: 'extranet', order: 0 }]
         };
         const all = await saveBookmark(newBm);
-        return { success: true, message: `书签 "${args.name}" 创建成功`, bookmark: newBm };
+        return { success: true, message: `Bookmark "${args.name}" created successfully`, bookmark: newBm };
       }
 
       case 'update_bookmark': {
         const bookmarks = await getBookmarks();
         const target = bookmarks.find(b => b.id === args.id);
-        if (!target) throw new Error(`未找到 ID 为 "${args.id}" 的书签`);
+        if (!target) throw new Error(`Bookmark with ID "${args.id}" not found`);
 
         const updated = {
           ...target,
@@ -402,21 +402,21 @@ class McpClient {
           ...(args.tags ? { tags: args.tags } : {})
         };
         await saveBookmark(updated);
-        return { success: true, message: `书签 "${updated.name}" 已更新`, bookmark: updated };
+        return { success: true, message: `Bookmark "${updated.name}" updated`, bookmark: updated };
       }
 
       case 'delete_bookmark': {
         await deleteBookmark(args.id);
-        return { success: true, message: `书签 ${args.id} 已删除` };
+        return { success: true, message: `Bookmark ${args.id} deleted` };
       }
 
       case 'create_group': {
         const groups = await saveGroup({ name: args.name });
-        return { success: true, message: `分组 "${args.name}" 已创建`, groups };
+        return { success: true, message: `Group "${args.name}" created`, groups };
       }
 
       case 'batch_organize_bookmarks': {
-        await createSnapshot('[MCP外部AI重构前备份] 执行大模型批量治理前快照', 'auto_mcp');
+        await createSnapshot('[MCP AI] Pre-refactor snapshot before LLM batch governance', 'auto_mcp');
         let groupResult = null;
         let tagResult = null;
 
@@ -429,7 +429,7 @@ class McpClient {
 
         return {
           success: true,
-          message: '外部大模型治理方案已成功应用',
+          message: 'External LLM governance plan applied successfully',
           groupChanges: groupResult?.modifiedCount || 0,
           tagChanges: tagResult?.modifiedCount || 0
         };
@@ -446,7 +446,7 @@ class McpClient {
       }
 
       default:
-        throw new Error(`未知的工具名称: ${name}`);
+        throw new Error(`Unknown tool name: ${name}`);
     }
   }
 }

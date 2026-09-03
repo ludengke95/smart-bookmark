@@ -44,3 +44,19 @@ export function formatLatencyI18n(latency, reachable = true, error = '') {
   }
   return { label: t('latency.sluggish'), colorClass: 'text-rose-500' };
 }
+
+/**
+ * 将服务层抛出的结构化错误（带 err.code）本地化为用户可读文案。
+ * 命中 errors.* 字典则返回翻译；否则回退 err.message（中性技术消息）。
+ */
+export function formatServiceError(err, fallback = '') {
+  const code = err?.code;
+  if (code) {
+    const translated = t(`errors.${code}`, err.params || {});
+    // i18n 找不到 key 时会原样返回 'errors.xxx'
+    if (translated && !translated.startsWith('errors.')) {
+      return translated;
+    }
+  }
+  return err?.message || fallback;
+}

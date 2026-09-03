@@ -1,6 +1,7 @@
 <script>
   import { toast } from '../../state/toast.svelte.js';
   import { t } from '../../i18n/index.svelte.js';
+  import { formatServiceError } from '../../i18n/utils.js';
   import ModalShell from '../common/ModalShell.svelte';
 
   let {
@@ -49,7 +50,7 @@
       await onApply(selectedItems);
       open = false;
     } catch (err) {
-      toast.show(t('ai.result.applyFailed', { error: err.message }));
+      toast.show(t('ai.result.applyFailed', { error: formatServiceError(err) }));
     } finally {
       isApplying = false;
     }
@@ -132,7 +133,7 @@
                   <!-- 分组前后对比 -->
                   <div class="flex items-center gap-2 text-[11px]">
                     <span class="text-text-secondary px-2 py-0.5 rounded bg-subtle/60 border border-border-subtle/40">
-                      {item.currentGroupName}
+                      {item.currentGroupName || t('groups.ungrouped')}
                     </span>
                     <span class="text-text-tertiary">➔</span>
                     <span class="font-medium text-accent px-2 py-0.5 rounded bg-accent/10 border border-accent/20 flex items-center gap-1">

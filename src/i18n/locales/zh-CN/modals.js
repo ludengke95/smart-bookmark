@@ -33,6 +33,9 @@ export default {
     resetDone: '已重置为默认初始数据'
   },
   ai: {
+    preparingData: '正在准备书签数据...',
+    progressGrouping: '正在智能分组分析 ({current}/{total} 批次)...',
+    progressTagging: '正在智能标签提炼 ({current}/{total} 批次)...',
     apiConfigTitle: 'AI 大模型接口配置',
     apiConfigDesc: '标准 OpenAI 兼容协议',
     presetsTitle: '服务商预设:',

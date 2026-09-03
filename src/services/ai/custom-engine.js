@@ -1,6 +1,7 @@
 /**
  * 自定义大模型 API 适配器 (兼容 OpenAI / DeepSeek / Ollama / vLLM 标准格式)
  */
+import { serviceError } from '../errors.js';
 
 /**
  * 测试自定义 API 连通性
@@ -38,7 +39,7 @@ export async function testCustomApiConnection(config) {
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => '');
-    throw new Error(`API 响应错误 [HTTP ${response.status}]: ${errorText.slice(0, 200)}`);
+    throw serviceError('apiHttpError', `HTTP ${response.status}`, { status: response.status }, errorText.slice(0, 300));
   }
 
   const data = await response.json();
@@ -101,13 +102,13 @@ export async function runCustomApiPrompt({ config, systemPrompt, prompt, schema 
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => '');
-    throw new Error(`API 响应异常 [${response.status}]: ${errorText.slice(0, 300)}`);
+    throw serviceError('apiHttpError', `HTTP ${response.status}`, { status: response.status }, errorText.slice(0, 300));
   }
 
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content;
   if (!content) {
-    throw new Error('模型未返回有效文本内容');
+    throw serviceError('apiEmptyResponse', 'Empty model response');
   }
 
   return content;

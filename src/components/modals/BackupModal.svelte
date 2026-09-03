@@ -4,10 +4,12 @@
   import { t } from '../../i18n/index.svelte.js';
   import { exportFullBackupJson, importFullBackupJson } from '../../services/storage.js';
   import ModalShell from '../common/ModalShell.svelte';
+  import ConfirmModal from '../common/ConfirmModal.svelte';
 
   let { open = $bindable(false) } = $props();
 
   let snapshotReason = $state('');
+  let rollbackConfirm = $state({ open: false, targetId: null });
 
   function formatTime(isoString) {
     try {
@@ -30,14 +32,16 @@
     toast.show(t('backup.created'));
   }
 
-  async function handleRollback(id) {
-    if (confirm(t('backup.rollbackConfirm'))) {
-      const ok = await appState.rollbackSnapshot(id);
-      if (ok) {
-        toast.show(t('backup.rollbackSuccess'));
-      } else {
-        toast.show(t('backup.rollbackFailed'));
-      }
+  function handleRollback(id) {
+    rollbackConfirm = { open: true, targetId: id };
+  }
+
+  async function performRollback() {
+    const ok = await appState.rollbackSnapshot(rollbackConfirm.targetId);
+    if (ok) {
+      toast.show(t('backup.rollbackSuccess'));
+    } else {
+      toast.show(t('backup.rollbackFailed'));
     }
   }
 
@@ -208,3 +212,11 @@
         </button>
       </div>
 </ModalShell>
+
+<ConfirmModal
+  bind:open={rollbackConfirm.open}
+  title={t('backup.modalTitle')}
+  message={t('backup.rollbackConfirm')}
+  confirmLabel={t('backup.restore')}
+  onconfirm={performRollback}
+/>

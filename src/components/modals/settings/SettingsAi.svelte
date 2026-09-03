@@ -2,6 +2,7 @@
   import { appState } from '../../../state/app.svelte.js';
   import { toast } from '../../../state/toast.svelte.js';
   import { t } from '../../../i18n/index.svelte.js';
+  import { formatServiceError } from '../../../i18n/utils.js';
   import {
     UNGROUPED_GROUP_ID,
     AI_API_PRESETS,
@@ -48,7 +49,7 @@
       const res = await appState.testCustomApiConfig(aiConfig);
       toast.show(t('ai.testSuccess', { model: res.model }));
     } catch (e) {
-      toast.show(t('ai.testFailed', { error: e.message }));
+      toast.show(t('ai.testFailed', { error: formatServiceError(e) }));
     } finally {
       isTestingApi = false;
     }
@@ -98,7 +99,7 @@
       aiResultItems = result.items;
       showAiResultModal = true;
     } catch (err) {
-      toast.show(t('ai.groupingAnalysisFailed', { error: err.message }));
+      toast.show(t('ai.groupingAnalysisFailed', { error: formatServiceError(err) }));
     }
   }
 
@@ -118,7 +119,7 @@
       aiResultItems = result.items;
       showAiResultModal = true;
     } catch (err) {
-      toast.show(t('ai.taggingAnalysisFailed', { error: err.message }));
+      toast.show(t('ai.taggingAnalysisFailed', { error: formatServiceError(err) }));
     }
   }
 

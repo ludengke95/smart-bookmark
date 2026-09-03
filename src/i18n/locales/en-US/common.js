@@ -110,5 +110,17 @@ export default {
     paperSand: 'Paper Sand',
     ceramicLight: 'Ceramic Light',
     obsidianDark: 'Obsidian Dark'
+  },
+  errors: {
+    apiHttpError: 'API returned an error (HTTP {status})',
+    apiEmptyResponse: 'Model returned no valid content',
+    aiEmptyInput: 'Please paste the LLM reply or upload a valid JSON file first',
+    aiParseInvalid: 'Could not parse a valid change list from the LLM output',
+    aiNoMatch: 'No current bookmark could be matched (bookmark IDs may mismatch)',
+    aiAnalysisFailed: 'AI analysis was interrupted, please try again later',
+    snapshotNotFound: 'Target snapshot data not found',
+    builtinGroupNoDelete: 'System built-in groups cannot be deleted',
+    mcpBookmarkNotFound: 'Bookmark with ID "{id}" not found',
+    mcpUnknownTool: 'Unknown tool name: {name}'
   }
 };

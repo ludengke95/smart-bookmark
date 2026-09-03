@@ -33,6 +33,9 @@ export default {
     resetDone: 'Reset to default data'
   },
   ai: {
+    preparingData: 'Preparing bookmark data...',
+    progressGrouping: 'Running smart grouping ({current}/{total} batches)...',
+    progressTagging: 'Refining smart tags ({current}/{total} batches)...',
     apiConfigTitle: 'AI LLM API Configuration',
     apiConfigDesc: 'Standard OpenAI Compatible Protocol',
     presetsTitle: 'Provider Presets:',

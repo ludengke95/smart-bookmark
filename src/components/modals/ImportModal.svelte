@@ -5,6 +5,7 @@
   import { fetchFaviconAsBase64, matchBrandIcon } from '../../services/favicon-fetcher.js';
   import { UNGROUPED_GROUP_ID, PINNED_GROUP_ID } from '../../constants/index.js';
   import { t } from '../../i18n/index.svelte.js';
+  import { formatServiceError } from '../../i18n/utils.js';
   import IconRender from '../common/IconRender.svelte';
   import Select from '../common/Select.svelte';
   import ModalShell from '../common/ModalShell.svelte';
@@ -372,7 +373,7 @@
       open = false;
     } catch (e) {
       console.error('导入书签失败:', e);
-      toast.show(t('import.importError', { error: e.message || t('import.unknownError') }));
+      toast.show(t('import.importError', { error: formatServiceError(e, t('import.unknownError')) }));
     } finally {
       isImporting = false;
     }

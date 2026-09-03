@@ -3,6 +3,7 @@
   import { toast } from '../../state/toast.svelte.js';
   import { UNGROUPED_GROUP_ID, DEFAULT_AI_MODEL } from '../../constants/index.js';
   import { t } from '../../i18n/index.svelte.js';
+  import { formatServiceError } from '../../i18n/utils.js';
   import AiResultModal from './AiResultModal.svelte';
   import ModalShell from '../common/ModalShell.svelte';
 
@@ -139,7 +140,7 @@
       showResultModal = true;
       toast.show(t('ai.parseSuccess', { count: parsed.matchedCount }));
     } catch (err) {
-      toast.show(t('ai.parseFailed', { error: err.message }));
+      toast.show(t('ai.parseFailed', { error: formatServiceError(err) }));
     } finally {
       isParsing = false;
     }
@@ -162,7 +163,7 @@
       resultItems = result.items;
       showResultModal = true;
     } catch (err) {
-      toast.show(t('ai.groupingAnalysisFailed', { error: err.message }));
+      toast.show(t('ai.groupingAnalysisFailed', { error: formatServiceError(err) }));
     }
   }
 
@@ -183,7 +184,7 @@
       resultItems = result.items;
       showResultModal = true;
     } catch (err) {
-      toast.show(t('ai.taggingAnalysisFailed', { error: err.message }));
+      toast.show(t('ai.taggingAnalysisFailed', { error: formatServiceError(err) }));
     }
   }
 
