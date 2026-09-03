@@ -34,6 +34,7 @@ import {
 import { detectAllLocalIps } from '../services/ip-detector.js';
 import { probeAllUrls } from '../services/ping-probe.js';
 import { sortEndpointsByTopology } from '../services/xor-matcher.js';
+import { createBookmarkComparator } from '../services/bookmark-sort.js';
 import { mcpClient } from '../services/mcp/client.js';
 import { testCustomApiConnection } from '../services/ai/custom-engine.js';
 import { analyzeSmartGrouping, analyzeSmartTagging, parseManualAiResult } from '../services/ai/organizer.js';
@@ -147,32 +148,15 @@ class AppState {
     }
 
     const sortOrder = this.settings.bookmarkSortOrder || 'custom';
+    const compare = createBookmarkComparator({
+      sortOrder,
+      clickStats: this.clickStats,
+      getRoute: (bm) => this.getBookmarkRoute(bm)
+    });
 
     // 对每个分组内的书签执行排序
     for (const [gId, list] of map.entries()) {
-      list.sort((a, b) => {
-        if (sortOrder === 'clicks') {
-          return (this.clickStats[b.id] || 0) - (this.clickStats[a.id] || 0);
-        }
-        if (sortOrder === 'name') {
-          return (a.name || '').localeCompare(b.name || '', 'zh-CN');
-        }
-        if (sortOrder === 'time') {
-          return (b.createdAt || 0) - (a.createdAt || 0);
-        }
-        if (sortOrder === 'latency') {
-          const routeA = this.getBookmarkRoute(a);
-          const routeB = this.getBookmarkRoute(b);
-          const reachA = routeA.optimal?.reachable !== false;
-          const reachB = routeB.optimal?.reachable !== false;
-          if (reachA !== reachB) return reachA ? -1 : 1;
-          const latA = typeof routeA.optimal?.latency === 'number' ? routeA.optimal.latency : 99999;
-          const latB = typeof routeB.optimal?.latency === 'number' ? routeB.optimal.latency : 99999;
-          return latA - latB;
-        }
-        // 默认 'custom'：按书签 order 属性排序
-        return (a.order || 0) - (b.order || 0);
-      });
+      list.sort(compare);
     }
 
     const customGroups = this.groups.filter(g => g.id !== PINNED_GROUP_ID && g.id !== UNGROUPED_GROUP_ID);
@@ -187,6 +171,10 @@ class AppState {
       bookmarks: map.get(g.id) || []
     }));
   });
+
+  // ==========================================
+  // 初始化与数据加载
+  // ==========================================
 
   // 初始化加载全量数据
   async init() {
@@ -240,6 +228,10 @@ class AppState {
     }
   }
 
+  // ==========================================
+  // 主题、搜索引擎与设置偏好
+  // ==========================================
+
   applyThemeToDOM(themeId) {
     const valid = THEMES.some(t => t.id === themeId);
     const target = valid ? themeId : 'paper-sand';
@@ -268,6 +260,10 @@ class AppState {
       this.applyThemeToDOM(partial.theme);
     }
   }
+
+  // ==========================================
+  // 网络探测与智能寻径
+  // ==========================================
 
   async refreshNetwork(force = false) {
     try {
@@ -322,6 +318,10 @@ class AppState {
     );
   }
 
+  // ==========================================
+  // 书签 CRUD 与批量导入
+  // ==========================================
+
   // 批量原子导入书签与分组
   async batchImportBookmarks(newGroups, newBookmarks) {
     const result = await storageBatchImportData({ newGroups, newBookmarks });
@@ -375,7 +375,10 @@ class AppState {
     this.bookmarks = await storageReorderBookmarks(orderedIds);
   }
 
+  // ==========================================
   // 分组操作
+  // ==========================================
+
   async saveGroup(grpData) {
     this.groups = await storageSaveGroup(grpData);
     return this.groups;
@@ -400,7 +403,10 @@ class AppState {
     this.collapsedGroups = next;
   }
 
-  // 快照管理
+  // ==========================================
+  // 快照与备份管理
+  // ==========================================
+
   async createSnapshot(reason, type, isLocked) {
     const snap = await storageCreateSnapshot(reason, type, isLocked);
     this.snapshots = await getSnapshots();
@@ -423,6 +429,10 @@ class AppState {
     }
     return false;
   }
+
+  // ==========================================
+  // 点击统计与数据重置
+  // ==========================================
 
   // 点击并记录统计
   async recordClick(bmId) {
