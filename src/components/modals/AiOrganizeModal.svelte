@@ -4,6 +4,7 @@
   import { UNGROUPED_GROUP_ID } from '../../constants/index.js';
   import { t } from '../../i18n/index.svelte.js';
   import AiResultModal from './AiResultModal.svelte';
+  import ModalShell from '../common/ModalShell.svelte';
 
   let { open = $bindable(false) } = $props();
 
@@ -208,40 +209,21 @@
   }
 </script>
 
-{#if open}
-  <div
-    class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-    onclick={(e) => { if (e.target === e.currentTarget && !isParsing && !appState.aiRunning) open = false; }}
-    onkeydown={(e) => { if (e.key === 'Escape' && !isParsing && !appState.aiRunning) open = false; }}
-  >
-    <!-- 优化适度扩充的固定尺寸 max-w-2xl h-[610px]，优先确保一屏完整展示且不触发滚动条 -->
-    <div class="w-full max-w-2xl h-[610px] bg-surface border border-border-subtle rounded-xl shadow-popover p-5 space-y-3.5 flex flex-col">
-      <!-- 头部 -->
-      <div class="flex items-center justify-between pb-2 border-b border-border-subtle flex-shrink-0">
-        <div class="flex items-center gap-2">
-          <div class="w-6 h-6 rounded-lg bg-accent/10 text-accent flex items-center justify-center font-bold text-xs">
-            ✨
-          </div>
-          <div>
-            <h2 class="text-sm font-semibold text-text-primary">{t('ai.dialogTitle')}</h2>
-          </div>
-        </div>
-        <button
-          type="button"
-          disabled={isParsing || appState.aiRunning}
-          onclick={() => (open = false)}
-          class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors disabled:opacity-40"
-          aria-label={t('common.close')}
-          title={t('common.close')}
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+<ModalShell
+  bind:open
+  maxWidth="max-w-2xl"
+  height="h-[610px]"
+  spacing="space-y-3.5"
+  closeDisabled={isParsing || appState.aiRunning}
+>
+  {#snippet header()}
+    <div class="flex items-center gap-2">
+      <div class="w-6 h-6 rounded-lg bg-accent/10 text-accent flex items-center justify-center font-bold text-xs">✨</div>
+      <div>
+        <h2 class="text-sm font-semibold text-text-primary">{t('ai.dialogTitle')}</h2>
       </div>
+    </div>
+  {/snippet}
 
       <!-- 模式切换分段胶囊：免Key网页对话 vs API直连 (显式固定高度 h-8，彻底消除因边框或徽标导致的 32px vs 30px 尺寸跳动) -->
       <div class="grid grid-cols-2 gap-1 bg-subtle p-1 rounded-lg text-xs flex-shrink-0">
@@ -687,9 +669,7 @@
           </div>
         {/if}
       </div>
-    </div>
-  </div>
-{/if}
+</ModalShell>
 
 <!-- 结果比对与应用弹窗 -->
 <AiResultModal

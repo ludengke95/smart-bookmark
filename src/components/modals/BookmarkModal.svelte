@@ -10,6 +10,7 @@
   import { getGroupName } from '../../i18n/utils.js';
   import IconRender from '../common/IconRender.svelte';
   import Select from '../common/Select.svelte';
+  import ModalShell from '../common/ModalShell.svelte';
 
   let { open = $bindable(false), editBookmark = null, defaultGroupId = '' } = $props();
 
@@ -150,35 +151,11 @@
   }
 </script>
 
-{#if open}
-  <!-- 模态遮罩层 -->
-  <div
-    class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-    onclick={(e) => { if (e.target === e.currentTarget) open = false; }}
-    onkeydown={(e) => { if (e.key === 'Escape') open = false; }}
-  >
-    <div class="w-full max-w-lg h-[530px] bg-surface border border-border-subtle rounded-xl shadow-popover p-5 space-y-4 flex flex-col">
-      <!-- 头部 -->
-      <div class="flex items-center justify-between pb-2 border-b border-border-subtle flex-shrink-0">
-        <h2 class="text-sm font-semibold text-text-primary">
-          {editBookmark ? t('bookmark.editTitle') : t('bookmark.addTitle')}
-        </h2>
-        <button
-          type="button"
-          onclick={() => (open = false)}
-          class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
-          aria-label={t('common.close')}
-          title={t('common.close')}
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
+<ModalShell
+  bind:open
+  title={editBookmark ? t('bookmark.editTitle') : t('bookmark.addTitle')}
+  maxWidth="max-w-lg"
+>
       <!-- 表单主体 (内容滚动区 + 固定底部) -->
       <form onsubmit={handleSubmit} class="flex-1 flex flex-col min-h-0 text-xs">
         <div class="flex-1 overflow-y-auto space-y-4 pr-1">
@@ -343,6 +320,4 @@
           </button>
         </div>
       </form>
-    </div>
-  </div>
-{/if}
+</ModalShell>

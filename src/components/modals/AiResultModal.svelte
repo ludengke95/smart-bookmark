@@ -1,6 +1,7 @@
 <script>
   import { toast } from '../../state/toast.svelte.js';
   import { t } from '../../i18n/index.svelte.js';
+  import ModalShell from '../common/ModalShell.svelte';
 
   let {
     open = $bindable(false),
@@ -55,42 +56,26 @@
   }
 </script>
 
-{#if open}
-  <div
-    class="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-    onclick={(e) => { if (e.target === e.currentTarget && !isApplying) open = false; }}
-    onkeydown={(e) => { if (e.key === 'Escape' && !isApplying) open = false; }}
-  >
-    <div class="w-full max-w-2xl h-[580px] bg-surface border border-border-subtle rounded-xl shadow-popover p-5 space-y-4 flex flex-col">
-      <!-- 头部 -->
-      <div class="flex items-center justify-between pb-2 border-b border-border-subtle flex-shrink-0">
-        <div>
-          <h2 class="text-sm font-semibold text-text-primary flex items-center gap-2">
-            {#if type === 'grouping'}
-              <span>✨ {t('ai.result.titleGrouping')}</span>
-            {:else}
-              <span>🏷️ {t('ai.result.titleTagging')}</span>
-            {/if}
-            <span class="text-xs font-normal text-text-tertiary">
-              {t('ai.result.analyzedCount', { total: items.length, selected: selectedCount })}
-            </span>
-          </h2>
-        </div>
-        <button
-          type="button"
-          disabled={isApplying}
-          onclick={() => (open = false)}
-          class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors disabled:opacity-40"
-          aria-label={t('common.close')}
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
+<ModalShell
+  bind:open
+  maxWidth="max-w-2xl"
+  height="h-[580px]"
+  zIndex="z-[60]"
+  backdrop="bg-black/50"
+  closeDisabled={isApplying}
+>
+  {#snippet header()}
+    <h2 class="text-sm font-semibold text-text-primary flex items-center gap-2">
+      {#if type === 'grouping'}
+        <span>✨ {t('ai.result.titleGrouping')}</span>
+      {:else}
+        <span>🏷️ {t('ai.result.titleTagging')}</span>
+      {/if}
+      <span class="text-xs font-normal text-text-tertiary">
+        {t('ai.result.analyzedCount', { total: items.length, selected: selectedCount })}
+      </span>
+    </h2>
+  {/snippet}
 
       <!-- 操作过滤栏 -->
       <div class="flex items-center justify-between bg-subtle/70 px-3 py-2 rounded-lg text-xs flex-shrink-0">
@@ -218,6 +203,4 @@
           </button>
         </div>
       </div>
-    </div>
-  </div>
-{/if}
+</ModalShell>

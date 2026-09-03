@@ -6,6 +6,7 @@
   import { UNGROUPED_GROUP_ID, PINNED_GROUP_ID } from '../../constants/index.js';
   import IconRender from '../common/IconRender.svelte';
   import Select from '../common/Select.svelte';
+  import ModalShell from '../common/ModalShell.svelte';
 
   let { open = $bindable(false) } = $props();
 
@@ -377,34 +378,13 @@
   }
 </script>
 
-{#if open}
-  <div
-    class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-    onclick={(e) => { if (!isImporting && e.target === e.currentTarget) open = false; }}
-    onkeydown={(e) => { if (!isImporting && e.key === 'Escape') open = false; }}
-  >
-    <div class="w-full max-w-xl h-[530px] bg-surface border border-border-subtle rounded-xl shadow-popover p-5 space-y-4 flex flex-col">
-      <!-- 头部 -->
-      <div class="flex items-center justify-between pb-2 border-b border-border-subtle flex-shrink-0">
-        <h2 class="text-sm font-semibold text-text-primary">导入与迁移书签</h2>
-        {#if !isImporting}
-          <button
-            type="button"
-            onclick={() => (open = false)}
-            class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
-            aria-label="关闭对话框"
-            title="关闭"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        {/if}
-      </div>
-
+<ModalShell
+  bind:open
+  title="导入与迁移书签"
+  maxWidth="max-w-xl"
+  closable={!isImporting}
+  closeDisabled={isImporting}
+>
       {#if isImporting}
         <!-- 导入中进度条全屏反馈 -->
         <div class="flex-1 flex flex-col items-center justify-center space-y-5 px-6 text-center">
@@ -606,6 +586,4 @@
           </div>
         </div>
       {/if}
-    </div>
-  </div>
-{/if}
+</ModalShell>
