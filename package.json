@@ -12,8 +12,8 @@
     "mcp": "node scripts/mcp-bridge.js"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "ludengke95 <ludengke95@gmail.com>",
+  "license": "MIT",
   "devDependencies": {
     "@lucide/svelte": "^1.38.0",
     "@wxt-dev/module-svelte": "^2.0.5",

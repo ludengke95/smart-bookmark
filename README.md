@@ -7,7 +7,7 @@
 [![Svelte 5](https://img.shields.io/badge/Framework-Svelte_5_(Runes)-FF3E00?style=flat-square)](https://svelte.dev)
 [![Tailwind CSS](https://img.shields.io/badge/CSS-Tailwind_3.4-38B2AC?style=flat-square)](https://tailwindcss.com)
 [![Manifest V3](https://img.shields.io/badge/Chrome-Manifest_V3-4285F4?style=flat-square)](https://developer.chrome.com/docs/extensions/mv3/)
-[![License](https://img.shields.io/badge/License-ISC-blue?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
 ---
 
@@ -131,6 +131,6 @@ newtab/
 
 ---
 
-## 📄 开源许可
+## 📄 开源许可 (License)
 
-本项目基于 [ISC License](LICENSE) 协议开源。
+本项目基于 [MIT License](LICENSE) 协议开源，欢迎自由使用、修改与分发。
