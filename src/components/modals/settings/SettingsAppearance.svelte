@@ -16,10 +16,14 @@
     { value: '12', label: t('settings.clock12') }
   ]);
 
+  function getThemeName(theme) {
+    return t('themes.' + theme.id, {}, theme.name);
+  }
+
   function handleThemeChange(themeId) {
     const theme = THEMES.find(item => item.id === themeId);
     appState.updateSettings({ theme: themeId });
-    toast.show(`已切换至主题: ${theme?.name || themeId}`);
+    toast.show(t('settings.themeSwitched', { name: getThemeName(theme) }));
   }
 </script>
 
@@ -39,7 +43,7 @@
 <!-- 3款极简主题切换 -->
 <div class="space-y-2 pt-2 border-t border-border-subtle">
   <span class="block font-medium text-text-secondary">{t('settings.theme')}</span>
-  <span class="block font-medium text-text-secondary">视觉风格 (3款极简主题)</span>
+  <span class="block font-medium text-text-secondary">{t('settings.themeDesc')}</span>
   <div class="grid grid-cols-3 gap-2.5">
     {#each THEMES as theme}
       <button
@@ -50,7 +54,7 @@
           : 'border-border-subtle bg-surface hover:bg-subtle/50'}"
       >
         <div class="flex items-center justify-between mb-2">
-          <span class="font-medium text-text-primary text-[11px]">{theme.name}</span>
+          <span class="font-medium text-text-primary text-[11px]">{getThemeName(theme)}</span>
           {#if appState.settings.theme === theme.id}
             <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
           {/if}

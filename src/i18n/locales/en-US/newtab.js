@@ -27,11 +27,17 @@ export default {
     backup: 'Backups & Snapshots',
     backupTitle: 'Snapshots & Rollback',
     settings: 'Preferences',
-    addBookmark: 'Add Bookmark'
+    addBookmark: 'Add Bookmark',
+    networkStatus: 'Network status',
+    networkStatusHint: 'Local network status, click to re-probe',
+    tagFilter: 'Tag filter'
   },
   search: {
     placeholder: 'Search bookmarks or query the web...',
-    engineTooltip: 'Switch search engine'
+    engineTooltip: 'Switch search engine',
+    engineSwitch: 'Click to switch search engine',
+    clearQuery: 'Clear search',
+    directJump: '⚡ Direct: {name}'
   },
   sort: {
     tooltip: 'Switch bookmark sorting order',
@@ -40,7 +46,8 @@ export default {
     clicks: 'By Frequency',
     name: 'By Name',
     latency: 'By Latency',
-    time: 'By Added Date'
+    time: 'By Added Date',
+    updated: 'Bookmark order updated'
   },
   popup: {
     title: 'Smart Bookmark Quick Add',
@@ -59,6 +66,7 @@ export default {
     noValidEndpoint: 'No valid endpoint configured',
     refreshNetwork: 'Refresh network status',
     detectingNetwork: 'Detecting network...',
-    noBookmarksFound: 'No matching bookmarks'
+    noBookmarksFound: 'No matching bookmarks',
+    currentPage: 'Current page'
   }
 };

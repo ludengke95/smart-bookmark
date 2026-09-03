@@ -101,13 +101,13 @@
     if (!url) return;
     isProbing[url] = 'testing';
     const res = await probeSingleUrl(url, 2000);
-    isProbing[url] = res.reachable ? `${res.latency}ms` : '不可达';
+    isProbing[url] = res.reachable ? `${res.latency}ms` : t('latency.unreachable');
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!name.trim()) {
-      toast.show('请输入书签名称');
+      toast.show(t('bookmark.nameRequiredToast'));
       return;
     }
 
@@ -126,7 +126,7 @@
       .filter(ep => !!ep.url);
 
     if (cleanEndpoints.length === 0) {
-      toast.show('请至少配置一个有效的访问 URL');
+      toast.show(t('bookmark.noValidUrlToast'));
       return;
     }
 

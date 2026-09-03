@@ -41,7 +41,11 @@ export default {
     created: 'Group created',
     renamed: 'Group renamed',
     deleted: 'Group deleted',
-    orderUpdated: 'Group order updated'
+    orderUpdated: 'Group order updated',
+    moveUpTooltip: 'Move group up',
+    moveDownTooltip: 'Move group down',
+    renameTooltip: 'Rename',
+    deleteTooltip: 'Delete group'
   },
   bookmark: {
     addTitle: 'Add New Bookmark',
@@ -81,7 +85,13 @@ export default {
     deleteConfirm: 'Are you sure you want to delete bookmark "{name}"?',
     noValidEndpointToast: 'This bookmark has no valid endpoint configured',
     directJumpToast: '⚡ Routing to: {target}',
-    directEndpointToast: 'Direct jump: {url}'
+    directEndpointToast: 'Direct jump: {url}',
+    nameRequiredToast: 'Please enter a bookmark name',
+    noValidUrlToast: 'Please configure at least one valid URL',
+    addToGroup: 'Add bookmark',
+    groupEmpty: 'No bookmarks in this group',
+    noMatch: 'No matching bookmarks',
+    clearFilter: 'Clear filters'
   },
   latency: {
     direct: 'Direct',
@@ -92,5 +102,13 @@ export default {
     timeout: 'Timeout',
     unreachable: 'Unreachable',
     offline: 'Offline'
+  },
+  select: {
+    placeholder: 'Please select...'
+  },
+  themes: {
+    paperSand: 'Paper Sand',
+    ceramicLight: 'Ceramic Light',
+    obsidianDark: 'Obsidian Dark'
   }
 };

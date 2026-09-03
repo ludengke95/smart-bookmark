@@ -1,5 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
+  import { t } from '../../i18n/index.svelte.js';
 
   /**
    * 自适应表单选择器组件 (Adaptive Select / Segmented Control)
@@ -12,7 +13,7 @@
   let {
     value = $bindable(),
     options = [],
-    placeholder = '请选择...',
+    placeholder = '',
     disabled = false,
     id = '',
     mode = 'auto', // 'auto' | 'segmented' | 'popover'
@@ -128,7 +129,7 @@
         {#if selectedOption}
           <span class="truncate font-medium">{selectedOption.label}</span>
         {:else}
-          <span class="text-text-tertiary truncate">{placeholder}</span>
+          <span class="text-text-tertiary truncate">{placeholder || t('select.placeholder')}</span>
         {/if}
       </div>
 

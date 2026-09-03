@@ -24,7 +24,7 @@
 {#if appState.bookmarks.length > 0}
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-col sm:flex-row items-center justify-between gap-2.5 select-none">
     <!-- 标签筛选胶囊区 -->
-    <nav aria-label="标签筛选" class="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 flex-1">
+    <nav aria-label={t('nav.tagFilter')} class="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 flex-1">
       <button
         type="button"
         onclick={() => (appState.activeTag = 'all')}

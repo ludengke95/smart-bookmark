@@ -41,7 +41,11 @@ export default {
     created: '分组已创建',
     renamed: '分组已重命名',
     deleted: '分组已删除',
-    orderUpdated: '分组排序已更新'
+    orderUpdated: '分组排序已更新',
+    moveUpTooltip: '上移分组',
+    moveDownTooltip: '下移分组',
+    renameTooltip: '重命名',
+    deleteTooltip: '删除分组'
   },
   bookmark: {
     addTitle: '添加新书签',
@@ -81,7 +85,13 @@ export default {
     deleteConfirm: '确定要删除书签 "{name}" 吗？',
     noValidEndpointToast: '该书签暂未配置有效访问入口',
     directJumpToast: '⚡ 寻径直达: {target}',
-    directEndpointToast: '直达入口: {url}'
+    directEndpointToast: '直达入口: {url}',
+    nameRequiredToast: '请输入书签名称',
+    noValidUrlToast: '请至少配置一个有效的访问 URL',
+    addToGroup: '加书签',
+    groupEmpty: '该分组暂无书签',
+    noMatch: '未找到匹配的书签',
+    clearFilter: '清除筛选条件'
   },
   latency: {
     direct: '直达',
@@ -92,5 +102,13 @@ export default {
     timeout: '超时',
     unreachable: '不可达',
     offline: '网络离线'
+  },
+  select: {
+    placeholder: '请选择...'
+  },
+  themes: {
+    paperSand: '纸本暖沙 (Paper Sand)',
+    ceramicLight: '陶瓷素白 (Ceramic Light)',
+    obsidianDark: '深曜黑 (Obsidian Dark)'
   }
 };

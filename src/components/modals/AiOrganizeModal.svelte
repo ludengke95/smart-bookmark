@@ -47,7 +47,7 @@
 
   function handleCopyPrompt() {
     if (appState.bookmarks.length === 0) {
-      toast.show('当前书签库为空，无法生成提示词');
+      toast.show(t('ai.emptyNoPrompt'));
       return;
     }
     const result = activeType === 'grouping'
@@ -55,20 +55,20 @@
       : appState.getManualTaggingPromptData();
 
     if (result.count === 0) {
-      toast.show(activeType === 'grouping' ? '当前范围内没有待整理的书签' : '当前范围内所有书签均已存在标签');
+      toast.show(activeType === 'grouping' ? t('ai.noPendingGrouping') : t('ai.allTagged'));
       return;
     }
 
     navigator.clipboard.writeText(result.promptText).then(() => {
-      toast.show('📋 提示词已复制到剪贴板！请配合下载的数据文件发给大模型');
+      toast.show(t('ai.promptCopiedFile'));
     }).catch(() => {
-      toast.show('复制失败，请手动复制');
+      toast.show(t('ai.copyFailed'));
     });
   }
 
   function handleDownloadDataJson() {
     if (appState.bookmarks.length === 0) {
-      toast.show('当前书签库为空，无法导出数据');
+      toast.show(t('ai.emptyNoExport'));
       return;
     }
     const result = activeType === 'grouping'
@@ -76,7 +76,7 @@
       : appState.getManualTaggingPromptData();
 
     if (result.count === 0) {
-      toast.show(activeType === 'grouping' ? '当前范围内没有待整理的书签' : '当前范围内所有书签均已存在标签');
+      toast.show(activeType === 'grouping' ? t('ai.noPendingGrouping') : t('ai.allTagged'));
       return;
     }
 
@@ -90,7 +90,7 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.show(`💾 已下载 ${result.count} 项书签精简数据文件`);
+    toast.show(t('ai.dataDownloaded', { count: result.count }));
   }
 
   function handleFileUpload(e) {
@@ -113,17 +113,17 @@
     const reader = new FileReader();
     reader.onload = (evt) => {
       rawInput = evt.target.result;
-      toast.show(`已载入文件: ${file.name}`);
+      toast.show(t('ai.fileLoaded', { name: file.name }));
     };
     reader.onerror = () => {
-      toast.show('读取文件失败');
+      toast.show(t('ai.readFileFailed'));
     };
     reader.readAsText(file);
   }
 
   function handleParseResult() {
     if (!rawInput.trim()) {
-      toast.show('请先粘贴模型回复内容或上传变更 JSON 文件');
+      toast.show(t('ai.pastePrompt'));
       return;
     }
 
@@ -131,15 +131,15 @@
     try {
       const parsed = appState.parseManualAiResponse(rawInput, activeType);
       if (!parsed.success || !parsed.items || parsed.items.length === 0) {
-        toast.show('未能解析出有效的变更项，请检查大模型返回格式');
+        toast.show(t('ai.parseNoValid'));
         return;
       }
       resultType = activeType;
       resultItems = parsed.items;
       showResultModal = true;
-      toast.show(`✅ 成功解析 ${parsed.matchedCount} 项变更建议`);
+      toast.show(t('ai.parseSuccess', { count: parsed.matchedCount }));
     } catch (err) {
-      toast.show(`❌ 解析失败: ${err.message}`);
+      toast.show(t('ai.parseFailed', { error: err.message }));
     } finally {
       isParsing = false;
     }
@@ -148,42 +148,42 @@
   // API 直连模式执行智能分组
   async function handleStartApiGrouping() {
     if (appState.bookmarks.length === 0) {
-      toast.show('当前书签库为空，请先添加或导入书签');
+      toast.show(t('ai.bookmarksEmpty'));
       return;
     }
 
     try {
       const result = await appState.runSmartGrouping();
       if (!result.success || !result.items || result.items.length === 0) {
-        toast.show(result.message || '没有发现需要迁移分组的书签');
+        toast.show(result.message || t('ai.noGroupingChanges'));
         return;
       }
       resultType = 'grouping';
       resultItems = result.items;
       showResultModal = true;
     } catch (err) {
-      toast.show(`AI 分组分析失败: ${err.message}`);
+      toast.show(t('ai.groupingAnalysisFailed', { error: err.message }));
     }
   }
 
   // API 直连模式执行智能标签
   async function handleStartApiTagging() {
     if (appState.bookmarks.length === 0) {
-      toast.show('当前书签库为空，请先添加或导入书签');
+      toast.show(t('ai.bookmarksEmpty'));
       return;
     }
 
     try {
       const result = await appState.runSmartTagging();
       if (!result.success || !result.items || result.items.length === 0) {
-        toast.show(result.message || '没有发现需要提炼标签的书签');
+        toast.show(result.message || t('ai.noTaggingChanges'));
         return;
       }
       resultType = 'tagging';
       resultItems = result.items;
       showResultModal = true;
     } catch (err) {
-      toast.show(`AI 标签提炼失败: ${err.message}`);
+      toast.show(t('ai.taggingAnalysisFailed', { error: err.message }));
     }
   }
 
@@ -195,7 +195,10 @@
         isNewGroup: item.isNewGroup
       }));
       const res = await appState.applyAiGroupChanges(plan);
-      toast.show(`✅ 已成功迁移 ${res.modifiedCount} 项书签${res.newGroupsCreated ? `，新建 ${res.newGroupsCreated} 个分组` : ''}`);
+      const newGroupsSuffix = res.newGroupsCreated
+        ? t('ai.groupingAppliedNewGroups', { newGroups: res.newGroupsCreated })
+        : '';
+      toast.show(t('ai.groupingApplied', { count: res.modifiedCount, newGroups: newGroupsSuffix }));
     } else {
       const plan = selectedItems.map(item => ({
         bookmarkId: item.bookmarkId,
@@ -203,7 +206,7 @@
       }));
       const mode = appState.settings.ai?.tagging?.mode || 'append';
       const res = await appState.applyAiTagChanges(plan, mode);
-      toast.show(`✅ 已成功更新 ${res.modifiedCount} 项书签的标签`);
+      toast.show(t('ai.taggingApplied', { count: res.modifiedCount }));
     }
     open = false;
   }
@@ -306,7 +309,7 @@
               {#if activeType === 'grouping'}
                 <div class="flex flex-wrap items-center justify-between gap-2">
                   <div class="flex items-center gap-3">
-                    <span class="text-text-tertiary">范围:</span>
+                    <span class="text-text-tertiary">{t('ai.rangeLabel')}</span>
                     <label class="flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="radio"
@@ -315,7 +318,7 @@
                         onchange={() => updateAiSettings({ grouping: { scope: 'ungrouped' } })}
                         class="accent-accent"
                       />
-                      <span>仅未分组 ({ungroupedCount} 项)</span>
+                      <span>{t('ai.scopeUngrouped', { count: ungroupedCount })}</span>
                     </label>
                     <label class="flex items-center gap-1.5 cursor-pointer">
                       <input
@@ -325,7 +328,7 @@
                         onchange={() => updateAiSettings({ grouping: { scope: 'all' } })}
                         class="accent-accent"
                       />
-                      <span>全部书签 ({appState.bookmarks.length} 项)</span>
+                      <span>{t('ai.scopeAll', { count: appState.bookmarks.length })}</span>
                     </label>
                   </div>
 
@@ -336,13 +339,13 @@
                       onchange={(e) => updateAiSettings({ grouping: { allowNewGroups: e.target.checked } })}
                       class="rounded border-border-subtle accent-accent"
                     />
-                    <span>允许提议新建分组</span>
+                    <span>{t('ai.allowNewGroupsShort')}</span>
                   </label>
                 </div>
               {:else}
                 <div class="flex flex-wrap items-center justify-between gap-2">
                   <div class="flex items-center gap-3">
-                    <span class="text-text-tertiary">范围:</span>
+                    <span class="text-text-tertiary">{t('ai.rangeLabel')}</span>
                     <label class="flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="radio"
@@ -351,7 +354,7 @@
                         onchange={() => updateAiSettings({ tagging: { scope: 'untagged' } })}
                         class="accent-accent"
                       />
-                      <span>仅无标签 ({untaggedCount} 项)</span>
+                      <span>{t('ai.scopeUntagged', { count: untaggedCount })}</span>
                     </label>
                     <label class="flex items-center gap-1.5 cursor-pointer">
                       <input
@@ -361,12 +364,12 @@
                         onchange={() => updateAiSettings({ tagging: { scope: 'all' } })}
                         class="accent-accent"
                       />
-                      <span>全部书签 ({appState.bookmarks.length} 项)</span>
+                      <span>{t('ai.scopeTagAll', { count: appState.bookmarks.length })}</span>
                     </label>
                   </div>
 
                   <div class="flex items-center gap-3">
-                    <span class="text-text-tertiary">模式:</span>
+                    <span class="text-text-tertiary">{t('ai.modeLabel')}</span>
                     <label class="flex items-center gap-1 cursor-pointer">
                       <input
                         type="radio"
@@ -375,7 +378,7 @@
                         onchange={() => updateAiSettings({ tagging: { mode: 'append' } })}
                         class="accent-accent"
                       />
-                      <span>增量追加</span>
+                      <span>{t('ai.modeAppend')}</span>
                     </label>
                     <label class="flex items-center gap-1 cursor-pointer">
                       <input
@@ -385,7 +388,7 @@
                         onchange={() => updateAiSettings({ tagging: { mode: 'replace' } })}
                         class="accent-accent"
                       />
-                      <span>重构覆盖</span>
+                      <span>{t('ai.modeReplace')}</span>
                     </label>
                   </div>
                 </div>
@@ -402,7 +405,7 @@
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
-                <span>一键复制提示词</span>
+                <span>{t('ai.copyPromptBtn')}</span>
               </button>
 
               <button
@@ -413,7 +416,7 @@
                 <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
-                <span>下载书签数据 JSON</span>
+                <span>{t('ai.downloadDataBtn')}</span>
               </button>
             </div>
           </div>
@@ -422,10 +425,10 @@
           <div class="p-2 rounded-xl border border-border-subtle/70 bg-subtle/30 space-y-0.5 text-[11px]">
             <div class="flex items-center gap-1.5 font-semibold text-text-primary text-[11px]">
               <span class="w-4 h-4 rounded-full bg-accent/10 text-accent flex items-center justify-center text-[10px] font-bold font-mono">2</span>
-              <span>前往网页大模型对话</span>
+              <span>{t('ai.step2Title')}</span>
             </div>
             <p class="text-text-secondary leading-relaxed">
-              在 <strong>DeepSeek / ChatGPT / Claude / Kimi / 豆包</strong> 中粘贴提示词并上传数据文件，模型将返回整理结果。
+              {t('ai.step2Desc')}
             </p>
           </div>
 
@@ -434,7 +437,7 @@
             <div class="flex items-center justify-between">
               <span class="font-semibold text-text-primary text-[11px] flex items-center gap-1.5">
                 <span class="w-4 h-4 rounded-full bg-accent/10 text-accent flex items-center justify-center text-[10px] font-bold font-mono">3</span>
-                <span>导入大模型返回的变更结果</span>
+                <span>{t('ai.step3Title')}</span>
               </span>
               {#if rawInput}
                 <button
@@ -442,7 +445,7 @@
                   onclick={() => { rawInput = ''; fileName = ''; }}
                   class="text-[11px] text-text-tertiary hover:text-status-danger transition-colors"
                 >
-                  清空
+                  {t('common.clear')}
                 </button>
               {/if}
             </div>
@@ -454,11 +457,11 @@
               ondragleave={() => (isDraggingOver = false)}
               ondrop={handleDrop}
               role="region"
-              aria-label="拖拽上传区域"
+              aria-label={t('ai.dropZone')}
             >
               <textarea
                 bind:value={rawInput}
-                placeholder="在此直接粘贴 (Ctrl+V) 大模型返回的 JSON 内容或 Markdown 代码块...（或将文件拖入此处）"
+                placeholder={t('ai.dragPlaceholder')}
                 rows="2"
                 class="w-full p-2 bg-transparent border-0 outline-none text-[11px] text-text-primary font-mono resize-none placeholder:text-text-tertiary"
               ></textarea>
@@ -468,14 +471,14 @@
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
-                  <span>上传返回的 JSON 文件</span>
+                  <span>{t('ai.uploadJsonFile')}</span>
                   <input type="file" accept=".json,.txt" onchange={handleFileUpload} class="hidden" />
                 </label>
 
                 {#if fileName}
-                  <span class="text-text-secondary font-mono truncate max-w-[200px]">已加载: {fileName}</span>
+                  <span class="text-text-secondary font-mono truncate max-w-[200px]">{t('ai.fileLoadedState', { name: fileName })}</span>
                 {:else if rawInput}
-                  <span class="text-text-tertiary">已输入 {rawInput.length} 字符</span>
+                  <span class="text-text-tertiary">{t('ai.charsInput', { count: rawInput.length })}</span>
                 {/if}
               </div>
             </div>
@@ -489,12 +492,12 @@
             >
               {#if isParsing}
                 <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                <span>正在解析中...</span>
+                <span>{t('ai.parsing')}</span>
               {:else}
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                 </svg>
-                <span>解析并预览变更建议</span>
+                <span>{t('ai.parseAndPreview')}</span>
               {/if}
             </button>
           </div>
@@ -505,11 +508,11 @@
             <!-- 当前配置信息条 -->
             <div class="p-3 rounded-xl border border-border-subtle bg-subtle/50 flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <span class="text-text-tertiary">接口地址:</span>
-                <span class="font-mono font-medium text-text-primary">{appState.settings.ai?.baseUrl || '未设置'}</span>
+                <span class="text-text-tertiary">{t('ai.apiUrlLabel')}</span>
+                <span class="font-mono font-medium text-text-primary">{appState.settings.ai?.baseUrl || t('ai.notConfigured')}</span>
                 <span class="px-1.5 py-0.5 rounded bg-surface text-[10px] text-text-secondary border border-border-subtle font-mono">{appState.settings.ai?.model || DEFAULT_AI_MODEL}</span>
               </div>
-              <span class="text-[10px] text-text-tertiary">可在偏好设置中修改 API Key</span>
+              <span class="text-[10px] text-text-tertiary">{t('ai.apiKeyHint')}</span>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
@@ -518,12 +521,12 @@
                 <div class="space-y-2">
                   <div class="flex items-center justify-between">
                     <span class="font-semibold text-text-primary text-[11px] flex items-center gap-1.5">
-                      <span>📁 智能分组治理</span>
+                      <span>📁 {t('ai.groupingTitle')}</span>
                     </span>
-                    <span class="text-[10px] text-text-tertiary font-mono">未分组: {ungroupedCount}</span>
+                    <span class="text-[10px] text-text-tertiary font-mono">{t('ai.ungroupedCount', { count: ungroupedCount })}</span>
                   </div>
                   <p class="text-[11px] text-text-secondary leading-relaxed">
-                    基于大模型分析书签语义，自动归类并提议创建新分组。
+                    {t('ai.groupingDesc')}
                   </p>
 
                   <div class="space-y-1.5 pt-1 text-[11px]">
@@ -537,7 +540,7 @@
                         class="accent-accent"
                       />
                       <label for="api-scope-ungrouped" class="text-text-secondary cursor-pointer">
-                        仅未分组 ({ungroupedCount} 项)
+                        {t('ai.scopeUngrouped', { count: ungroupedCount })}
                       </label>
                     </div>
                     <div class="flex items-center gap-2">
@@ -550,7 +553,7 @@
                         class="accent-accent"
                       />
                       <label for="api-scope-all" class="text-text-secondary cursor-pointer">
-                        全部书签 ({appState.bookmarks.length} 项)
+                        {t('ai.scopeAll', { count: appState.bookmarks.length })}
                       </label>
                     </div>
 
@@ -563,7 +566,7 @@
                         class="rounded border-border-subtle accent-accent"
                       />
                       <label for="api-allow-new-groups" class="text-text-tertiary cursor-pointer text-[10px]">
-                        允许 AI 提议创建语义新分组
+                        {t('ai.allowNewGroups')}
                       </label>
                     </div>
                   </div>
@@ -579,7 +582,7 @@
                     <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                     <span>{appState.aiProgress.message}</span>
                   {:else}
-                    <span>🚀 启动 AI 智能分组分析</span>
+                    <span>🚀 {t('ai.startGrouping')}</span>
                   {/if}
                 </button>
               </div>
@@ -589,12 +592,12 @@
                 <div class="space-y-2">
                   <div class="flex items-center justify-between">
                     <span class="font-semibold text-text-primary text-[11px] flex items-center gap-1.5">
-                      <span>🏷️ 智能标签提炼</span>
+                      <span>🏷️ {t('ai.taggingTitle')}</span>
                     </span>
-                    <span class="text-[10px] text-text-tertiary font-mono">无标签: {untaggedCount}</span>
+                    <span class="text-[10px] text-text-tertiary font-mono">{t('ai.untaggedCount', { count: untaggedCount })}</span>
                   </div>
                   <p class="text-[11px] text-text-secondary leading-relaxed">
-                    提炼技术栈与业务属性标签，支持增量追加或重构覆盖。
+                    {t('ai.taggingDesc')}
                   </p>
 
                   <div class="space-y-1.5 pt-1 text-[11px]">
@@ -608,7 +611,7 @@
                         class="accent-accent"
                       />
                       <label for="api-scope-untagged" class="text-text-secondary cursor-pointer">
-                        仅无标签 ({untaggedCount} 项)
+                        {t('ai.scopeUntagged', { count: untaggedCount })}
                       </label>
                     </div>
                     <div class="flex items-center gap-2">
@@ -621,12 +624,12 @@
                         class="accent-accent"
                       />
                       <label for="api-scope-tag-all" class="text-text-secondary cursor-pointer">
-                        优化全部标签 ({appState.bookmarks.length} 项)
+                        {t('ai.scopeTagAll', { count: appState.bookmarks.length })}
                       </label>
                     </div>
 
                     <div class="flex items-center justify-between pt-1 text-[10px] text-text-tertiary">
-                      <span>合并方式:</span>
+                      <span>{t('ai.mergeMode')}</span>
                       <div class="flex items-center gap-2">
                         <label class="cursor-pointer">
                           <input
@@ -635,7 +638,7 @@
                             checked={appState.settings.ai?.tagging?.mode !== 'replace'}
                             onchange={() => updateAiSettings({ tagging: { mode: 'append' } })}
                             class="accent-accent mr-0.5"
-                          /> 增量追加
+                          /> {t('ai.modeAppend')}
                         </label>
                         <label class="cursor-pointer">
                           <input
@@ -644,7 +647,7 @@
                             checked={appState.settings.ai?.tagging?.mode === 'replace'}
                             onchange={() => updateAiSettings({ tagging: { mode: 'replace' } })}
                             class="accent-accent mr-0.5"
-                          /> 重构覆盖
+                          /> {t('ai.modeReplace')}
                         </label>
                       </div>
                     </div>
@@ -661,7 +664,7 @@
                     <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                     <span>{appState.aiProgress.message}</span>
                   {:else}
-                    <span>🏷️ 启动 AI 标签提炼</span>
+                    <span>🏷️ {t('ai.startTagging')}</span>
                   {/if}
                 </button>
               </div>

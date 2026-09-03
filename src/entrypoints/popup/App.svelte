@@ -205,7 +205,7 @@
         {#if !showSaveTabForm}
           <div class="flex items-center justify-between gap-2">
             <div class="min-w-0 flex-1 truncate">
-              <span class="font-medium text-text-primary truncate block">{currentTab.title || '当前网页'}</span>
+              <span class="font-medium text-text-primary truncate block">{currentTab.title || t('popup.currentPage')}</span>
               <span class="font-mono text-[10px] text-text-tertiary truncate block">{currentTab.url}</span>
             </div>
             <button

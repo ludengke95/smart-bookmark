@@ -26,18 +26,9 @@
 
     currentTimeStr = showSec ? `${hh} : ${mm} : ${ss}` : `${hh} : ${mm}`;
 
-    const isEn = i18n.currentLocale === 'en-US';
-    if (isEn) {
-      const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
-      currentDateStr = now.toLocaleDateString('en-US', options);
-    } else {
-      const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-      const Y = now.getFullYear();
-      const M = now.getMonth() + 1;
-      const D = now.getDate();
-      const dayStr = days[now.getDay()];
-      currentDateStr = `${Y}年${M}月${D}日 ${dayStr}`;
-    }
+    const locale = i18n.currentLocale === 'en-US' ? 'en-US' : 'zh-CN';
+    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    currentDateStr = now.toLocaleDateString(locale, dateOptions);
   }
 
   onMount(() => {
@@ -71,7 +62,7 @@
       const route = appState.getBookmarkRoute(targetBm);
       if (route.optimal?.url) {
         appState.recordClick(targetBm.id);
-        toast.show(`⚡ 直达: ${targetBm.name}`);
+        toast.show(t('search.directJump', { name: targetBm.name }));
         window.location.href = route.optimal.url;
         return;
       }
@@ -118,7 +109,7 @@
           type="button"
           onclick={() => (showEngineMenu = !showEngineMenu)}
           class="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full hover:bg-subtle text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
-          title="点击切换搜索引擎"
+          title={t('search.engineSwitch')}
         >
           <span class="w-4 h-4 rounded-full bg-subtle flex items-center justify-center text-[10px] font-bold {appState.selectedEngine.colorClass}">
             {appState.selectedEngine.iconText}
@@ -164,7 +155,7 @@
             type="button"
             onclick={() => (appState.searchQuery = '')}
             class="p-1 rounded-full hover:text-text-primary hover:bg-subtle transition-colors"
-            title="清空搜索"
+            title={t('search.clearQuery')}
           >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -179,7 +170,7 @@
         <button
           type="submit"
           class="p-1.5 rounded-full bg-accent text-accent-fg hover:opacity-90 transition-opacity"
-          title="搜索"
+          title={t('common.search')}
         >
           <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

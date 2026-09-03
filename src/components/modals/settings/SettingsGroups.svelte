@@ -101,14 +101,14 @@
             onclick={handleSaveEditGroup}
             class="px-2 py-1 rounded bg-accent text-accent-fg text-[11px]"
           >
-            确定
+            {t('common.confirm')}
           </button>
           <button
             type="button"
             onclick={() => (editingGroupId = null)}
             class="px-2 py-1 rounded border border-border-subtle text-[11px]"
           >
-            取消
+            {t('common.cancel')}
           </button>
         </div>
       {:else}
@@ -131,7 +131,7 @@
             disabled={customIdx === 0}
             onclick={() => handleMoveGroup(g.id, -1)}
             class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
-            title="上移分组"
+            title={t('groups.moveUpTooltip')}
           >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
@@ -143,7 +143,7 @@
             disabled={customIdx === customGroups.length - 1}
             onclick={() => handleMoveGroup(g.id, 1)}
             class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
-            title="下移分组"
+            title={t('groups.moveDownTooltip')}
           >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -154,7 +154,7 @@
             type="button"
             onclick={() => handleStartEditGroup(g)}
             class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
-            title="重命名"
+            title={t('groups.renameTooltip')}
           >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -165,7 +165,7 @@
             type="button"
             onclick={() => handleDeleteGroup(g.id)}
             class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-status-danger transition-colors"
-            title="删除分组"
+            title={t('groups.deleteTooltip')}
           >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

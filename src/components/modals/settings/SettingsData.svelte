@@ -6,9 +6,9 @@
   let { onClose = () => {} } = $props();
 
   async function handleResetData() {
-    if (confirm('确定要恢复出厂初始数据吗？当前数据将自动生成安全快照备份。')) {
+    if (confirm(t('settings.resetWarning'))) {
       await appState.resetDefaultData();
-      toast.show('已重置为默认初始数据');
+      toast.show(t('settings.resetDone'));
       onClose();
     }
   }

@@ -71,7 +71,7 @@
       if (movedBm.groupId !== targetBm.groupId && group?.id && group.id !== PINNED_GROUP_ID) {
         await appState.saveBookmark(movedBm);
       }
-      toast.show('已更新书签排序');
+      toast.show(t('sort.updated'));
     }
 
     draggedBookmarkId = null;
@@ -175,7 +175,7 @@
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
-                <span>加书签</span>
+                <span>{t('bookmark.addToGroup')}</span>
               </button>
             {/if}
           </div>
@@ -204,7 +204,7 @@
               </div>
             {:else}
               <div class="p-6 rounded-lg border border-dashed border-border-subtle/80 text-center text-text-tertiary text-xs">
-                该分组暂无书签
+                {t('bookmark.groupEmpty')}
               </div>
             {/if}
           {/if}
@@ -220,13 +220,13 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
-        <p class="text-sm text-text-secondary">未找到匹配的书签</p>
+        <p class="text-sm text-text-secondary">{t('bookmark.noMatch')}</p>
         <button
           type="button"
           onclick={() => { appState.searchQuery = ''; appState.activeTag = 'all'; }}
           class="text-xs text-accent underline hover:opacity-80"
         >
-          清除筛选条件
+          {t('bookmark.clearFilter')}
         </button>
       </div>
     {/if}

@@ -27,11 +27,17 @@ export default {
     backup: '备份与快照',
     backupTitle: '数据快照与版本回滚',
     settings: '系统设置',
-    addBookmark: '添加书签'
+    addBookmark: '添加书签',
+    networkStatus: '网络状态',
+    networkStatusHint: '本机网络状态，点击重新探测',
+    tagFilter: '标签筛选'
   },
   search: {
     placeholder: '搜索书签或网页内容...',
-    engineTooltip: '切换搜索引擎'
+    engineTooltip: '切换搜索引擎',
+    engineSwitch: '点击切换搜索引擎',
+    clearQuery: '清空搜索',
+    directJump: '⚡ 直达: {name}'
   },
   sort: {
     tooltip: '切换书签排序方式',
@@ -40,7 +46,8 @@ export default {
     clicks: '按访问热度',
     name: '按书签名称',
     latency: '按响应测速',
-    time: '按添加时间'
+    time: '按添加时间',
+    updated: '已更新书签排序'
   },
   popup: {
     title: 'Smart Bookmark 快捷收藏',
@@ -59,6 +66,7 @@ export default {
     noValidEndpoint: '未配置有效入口',
     refreshNetwork: '刷新网络状态',
     detectingNetwork: '检测网络中...',
-    noBookmarksFound: '未找到匹配书签'
+    noBookmarksFound: '未找到匹配书签',
+    currentPage: '当前网页'
   }
 };

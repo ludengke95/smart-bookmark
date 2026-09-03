@@ -4,6 +4,7 @@
   import { classifyUrl } from '../../services/xor-matcher.js';
   import { fetchFaviconAsBase64, matchBrandIcon } from '../../services/favicon-fetcher.js';
   import { UNGROUPED_GROUP_ID, PINNED_GROUP_ID } from '../../constants/index.js';
+  import { t } from '../../i18n/index.svelte.js';
   import IconRender from '../common/IconRender.svelte';
   import Select from '../common/Select.svelte';
   import ModalShell from '../common/ModalShell.svelte';
@@ -26,11 +27,11 @@
   let groupMode = $state('ungrouped');
   let targetGroupId = $state('');
 
-  const groupStrategyOptions = [
-    { value: 'ungrouped', label: '未分组 (推荐)' },
-    { value: 'path', label: '按原路径建组' },
-    { value: 'specified', label: '指定分组' }
-  ];
+  const groupStrategyOptions = $derived([
+    { value: 'ungrouped', label: t('import.strategyUngrouped') },
+    { value: 'path', label: t('import.strategyPath') },
+    { value: 'specified', label: t('import.strategySpecified') }
+  ]);
 
   // 过滤出用户自定义分组（排除系统内置的常用分组和未分组）
   const customGroups = $derived(
@@ -80,7 +81,7 @@
 
   async function scanChromeBookmarks() {
     if (typeof chrome === 'undefined' || !chrome.bookmarks) {
-      toast.show('当前环境未启用 Chrome 书签权限');
+      toast.show(t('import.chromePermissionError'));
       return;
     }
     isScanning = true;
@@ -94,7 +95,7 @@
             rawList.push({
               name: node.title || node.url,
               url: node.url,
-              folder: path || '默认导入',
+              folder: path || t('import.defaultImportFolder'),
               customIconBase64: ''
             });
           }
@@ -111,7 +112,7 @@
       processScannedBookmarks(rawList);
     } catch (e) {
       console.error('扫描 Chrome 书签失败:', e);
-      toast.show('读取 Chrome 书签失败');
+      toast.show(t('import.chromeScanFailed'));
     } finally {
       isScanning = false;
     }
@@ -137,7 +138,7 @@
               rawList.push({
                 name: title,
                 url: href,
-                folder: currentPath || '默认导入',
+                folder: currentPath || t('import.defaultImportFolder'),
                 customIconBase64: iconAttr
               });
             }
@@ -169,7 +170,7 @@
           rawList.push({
             name: title,
             url: href,
-            folder: 'HTML导入',
+            folder: t('import.htmlImportFolder'),
             customIconBase64: iconAttr
           });
         }
@@ -192,7 +193,7 @@
         rawScannedList = raw;
         processScannedBookmarks(raw);
       } catch (err) {
-        toast.show('解析 HTML 书签文件失败');
+        toast.show(t('import.htmlParseFailed'));
       } finally {
         isScanning = false;
       }
@@ -253,18 +254,18 @@
         const parts = folder.split('/').filter(Boolean);
         folder = parts[parts.length - 1] || folder;
       }
-      return folder || '默认分组';
+      return folder || t('import.defaultGroup');
     }
     if (groupMode === 'specified') {
       const g = customGroups.find(group => group.id === targetGroupId) || customGroups[0];
-      return g?.name || '指定分组';
+      return g?.name || t('import.specifiedGroup');
     }
-    return '未分组';
+    return t('groups.ungrouped');
   }
 
   async function executeImport() {
     if (importPreview.length === 0) {
-      toast.show('没有可导入的书签');
+      toast.show(t('import.noBookmarks'));
       return;
     }
 
@@ -272,7 +273,7 @@
     importTotal = importPreview.length;
     importCurrent = 0;
     importProgress = 0;
-    importStatusText = '准备导入...';
+    importStatusText = t('import.preparingImport');
 
     try {
       // 1. 构建已有分组名称索引
@@ -294,7 +295,7 @@
             const parts = folderName.split('/').filter(Boolean);
             folderName = parts[parts.length - 1] || folderName;
           }
-          if (!folderName) folderName = '默认导入';
+          if (!folderName) folderName = t('import.defaultImportFolder');
 
           const key = folderName.toLowerCase();
           if (groupNameMap.has(key)) {
@@ -320,7 +321,7 @@
 
         preparedBookmarks.push({
           id: 'bm_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8),
-          name: item.name || '未命名书签',
+          name: item.name || t('import.unnamedBookmark'),
           groupId: finalGroupId,
           tags: [],
           iconKey: item.iconKey || '',
@@ -350,7 +351,7 @@
         }
         importCurrent++;
         importProgress = Math.min(100, Math.round((importCurrent / importTotal) * 100));
-        importStatusText = `正在获取图标与处理 (${importCurrent}/${importTotal})...`;
+        importStatusText = t('import.fetchingIcons', { current: importCurrent, total: importTotal });
       }
 
       const workers = Array.from({ length: Math.min(concurrency, preparedBookmarks.length) }, async () => {
@@ -362,16 +363,16 @@
 
       await Promise.all(workers);
 
-      importStatusText = '正在写入存储...';
+      importStatusText = t('import.writingStorage');
       importProgress = 100;
 
       // 3. 单次原子批量写入
       const res = await appState.batchImportBookmarks(groupsToCreate, preparedBookmarks);
-      toast.show(`成功导入 ${res.importedCount || preparedBookmarks.length} 个智能书签（已同步获取图标）`);
+      toast.show(t('import.importSuccess', { count: res.importedCount || preparedBookmarks.length }));
       open = false;
     } catch (e) {
       console.error('导入书签失败:', e);
-      toast.show('导入过程出错: ' + (e.message || '未知异常'));
+      toast.show(t('import.importError', { error: e.message || t('import.unknownError') }));
     } finally {
       isImporting = false;
     }
@@ -380,7 +381,7 @@
 
 <ModalShell
   bind:open
-  title="导入与迁移书签"
+  title={t('import.title')}
   maxWidth="max-w-xl"
   closable={!isImporting}
   closeDisabled={isImporting}
@@ -404,7 +405,7 @@
               ></div>
             </div>
             <p class="text-[11px] text-text-tertiary pt-1">
-              正在并发识别品牌图标并抓取网站 Favicon，请稍候...
+              {t('import.importingHint')}
             </p>
           </div>
         </div>
@@ -419,7 +420,7 @@
                 ? 'bg-surface text-text-primary shadow-sm font-semibold border border-border-subtle/60'
                 : 'text-text-secondary hover:text-text-primary hover:bg-surface/50'}"
             >
-              浏览器书签
+              {t('import.tabChrome')}
             </button>
           {/if}
           <button
@@ -429,14 +430,14 @@
               ? 'bg-surface text-text-primary shadow-sm font-semibold border border-border-subtle/60'
               : 'text-text-secondary hover:text-text-primary hover:bg-surface/50'}"
           >
-            HTML 书签文件
+            {t('import.tabFile')}
           </button>
         </div>
 
         <!-- 导入目标分组策略配置区 -->
         <div class="space-y-2 bg-subtle p-3 rounded-lg border border-border-subtle flex-shrink-0 text-xs">
           <div class="space-y-1.5">
-            <span class="block text-text-secondary font-medium">导入目标分组策略</span>
+            <span class="block text-text-secondary font-medium">{t('import.strategyLabel')}</span>
             <Select
               mode="segmented"
               options={groupStrategyOptions}
@@ -448,12 +449,12 @@
             <div class="flex items-start gap-2 p-2 rounded-md bg-accent/5 border border-accent/15 text-[11px] leading-relaxed">
               <span class="text-accent flex-shrink-0 mt-0.5">✨</span>
               <span class="text-text-secondary">
-                <strong class="text-text-primary font-medium">推荐策略</strong>：书签将先统一归入「未分组」，导入完成后可前往 <strong class="text-accent font-medium">设置 → AI 与 MCP</strong> 使用智能分组一键完成整理与分类。
+                <strong class="text-text-primary font-medium">{t('import.recommendedTitle')}</strong>：{t('import.recommendedDesc')}
               </span>
             </div>
           {:else if groupMode === 'specified'}
             <div class="space-y-1 pt-1.5 border-t border-border-subtle/50">
-              <span class="block text-text-secondary font-medium">选择指定的目标分组 (自定义分组)</span>
+              <span class="block text-text-secondary font-medium">{t('import.specifiedGroupLabel')}</span>
               {#if customGroups.length > 0}
                 <Select
                   options={customGroupOptions}
@@ -461,13 +462,13 @@
                 />
               {:else}
                 <div class="p-2 rounded bg-surface border border-border-subtle text-text-tertiary text-[11px]">
-                  当前暂无自定义分组，请先在“偏好设置”中创建，或选择「未分组」/「按原路径建组」。
+                  {t('import.noCustomGroupHint')}
                 </div>
               {/if}
             </div>
           {:else if groupMode === 'path'}
             <div class="p-2 rounded-md bg-surface/60 border border-border-subtle/60 text-[11px] text-text-tertiary">
-              📁 将自动读取原书签夹的目录结构，并为每个目录创建对应的分组。
+              {t('import.pathGroupHint')}
             </div>
           {/if}
 
@@ -480,7 +481,7 @@
               class="rounded border-border-subtle text-accent"
             />
             <label for="merge-similar" class="text-text-secondary cursor-pointer">
-              自动合并同名书签为多入口 (内网 / 外网多地址聚合)
+              {t('import.mergeSimilarLabel')}
             </label>
           </div>
         </div>
@@ -502,8 +503,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                   </svg>
                 </div>
-                <p class="font-medium text-text-primary">点击选择 Chrome 导出的 HTML 书签文件</p>
-                <p class="text-[11px] text-text-tertiary">支持 Netscape / 标准 HTML 树状书签格式 (含内置图标)</p>
+                <p class="font-medium text-text-primary">{t('import.chooseHtmlFile')}</p>
+                <p class="text-[11px] text-text-tertiary">{t('import.htmlFormatHint')}</p>
               </label>
             </div>
           {/if}
@@ -512,18 +513,18 @@
           {#if isScanning}
             <div class="py-12 flex-1 flex flex-col items-center justify-center text-text-tertiary space-y-2">
               <div class="w-5 h-5 mx-auto border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
-              <p>正在读取并解析书签路径结构...</p>
+              <p>{t('import.scanningHint')}</p>
             </div>
           {:else if importPreview.length > 0}
             <div class="flex-1 min-h-0 flex flex-col space-y-1.5">
               <div class="flex items-center justify-between text-text-tertiary text-[11px] px-1 flex-shrink-0">
-                <span>待导入书签列表 ({importPreview.length} 项)</span>
+                <span>{t('import.previewCount', { count: importPreview.length })}</span>
                 <div class="flex items-center gap-2">
-                  <span>目标策略：{groupStrategyOptions.find(o => o.value === groupMode)?.label}</span>
+                  <span>{t('import.targetStrategy', { strategy: groupStrategyOptions.find(o => o.value === groupMode)?.label })}</span>
                   {#if activeTab === 'file'}
                     <span>·</span>
                     <label for="html-file-input-reselect" class="text-accent hover:underline cursor-pointer">
-                      重选文件
+                      {t('import.reselectFile')}
                     </label>
                     <input
                       type="file"
@@ -553,7 +554,7 @@
                       </div>
                     </div>
                     <span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-subtle text-text-secondary flex-shrink-0">
-                      {item.endpoints.length} 入口
+                      {t('import.entryCount', { count: item.endpoints.length })}
                     </span>
                   </div>
                 {/each}
@@ -565,7 +566,7 @@
         <!-- 底部操作按钮 -->
         <div class="flex items-center justify-between pt-3 border-t border-border-subtle flex-shrink-0">
           <span class="text-xs text-text-tertiary">
-            {#if importPreview.length > 0}已解析 {importPreview.length} 个书签{/if}
+            {#if importPreview.length > 0}{t('import.parsedCount', { count: importPreview.length })}{/if}
           </span>
           <div class="flex items-center gap-2">
             <button
@@ -573,7 +574,7 @@
               onclick={() => (open = false)}
               class="px-4 py-2 rounded-lg border border-border-subtle hover:bg-subtle text-xs font-medium text-text-secondary transition-colors"
             >
-              取消
+              {t('common.cancel')}
             </button>
             <button
               type="button"
@@ -581,7 +582,7 @@
               onclick={executeImport}
               class="px-4 py-2 rounded-lg bg-accent text-accent-fg text-xs font-medium shadow-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              确认导入
+              {t('import.confirmImport')}
             </button>
           </div>
         </div>

@@ -41,7 +41,7 @@
         <div
           class="relative flex items-center"
           role="region"
-          aria-label="网络状态"
+          aria-label={t('nav.networkStatus')}
           onmouseenter={() => (showIpPopover = true)}
           onmouseleave={() => (showIpPopover = false)}
         >
@@ -49,7 +49,7 @@
             type="button"
             onclick={handleRefreshNetwork}
             class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-subtle border border-border-subtle text-[11px] font-mono text-text-secondary hover:text-text-primary hover:border-border-focus transition-all"
-            aria-label="本机网络状态，点击重新探测"
+            aria-label={t('nav.networkStatusHint')}
           >
             <span class="w-1.5 h-1.5 rounded-full {appState.currentLocalIp ? 'bg-status-intranet shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-text-tertiary'} {isRefreshing ? 'animate-pulse' : ''}"></span>
             <span>{appState.currentLocalIp || t('nav.statusExtranet')}</span>
