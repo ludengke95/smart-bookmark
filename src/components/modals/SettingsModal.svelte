@@ -11,7 +11,7 @@
   let activeTab = $state('general'); // 'general' | 'groups' | 'ai' | 'danger'
 </script>
 
-<ModalShell bind:open title={t('settings.title')} maxWidth="max-w-xl" height="h-[560px]">
+<ModalShell bind:open title={t('settings.title')} maxWidth="max-w-xl" height="h-[600px]">
       <!-- 标签页导航 (4个均分等宽分段胶囊，显式锁定 h-8 保持绝对空间稳定性) -->
       <div class="grid grid-cols-4 gap-1 bg-subtle p-1 rounded-lg text-xs flex-shrink-0">
         <button

@@ -24,6 +24,7 @@ node_modules/
 .agents/
 .workbuddy/
 skills-lock.json
+.codegraph/
 
 
 

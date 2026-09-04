@@ -128,8 +128,8 @@ export function formatLatencyChinese(latency, reachable = true, error = '') {
 export const AI_API_PRESETS = [
   { id: 'deepseek', name: 'DeepSeek', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', desc: '超高性价比，中文理解极强' },
   { id: 'openai', name: 'OpenAI', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini', desc: '经典通用，稳定快速' },
-  { id: 'ollama', name: 'Ollama (本地私有)', baseUrl: 'http://localhost:11434/v1', model: 'qwen2.5:7b', desc: '完全本地运行，离线私密免 Key' },
-  { id: 'custom', name: '自定义接口', baseUrl: '', model: '', desc: '兼容任何 OpenAI 协议端点' }
+  { id: 'ollama', name: 'Ollama', baseUrl: 'http://localhost:11434/v1', model: 'qwen2.5:7b', desc: '完全本地运行，离线私密免 Key' },
+  { id: 'custom', name: 'Custom', baseUrl: '', model: '', desc: '兼容任何 OpenAI 协议端点' }
 ];
 
 // 默认 AI 智能治理配置
