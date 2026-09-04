@@ -9,19 +9,16 @@
   "files": [
     "mcp-bridge.js",
     "extension-transport.js",
-    "register-mcp.mjs",
-    "unregister-mcp.mjs",
+    "install-cli.mjs",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
     "test": "node --test",
-    "register-mcp": "node ./register-mcp.mjs",
-    "postinstall": "node ./register-mcp.mjs",
-    "preuninstall": "node ./unregister-mcp.mjs"
+    "install-cli": "node ./install-cli.mjs"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.12.0"
   },
   "keywords": [
     "mcp",
@@ -39,6 +36,7 @@
     "url": "https://github.com/ludengke95/smart-bookmark.git"
   },
   "dependencies": {
+    "@clack/prompts": "^1.7.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "ws": "^8.21.3"
   }

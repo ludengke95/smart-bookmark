@@ -31,6 +31,52 @@ const { Client } = require('@modelcontextprotocol/sdk/client/index.js');
 const { ListToolsRequestSchema, CallToolRequestSchema, McpError } =
   require('@modelcontextprotocol/sdk/types.js');
 
+// Interactive installer subcommand: `smart-bookmark-mcp install`
+// (`@clack/prompts` UI) — or non-interactive via flags:
+//   smart-bookmark-mcp install --target claude,workbuddy --location global --yes
+// Must run before the MCP server boots (which happens at the bottom via a
+// top-level await). The installer writes the chosen configs and prints a
+// universal snippet, then exits.
+if (process.argv[2] === 'install') {
+  try {
+    const { runInstaller, runInstallerWithOptions, parseInstallFlags, printInstallHelp } =
+      await import('./install-cli.mjs');
+    const opts = parseInstallFlags(process.argv.slice(3));
+    if (opts.help) {
+      printInstallHelp();
+    } else if (opts.nonInteractive) {
+      await runInstallerWithOptions(opts);
+    } else {
+      await runInstaller();
+    }
+  } catch (err) {
+    console.error(err && err.stack ? err.stack : String(err));
+    process.exit(1);
+  }
+  process.exit(0);
+}
+
+// `smart-bookmark-mcp server` is the canonical command to start the MCP
+// bridge. Bare invocation (no subcommand) is kept as a backward-compatible
+// alias that also starts the server. Flags like `--port`/`--host` (which
+// start with `--`) are passed through to the server below, so they must NOT
+// be treated as subcommands. Any other non-flag word is an unknown
+// subcommand and is rejected with usage info (typos fail loudly).
+const arg2 = process.argv[2];
+if (arg2 === '--help' || arg2 === '-h') {
+  console.error('Usage:');
+  console.error('  smart-bookmark-mcp server   Start the MCP bridge server');
+  console.error('  smart-bookmark-mcp install  Interactive setup wizard');
+  process.exit(0);
+}
+if (arg2 !== undefined && arg2 !== 'server' && !arg2.startsWith('--')) {
+  console.error('Unknown subcommand: ' + arg2);
+  console.error('Usage:');
+  console.error('  smart-bookmark-mcp server   Start the MCP bridge server');
+  console.error('  smart-bookmark-mcp install  Interactive setup wizard');
+  process.exit(1);
+}
+
 // Parse CLI flags and environment variables (supports --host 127.0.0.1 --port 8333)
 const rawArgs = process.argv.slice(2);
 let customHost = process.env.HOST || '127.0.0.1';

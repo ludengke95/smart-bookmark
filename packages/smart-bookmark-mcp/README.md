@@ -17,18 +17,49 @@ mature [`ws`](https://www.npmjs.com/package/ws) WebSocket library — no hand-ro
 ## Install / Run
 
 No build step (the published package is plain ESM + a bin). It pulls two runtime dependencies
-(`@modelcontextprotocol/sdk` and `ws`) on install. Either run it directly:
+(`@modelcontextprotocol/sdk` and `ws`) on install. Two ways to install and run — **global install
+is recommended** (the bin lands on your PATH, so client configs can use the bare command and startup
+is faster):
 
-```bash
-npx @ludengke95/smart-bookmark-mcp
-```
-
-…or install it globally and run the bin:
+### Method 1 (recommended): global install
 
 ```bash
 npm install -g @ludengke95/smart-bookmark-mcp
-smart-bookmark-mcp
+smart-bookmark-mcp server
 ```
+
+### Method 2 (manual): npx on demand
+
+```bash
+npx -y @ludengke95/smart-bookmark-mcp server
+```
+
+(No install needed, but it fetches the published package from npm on every launch — requires network.)
+
+> `smart-bookmark-mcp` is a subcommand CLI: `server` starts the bridge (also the default when run bare), and `install` launches the interactive setup wizard that writes client configs for you (choose language / client / scope / LAN).
+
+### Interactive setup wizard
+
+Instead of editing each client's config by hand, run the wizard — it prompts for
+**language → clients (multi-select) → scope → LAN**, writes the config into each
+selected file, and prints a universal JSON:
+
+```bash
+smart-bookmark-mcp install
+```
+
+Non-interactive / CI form:
+
+```bash
+smart-bookmark-mcp install --target claude,workbuddy --location global --yes
+smart-bookmark-mcp install --target all --location global --lan --yes   # enable LAN (0.0.0.0)
+smart-bookmark-mcp install --help
+```
+
+Flags: `--target <ids>` (`all`/`auto`/`none` or comma-separated ids/indices),
+`--location global|project`, `--lan`/`--no-lan`, `--yes`, `--help`.
+The wizard writes `command: "npx"` snippets; if installed globally you can switch
+`command` to `smart-bookmark-mcp`.
 
 ### Options
 
@@ -44,7 +75,7 @@ smart-bookmark-mcp
 Example:
 
 ```bash
-npx @ludengke95/smart-bookmark-mcp --host 127.0.0.1 --port 9000
+smart-bookmark-mcp server --host 127.0.0.1 --port 9000
 ```
 
 A plain HTTP `GET` on the WebSocket port returns a small status JSON
@@ -61,7 +92,7 @@ Add the bridge to your MCP client config. The client launches it over stdio.
   "mcpServers": {
     "smart-bookmark": {
       "command": "npx",
-      "args": ["@ludengke95/smart-bookmark-mcp"]
+      "args": ["-y", "@ludengke95/smart-bookmark-mcp", "server"]
     }
   }
 }
@@ -74,7 +105,7 @@ Add the bridge to your MCP client config. The client launches it over stdio.
   "mcpServers": {
     "smart-bookmark": {
       "command": "npx",
-      "args": ["@ludengke95/smart-bookmark-mcp"]
+      "args": ["-y", "@ludengke95/smart-bookmark-mcp", "server"]
     }
   }
 }
@@ -87,7 +118,7 @@ Add the bridge to your MCP client config. The client launches it over stdio.
   "mcpServers": {
     "smart-bookmark": {
       "command": "npx",
-      "args": ["@ludengke95/smart-bookmark-mcp", "--port", "9000"]
+      "args": ["-y", "@ludengke95/smart-bookmark-mcp", "server", "--port", "9000"]
     }
   }
 }
@@ -126,10 +157,10 @@ transport-only proxy so it stays compatible with the extension's protocol versio
 
 ## Troubleshooting
 
-- **`ENOENT` / `command not found` on launch** — you used the bare command `smart-bookmark-mcp`, but the bin is not installed globally or is not on the client process's PATH. Use `"command": "npx"` + `"args": ["-y", "@ludengke95/smart-bookmark-mcp"]` so npx resolves it without relying on PATH.
+- **`ENOENT` / `command not found` on launch** — you used the bare command `smart-bookmark-mcp`, but the bin is not installed globally or is not on the client process's PATH. Install it globally first: `npm install -g @ludengke95/smart-bookmark-mcp` (recommended — see above). If you prefer not to install globally, use `"command": "npx"` + `"args": ["-y", "@ludengke95/smart-bookmark-mcp", "server"]` so npx resolves it without relying on PATH.
 - **Empty tool list** — confirm the extension is installed and its new-tab page is open.
 - **Port conflict / launch failure** — pick another port: `--port 9000`, or set the `PORT` env var.
-- **Node version too old** — the bridge requires Node.js >= 18; verify with `node -v`.
+- **Node version too old** — the bridge requires Node.js >= 20.12 (the interactive wizard uses `@clack/prompts`); verify with `node -v`.
 
 ## Security
 
@@ -146,7 +177,7 @@ See the project roadmap for the proposed fix and current status:
 
 ## Requirements
 
-- Node.js >= 18
+- Node.js >= 20.12
 - The Smart Bookmark extension installed, with its new-tab page open.
 
 ## License
