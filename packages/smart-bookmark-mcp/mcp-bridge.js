@@ -3,19 +3,33 @@
  * Smart Bookmark MCP (Model Context Protocol) bridge proxy server
  *
  * Architecture:
- * [External AI client (Cursor / Claude Desktop / Windsurf)]
- *        | Stdio (JSON-RPC)
- * [This script (mcp-bridge.js) - zero-dependency RFC 6455 WebSocket server]
- *        | WebSocket (ws://[HOST]:[PORT])
- * [Chrome extension (Smart Bookmark background / UI)]
+ * [External AI client (Cursor / Claude Desktop / WorkBuddy / Windsurf)]
+ *        | Stdio (JSON-RPC, handled by the official MCP SDK Server)
+ * [This script (mcp-bridge.js)]
+ *        | WebSocket (ws://[HOST]:[PORT], handled by the `ws` library)
+ * [Chrome extension (Smart Bookmark) — runs an MCP server over this socket]
  *
- * The script uses only Node.js built-in modules, so it can be installed and run
- * directly via `npx @ludengke95/smart-bookmark-mcp` with no extra dependencies.
+ * The bridge is a thin proxy:
+ *   - To the AI client it acts as an MCP server (dynamic proxy).
+ *   - To the extension it acts as an MCP client (one per extension connection).
+ * Tool definitions and execution live in the extension; the bridge only
+ * forwards `tools/list` and `tools/call` and relays `tools/list_changed`.
+ *
+ * Dependencies: `ws` + `@modelcontextprotocol/sdk` (both minimal, widely used).
  */
-
 import http from 'http';
-import crypto from 'crypto';
-import readline from 'readline';
+import { createRequire } from 'module';
+import { ExtensionClientTransport } from './extension-transport.js';
+
+// The SDK and `ws` are CommonJS packages; load them via createRequire so the
+// ESM entry point can consume their named exports reliably.
+const require = createRequire(import.meta.url);
+const { WebSocketServer } = require('ws');
+const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
+const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
+const { Client } = require('@modelcontextprotocol/sdk/client/index.js');
+const { ListToolsRequestSchema, CallToolRequestSchema, McpError } =
+  require('@modelcontextprotocol/sdk/types.js');
 
 // Parse CLI flags and environment variables (supports --host 127.0.0.1 --port 8333)
 const rawArgs = process.argv.slice(2);
@@ -39,103 +53,51 @@ for (let i = 0; i < rawArgs.length; i++) {
 
 const HOST = customHost || '127.0.0.1';
 const PORT = customPort || 8333;
-const WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
-// Active Chrome extension connection set
+// --- AI-facing MCP server (dynamic proxy) ---------------------------------
+const aiServer = new Server(
+  { name: 'smart-bookmark-mcp-server', version: '1.0.0' },
+  { capabilities: { tools: { listChanged: true } } }
+);
+
+// Active Chrome extension MCP clients (one per WebSocket connection).
 const extensionClients = new Set();
 
-// Whether the external AI client has completed the MCP `initialized` handshake.
-// `tools/list_changed` notifications are only emitted after this, so a client
-// that has not finished initializing never receives a stray notification.
-let clientInitialized = false;
-
-/**
- * Encode text into an RFC 6455 WebSocket data frame (Server -> Client, unmasked)
- */
-function encodeWebSocketFrame(text) {
-  const payload = Buffer.from(text, 'utf8');
-  const length = payload.length;
-
-  let header;
-  if (length < 126) {
-    header = Buffer.alloc(2);
-    header[0] = 0x81; // FIN + text opcode (0x1)
-    header[1] = length;
-  } else if (length < 65536) {
-    header = Buffer.alloc(4);
-    header[0] = 0x81;
-    header[1] = 126;
-    header.writeUInt16BE(length, 2);
-  } else {
-    header = Buffer.alloc(10);
-    header[0] = 0x81;
-    header[1] = 127;
-    header.writeBigUInt64BE(BigInt(length), 2);
-  }
-
-  return Buffer.concat([header, payload]);
+function firstExtension() {
+  for (const entry of extensionClients) return entry;
+  return null;
 }
 
-/**
- * Decode WebSocket data frames coming from the Client -> Server (masked)
- */
-function decodeWebSocketFrames(buffer, onMessage) {
-  let offset = 0;
-  while (offset < buffer.length) {
-    if (buffer.length - offset < 2) break;
-
-    const byte1 = buffer[offset];
-    const byte2 = buffer[offset + 1];
-    const opcode = byte1 & 0x0f;
-    const isMasked = (byte2 & 0x80) !== 0;
-    let payloadLength = byte2 & 0x7f;
-
-    let headerSize = 2;
-    if (payloadLength === 126) {
-      if (buffer.length - offset < 4) break;
-      payloadLength = buffer.readUInt16BE(offset + 2);
-      headerSize = 4;
-    } else if (payloadLength === 127) {
-      if (buffer.length - offset < 10) break;
-      payloadLength = Number(buffer.readBigUInt64BE(offset + 2));
-      headerSize = 10;
-    }
-
-    const maskSize = isMasked ? 4 : 0;
-    const totalFrameSize = headerSize + maskSize + payloadLength;
-    if (buffer.length - offset < totalFrameSize) break;
-
-    let maskKey = null;
-    if (isMasked) {
-      maskKey = buffer.slice(offset + headerSize, offset + headerSize + 4);
-    }
-
-    const payloadOffset = offset + headerSize + maskSize;
-    const payload = buffer.slice(payloadOffset, payloadOffset + payloadLength);
-
-    if (isMasked && maskKey) {
-      for (let i = 0; i < payload.length; i++) {
-        payload[i] ^= maskKey[i % 4];
-      }
-    }
-
-    // opcode 0x1 = text, 0x8 = close, 0x9 = ping, 0xA = pong
-    if (opcode === 0x1) {
-      onMessage(payload.toString('utf8'));
-    } else if (opcode === 0x8) {
-      // Client initiated close
-      return { offset: buffer.length, closed: true };
-    }
-
-    offset += totalFrameSize;
+function notifyToolListChanged() {
+  try {
+    aiServer.sendToolListChanged();
+  } catch {
+    // ignore notification errors before the client is initialized
   }
-
-  return { offset, closed: false };
 }
 
-/**
- * Start the HTTP server and handle WebSocket Upgrade handshakes
- */
+aiServer.setRequestHandler(ListToolsRequestSchema, async () => {
+  const ext = firstExtension();
+  if (!ext) return { tools: [] };
+  const result = await ext.client.listTools();
+  return { tools: result.tools };
+});
+
+aiServer.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const ext = firstExtension();
+  if (!ext) {
+    throw new McpError(
+      -32000,
+      'Smart Bookmark Chrome extension is not connected. Please open the browser and keep the Smart Bookmark new tab page active.'
+    );
+  }
+  return ext.client.callTool({
+    name: request.params.name,
+    arguments: request.params.arguments || {}
+  });
+});
+
+// --- HTTP status endpoint + WebSocket upgrade ---------------------------------
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({
@@ -147,240 +109,50 @@ const server = http.createServer((req, res) => {
   }));
 });
 
-server.on('upgrade', (req, socket, head) => {
-  const secKey = req.headers['sec-websocket-key'];
-  if (!secKey) {
-    socket.destroy();
-    return;
-  }
+const wss = new WebSocketServer({ server });
 
-  // Compute Sec-WebSocket-Accept
-  const hash = crypto.createHash('sha1').update(secKey + WS_GUID).digest('base64');
-  const responseHeaders = [
-    'HTTP/1.1 101 Switching Protocols',
-    'Upgrade: websocket',
-    'Connection: Upgrade',
-    `Sec-WebSocket-Accept: ${hash}`
-  ];
+wss.on('connection', async (ws) => {
+  const entry = { ws, client: null };
+  const transport = new ExtensionClientTransport(ws);
+  const client = new Client(
+    { name: 'smart-bookmark-bridge', version: '1.0.0' },
+    { capabilities: {} }
+  );
+  entry.client = client;
 
-  socket.write(responseHeaders.join('\r\n') + '\r\n\r\n');
-
-  // Register the connection in the extension client set
-  const clientObj = { socket, buffer: Buffer.alloc(0) };
-  const wasEmpty = extensionClients.size === 0;
-  extensionClients.add(clientObj);
-  if (wasEmpty) {
-    // First extension just connected: tell the client to (re)fetch tools/list
-    // so the model discovers the bookmark tools even if the browser opened
-    // after the AI client had already started.
-    emitToolsListChanged();
-  }
-  process.stderr.write(`[MCP Bridge] Chrome extension connected via WebSocket (active connections: ${extensionClients.size})\n`);
-
-  socket.on('data', (chunk) => {
-    clientObj.buffer = Buffer.concat([clientObj.buffer, chunk]);
-    const { offset, closed } = decodeWebSocketFrames(clientObj.buffer, (textMsg) => {
-      handleExtensionMessage(textMsg);
-    });
-
-    if (closed) {
-      socket.destroy();
-      removeExtensionClient(clientObj);
-    } else if (offset > 0) {
-      clientObj.buffer = clientObj.buffer.slice(offset);
-    }
-  });
-
-  socket.on('close', () => {
-    removeExtensionClient(clientObj);
-    process.stderr.write(`[MCP Bridge] Chrome extension disconnected (active connections: ${extensionClients.size})\n`);
-  });
-
-  socket.on('error', (err) => {
-    process.stderr.write(`[MCP Bridge] WebSocket error: ${err.message}\n`);
-    removeExtensionClient(clientObj);
-  });
-});
-
-/**
- * Handle responses sent back from the Chrome extension
- */
-function handleExtensionMessage(textMsg) {
   try {
-    const response = JSON.parse(textMsg);
-    // Write to stdout for the external AI client to consume
-    sendStdioJson(response);
+    await client.connect(transport);
+    const wasEmpty = extensionClients.size === 0;
+    extensionClients.add(entry);
+    process.stderr.write(`[MCP Bridge] Chrome extension connected via MCP (active: ${extensionClients.size})\n`);
+    // First extension just connected: tell the AI client to (re)fetch tools/list.
+    if (wasEmpty) notifyToolListChanged();
   } catch (e) {
-    process.stderr.write(`[MCP Bridge] Failed to forward extension message: ${e.message}\n`);
-  }
-}
-
-/**
- * Write a standard JSON response to Stdio
- */
-function sendStdioJson(obj) {
-  const line = JSON.stringify(obj) + '\n';
-  process.stdout.write(line);
-}
-
-/**
- * Notify the external AI client that the available tool set has changed.
- * Emitted only after the client has finished initialization, so a host that
- * has not completed the handshake is never pushed a notification it would drop.
- */
-function emitToolsListChanged() {
-  if (!clientInitialized) return;
-  sendStdioJson({ jsonrpc: '2.0', method: 'notifications/tools/list_changed' });
-}
-
-/**
- * Remove an extension connection. When the last one leaves, tell the client to
- * drop its cached tool list so the model does not call tools with no backing
- * extension. This also covers the case where the browser is closed after the
- * AI client has already cached the tool catalog.
- */
-function removeExtensionClient(clientObj) {
-  if (!extensionClients.has(clientObj)) return;
-  extensionClients.delete(clientObj);
-  if (extensionClients.size === 0) {
-    emitToolsListChanged();
-  }
-}
-
-/**
- * Listen for inbound MCP JSON-RPC requests from stdin
- */
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
-});
-
-rl.on('line', (line) => {
-  const trimmed = line.trim();
-  if (!trimmed) return;
-
-  let request;
-  try {
-    request = JSON.parse(trimmed);
-  } catch (e) {
-    sendStdioJson({
-      jsonrpc: '2.0',
-      id: null,
-      error: { code: -32700, message: 'Parse error' }
-    });
+    process.stderr.write(`[MCP Bridge] Failed to connect extension MCP client: ${e.message}\n`);
+    try { ws.close(); } catch { /* ignore */ }
     return;
   }
 
-  handleMcpRequest(request);
-});
-
-/**
- * Core MCP request dispatcher
- */
-function handleMcpRequest(request) {
-  const { method, id } = request;
-
-  // 1. Initialization handshake
-  if (method === 'initialize') {
-    sendStdioJson({
-      jsonrpc: '2.0',
-      id,
-      result: {
-        protocolVersion: '2024-11-05',
-        capabilities: {
-          tools: { listChanged: true }
-        },
-        serverInfo: {
-          name: 'smart-bookmark-mcp-server',
-          version: '1.0.0'
-        }
-      }
-    });
-    return;
-  }
-
-  // 2. Initialized notification (no response required)
-  if (method === 'notifications/initialized') {
-    clientInitialized = true;
-    return;
-  }
-
-  // 3. Ping probe
-  if (method === 'ping') {
-    sendStdioJson({
-      jsonrpc: '2.0',
-      id,
-      result: {}
-    });
-    return;
-  }
-
-  // 4. Tool listing: if the extension is not connected yet, return an empty
-  // catalog instead of an error. Many MCP clients treat a failing tools/list
-  // as a server-level failure and close the connection. The empty catalog is
-  // valid, and the client will be told to refetch via notifications/tools/list_changed
-  // as soon as the browser extension connects.
-  if (method === 'tools/list') {
-    if (extensionClients.size === 0) {
-      sendStdioJson({
-        jsonrpc: '2.0',
-        id,
-        result: { tools: [] }
-      });
-      return;
-    }
-
-    const frame = encodeWebSocketFrame(JSON.stringify(request));
-    for (const client of extensionClients) {
-      try {
-        client.socket.write(frame);
-      } catch (e) {
-        process.stderr.write(`[MCP Bridge] Failed to forward request to extension: ${e.message}\n`);
-      }
-    }
-    return;
-  }
-
-  // 5. Tool execution: this actually needs the extension to do work, so an
-  // unconnected extension is a real runtime error.
-  if (method === 'tools/call') {
-    if (extensionClients.size === 0) {
-      sendStdioJson({
-        jsonrpc: '2.0',
-        id,
-        error: {
-          code: -32000,
-          message: 'Smart Bookmark Chrome extension is not connected. Please open the browser and keep the Smart Bookmark new tab page active.'
-        }
-      });
-      return;
-    }
-
-    const frame = encodeWebSocketFrame(JSON.stringify(request));
-    for (const client of extensionClients) {
-      try {
-        client.socket.write(frame);
-      } catch (e) {
-        process.stderr.write(`[MCP Bridge] Failed to forward request to extension: ${e.message}\n`);
-      }
-    }
-    return;
-  }
-
-  // Default fallback for unknown methods
-  sendStdioJson({
-    jsonrpc: '2.0',
-    id,
-    error: {
-      code: -32601,
-      message: `Method '${method}' not found`
-    }
+  ws.on('close', () => {
+    extensionClients.delete(entry);
+    try { client.close(); } catch { /* ignore */ }
+    process.stderr.write(`[MCP Bridge] Chrome extension disconnected (active: ${extensionClients.size})\n`);
+    // Last extension left: drop the cached tool list so the model does not
+    // call tools with no backing extension.
+    if (extensionClients.size === 0) notifyToolListChanged();
   });
-}
+
+  ws.on('error', (err) => {
+    process.stderr.write(`[MCP Bridge] Extension WS error: ${err.message}\n`);
+  });
+});
+
+// --- Wire the AI-facing server to stdio ---------------------------------
+const stdioTransport = new StdioServerTransport();
+await aiServer.connect(stdioTransport);
 
 server.listen(PORT, HOST, () => {
   process.stderr.write(`\n🚀 Smart Bookmark MCP bridge server started!\n`);
   process.stderr.write(`• WebSocket listener: ws://${HOST}:${PORT}\n`);
-  process.stderr.write(`• MCP Stdio protocol: ready, waiting for Cursor / Claude Desktop commands...\n\n`);
+  process.stderr.write(`• MCP Stdio protocol: ready, waiting for AI client commands...\n\n`);
 });

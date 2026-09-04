@@ -1,6 +1,10 @@
 /**
  * Chrome 插件端 MCP (Model Context Protocol) 客户端
- * 负责通过 WebSocket (ws://127.0.0.1:8333) 与本地 Node.js 桥接器保持通信，执行外部大模型发来的指令
+ * 负责通过 WebSocket (ws://127.0.0.1:8333) 与本地 Node.js 桥接器保持通信，
+ * 并以 MCP Server 身份把书签工具暴露给外部大模型。
+ *
+ * 工具定义与执行业务逻辑见 getToolDefinitions() / executeTool()，
+ * JSON-RPC 收发由官方 MCP SDK 的 Server + BrowserExtensionTransport 接管。
  */
 import {
   getBookmarks,
@@ -17,6 +21,9 @@ import {
   createSnapshot
 } from '../storage.js';
 import { DEFAULT_MCP_SETTINGS, DEFAULT_MCP_WS_HOST, DEFAULT_MCP_WS_PORT, UNGROUPED_GROUP_ID } from '../../constants/index.js';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { BrowserExtensionTransport } from './extension-mcp-transport.js';
 
 class McpClient {
   constructor() {
@@ -29,6 +36,8 @@ class McpClient {
     this.autoReconnect = false;
     this.reconnectTimer = null;
     this.listeners = new Set();
+    /** @type {import('@modelcontextprotocol/sdk/server/index.js').Server | null} */
+    this.mcpServer = null;
   }
 
   /**
@@ -81,26 +90,23 @@ class McpClient {
     try {
       this.socket = new WebSocket(wsUrl);
 
-      this.socket.onopen = () => {
+      this.socket.onopen = async () => {
         this.isConnected = true;
         this.isConnecting = false;
         this.lastError = null;
         console.log(`[MCP Client] 已成功连接至 MCP 桥接服务 (${wsUrl})`);
         this.notify();
-      };
-
-      this.socket.onmessage = async (event) => {
         try {
-          const request = JSON.parse(event.data);
-          await this.handleMessage(request);
-        } catch (err) {
-          console.error('[MCP Client] 消息处理异常:', err);
+          await this.startMcpServer();
+        } catch (e) {
+          console.error('[MCP Client] MCP Server 启动失败:', e);
         }
       };
 
       this.socket.onclose = () => {
         this.isConnected = false;
         this.isConnecting = false;
+        this.closeMcpServer();
         this.notify();
         this.scheduleReconnect();
       };
@@ -109,6 +115,7 @@ class McpClient {
         this.lastError = `未能连接到 MCP 桥接服务 (${wsUrl})。请确保已执行 "npm run mcp"。`;
         this.isConnected = false;
         this.isConnecting = false;
+        this.closeMcpServer();
         this.notify();
       };
     } catch (e) {
@@ -121,6 +128,59 @@ class McpClient {
   }
 
   /**
+   * 基于当前 WebSocket 连接启动 MCP Server，把书签工具暴露给外部大模型。
+   */
+  async startMcpServer() {
+    const server = new Server(
+      { name: 'smart-bookmark-extension', version: '1.0.0' },
+      { capabilities: { tools: { listChanged: true } } }
+    );
+
+    server.setRequestHandler(ListToolsRequestSchema, async () => ({
+      tools: this.getToolDefinitions()
+    }));
+
+    server.setRequestHandler(CallToolRequestSchema, async (request) => {
+      try {
+        const data = await this.executeTool(request.params.name, request.params.arguments || {});
+        return {
+          content: [
+            {
+              type: 'text',
+              text: typeof data === 'string' ? data : JSON.stringify(data, null, 2)
+            }
+          ]
+        };
+      } catch (err) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: 'text',
+              text: `工具执行失败 [${request.params.name}]: ${err.message}`
+            }
+          ]
+        };
+      }
+    });
+
+    const transport = new BrowserExtensionTransport(this.socket);
+    await server.connect(transport);
+    this.mcpServer = server;
+  }
+
+  closeMcpServer() {
+    if (this.mcpServer) {
+      try {
+        this.mcpServer.close();
+      } catch {
+        // ignore
+      }
+      this.mcpServer = null;
+    }
+  }
+
+  /**
    * 断开连接
    */
   disconnect() {
@@ -129,6 +189,7 @@ class McpClient {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
+    this.closeMcpServer();
     if (this.socket) {
       this.socket.close();
       this.socket = null;
@@ -146,71 +207,6 @@ class McpClient {
       this.reconnectTimer = null;
       this.connect(this.host, this.port);
     }, 4000);
-  }
-
-  /**
-   * 处理来自外部大模型发来的 MCP 请求
-   */
-  async handleMessage(request) {
-    if (!request || !request.id) return;
-    const { id, method, params } = request;
-
-    if (method === 'tools/list') {
-      const tools = this.getToolDefinitions();
-      this.sendResponse({
-        jsonrpc: '2.0',
-        id,
-        result: { tools }
-      });
-      return;
-    }
-
-    if (method === 'tools/call') {
-      const { name, arguments: args } = params || {};
-      try {
-        const resultData = await this.executeTool(name, args || {});
-        this.sendResponse({
-          jsonrpc: '2.0',
-          id,
-          result: {
-            content: [
-              {
-                type: 'text',
-                text: typeof resultData === 'string' ? resultData : JSON.stringify(resultData, null, 2)
-              }
-            ]
-          }
-        });
-      } catch (err) {
-        this.sendResponse({
-          jsonrpc: '2.0',
-          id,
-          result: {
-            isError: true,
-            content: [
-              {
-                type: 'text',
-                text: `工具执行失败 [${name}]: ${err.message}`
-              }
-            ]
-          }
-        });
-      }
-      return;
-    }
-
-    // 未知方法
-    this.sendResponse({
-      jsonrpc: '2.0',
-      id,
-      error: { code: -32601, message: `Unsupported method: ${method}` }
-    });
-  }
-
-  sendResponse(resp) {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify(resp));
-    }
   }
 
   /**

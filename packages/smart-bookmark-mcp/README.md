@@ -4,8 +4,10 @@ MCP (Model Context Protocol) bridge server for the **Smart Bookmark** Chrome ext
 
 It lets AI clients such as **Cursor**, **Claude Desktop**, and **Windsurf** read and manage your
 bookmarks, groups, and tags through a standardized MCP interface. The bridge runs locally as a
-zero-dependency Node.js process and relays MCP JSON-RPC calls (over stdio) to the Smart Bookmark
-extension (over a local WebSocket).
+Node.js process and relays MCP JSON-RPC calls (over stdio) to the Smart Bookmark
+extension (over a local WebSocket). It is built on the official
+[`@modelcontextprotocol/sdk`](https://www.npmjs.com/package/@modelcontextprotocol/sdk) and the
+mature [`ws`](https://www.npmjs.com/package/ws) WebSocket library — no hand-rolled protocol code.
 
 > The extension itself must be installed and its new-tab page kept active. The bridge only proxies
 > between your AI client and the extension — it does not store or read your bookmarks on its own.
@@ -14,7 +16,8 @@ extension (over a local WebSocket).
 
 ## Install / Run
 
-No build step, no dependencies. Either run it directly:
+No build step (the published package is plain ESM + a bin). It pulls two runtime dependencies
+(`@modelcontextprotocol/sdk` and `ws`) on install. Either run it directly:
 
 ```bash
 npx @ludengke95/smart-bookmark-mcp
@@ -96,11 +99,13 @@ Add the bridge to your MCP client config. The client launches it over stdio.
 [AI client] --stdio(JSON-RPC)--> [mcp-bridge.js] --WebSocket--> [Smart Bookmark extension]
 ```
 
-1. The AI client starts the bridge over stdio and speaks MCP JSON-RPC.
-2. The bridge opens an RFC 6455 WebSocket server (hand-rolled, no deps) on `127.0.0.1:8333`.
-3. The Smart Bookmark extension connects to that WebSocket and registers its MCP tools.
-4. `tools/list` and `tools/call` from the AI client are forwarded to the extension, whose
-   responses are written back to stdout.
+1. The AI client starts the bridge over stdio; the bridge speaks MCP JSON-RPC to the client using
+   the official `@modelcontextprotocol/sdk` `Server`.
+2. The bridge opens an RFC 6455 WebSocket server (via the `ws` library) on `127.0.0.1:8333`.
+3. The Smart Bookmark extension connects to that WebSocket and runs an MCP server over it; the
+   bridge connects as an MCP `Client` (one per extension connection, via a custom transport).
+4. `tools/list` and `tools/call` from the AI client are proxied to the extension's MCP server, and
+   the responses are written back to stdout.
 
 ### Extension not connected yet?
 
