@@ -10,15 +10,19 @@
     "build": "wxt build",
     "zip": "wxt zip",
     "compile": "wxt compile",
-    "mcp": "node scripts/mcp-bridge.js"
+    "mcp": "node scripts/mcp-bridge.js",
+    "release:notes": "conventional-changelog -p angular -r 1 -o RELEASE_NOTES.md"
   },
   "keywords": [],
   "author": "ludengke95 <ludengke95@gmail.com>",
   "license": "MIT",
   "devDependencies": {
+    "@commitlint/cli": "^19.6.0",
+    "@commitlint/config-conventional": "^19.6.0",
     "@lucide/svelte": "^1.38.0",
     "@wxt-dev/module-svelte": "^2.0.5",
     "autoprefixer": "^10.5.4",
+    "conventional-changelog-cli": "^5.0.0",
     "lucide-svelte": "^1.0.1",
     "postcss": "^8.5.26",
     "svelte": "^5.57.0",

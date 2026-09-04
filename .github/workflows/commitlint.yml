@@ -1,0 +1,24 @@
+name: Commitlint
+
+# 校验提交信息是否符合 Conventional Commits。
+# master 受保护、仅允许 PR 合入，故在 PR 与 push(master) 两个时机都跑：
+#   - PR：校验 PR 内每条提交
+#   - push(master)：校验 Squash 合入后的单条提交（来自 PR 标题）
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+jobs:
+  commitlint:
+    name: Lint commit messages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 需要完整历史以校验 PR 内全部提交
+
+      - name: 校验提交信息
+        uses: wagoid/commitlint-gh-action@v6

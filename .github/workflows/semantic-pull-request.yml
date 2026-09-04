@@ -1,0 +1,18 @@
+name: Semantic Pull Request
+
+# 校验 PR 标题是否符合 Conventional Commits 格式。
+# 与 commitlint 互补：确保 Squash and merge 后 master 的提交信息保持规范，
+# 从而 conventional-changelog 能正确解析并生成 Release 变更日志。
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  semantic:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    steps:
+      - name: 校验 PR 标题
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

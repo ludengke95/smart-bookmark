@@ -26,5 +26,8 @@ node_modules/
 skills-lock.json
 .codegraph/
 
+# Generated release notes (produced by conventional-changelog in CI)
+RELEASE_NOTES.md
+
 
 

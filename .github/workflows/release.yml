@@ -22,6 +22,9 @@ jobs:
     steps:
       - name: Checkout 代码
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # conventional-changelog 需要完整历史与全部 tag 以计算变更
+          fetch-tags: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -44,13 +47,18 @@ jobs:
           npm ci
           npm pack
 
-      # 3) 创建 Release，附插件包 + mcp 包（源码包由 GitHub 自动附带）
+      # 3) 由 Conventional Commits 自动生成 Release 正文
+      - name: Generate release notes（conventional-changelog）
+        run: npm run release:notes
+
+      # 4) 创建 Release，附插件包 + mcp 包 + 自动生成的变更日志正文
+      #    （源码包由 GitHub 自动附带）
       - name: 创建 Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             .output/*.zip
             packages/smart-bookmark-mcp/*.tgz
-          generate_release_notes: true # 自动生成 Release 说明
+          body_path: RELEASE_NOTES.md # 由 conventional-changelog 生成，替代默认自动说明
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
