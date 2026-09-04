@@ -1,13 +1,16 @@
 name: Create Release
 
-# 推送 smart-bookmark-mcp@<version> 标签（如 smart-bookmark-mcp@1.0.1）时，
-# 自动打包 npm tarball 并创建 GitHub Release。
+# 推送以 v 开头的标签（如 v1.0.0）时，构建扩展与 mcp 包并创建 GitHub Release。
+# Release 附带三类产物：
+#   1) 源码包 —— GitHub 自动生成的 Source code (zip / tar.gz)，无需额外步骤
+#   2) 插件包 —— `wxt zip` 构建并打包的 Chrome 扩展 zip（.output/*.zip）
+#   3) mcp 包  —— 子包 `npm pack` 产出的 npm tarball（packages/smart-bookmark-mcp/*.tgz）
 # 创建的 Release 会触发 publish.yml 的 release: types:[published] → 自动 npm publish，
-# 从而形成「打标签 → 建 Release → 发 npm」的完整自动化发布链。
+# 形成「打 v 标签 → 建 Release(三类产物) → 发 npm」的完整自动化链。
 on:
   push:
     tags:
-      - "smart-bookmark-mcp@*"
+      - "v*"
 
 permissions:
   contents: write # softprops/action-gh-release 需要写权限来创建 Release
@@ -16,9 +19,6 @@ jobs:
   release:
     name: Build and create release
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: packages/smart-bookmark-mcp
     steps:
       - name: Checkout 代码
         uses: actions/checkout@v4
@@ -28,19 +28,29 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: packages/smart-bookmark-mcp/package-lock.json
+          cache-dependency-path: package-lock.json
 
-      - name: Install dependencies
+      # 1) 插件包：安装根依赖并构建 + 打包 Chrome 扩展
+      - name: Install root dependencies
         run: npm ci
 
-      - name: 打包 npm tarball
-        run: npm pack
+      - name: Build & zip Chrome extension（插件包）
+        run: npm run zip
 
+      # 2) mcp 包：子包 npm pack
+      - name: Pack mcp sub-package（mcp 包）
+        working-directory: packages/smart-bookmark-mcp
+        run: |
+          npm ci
+          npm pack
+
+      # 3) 创建 Release，附插件包 + mcp 包（源码包由 GitHub 自动附带）
       - name: 创建 Release
         uses: softprops/action-gh-release@v2
         with:
-          # 基于触发本次 workflow 的标签创建 Release
-          files: packages/smart-bookmark-mcp/*.tgz
+          files: |
+            .output/*.zip
+            packages/smart-bookmark-mcp/*.tgz
           generate_release_notes: true # 自动生成 Release 说明
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
