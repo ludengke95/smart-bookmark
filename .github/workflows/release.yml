@@ -3,7 +3,7 @@ name: Create Release
 # 推送以 v 开头的标签（如 v1.0.0）时，构建扩展与 mcp 包并创建 GitHub Release。
 # Release 附带三类产物：
 #   1) 源码包 —— GitHub 自动生成的 Source code (zip / tar.gz)，无需额外步骤
-#   2) 插件包 —— `wxt zip` 构建并打包的 Chrome 扩展 zip（.output/*.zip）
+#   2) 插件包 —— `wxt zip` 构建并打包的 Chrome 扩展 zip（.output/smart-bookmark-v<version>-chrome.zip）
 #   3) mcp 包  —— 子包 `npm pack` 产出的 npm tarball（packages/smart-bookmark-mcp/*.tgz）
 # 创建的 Release 会触发 publish.yml 的 release: types:[published] → 自动 npm publish，
 # 形成「打 v 标签 → 建 Release(三类产物) → 发 npm」的完整自动化链。

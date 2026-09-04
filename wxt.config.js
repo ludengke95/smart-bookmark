@@ -3,6 +3,10 @@ import { defineConfig } from 'wxt';
 export default defineConfig({
   srcDir: 'src',
   modules: ['@wxt-dev/module-svelte'],
+  zip: {
+    // Release 附件的插件包命名：smart-bookmark-v<根包版本>-<浏览器>.zip
+    artifactTemplate: '{{name}}-v{{packageVersion}}-{{browser}}.zip',
+  },
   manifest: {
     default_locale: 'zh_CN',
     name: '__MSG_extName__',
