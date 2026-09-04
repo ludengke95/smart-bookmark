@@ -1,0 +1,38 @@
+name: CI
+
+# 监控 smart-bookmark-mcp 子包的改动，在 push / PR 到 master 时跑单元测试。
+# 子包自带 package-lock.json，使用 npm ci 保证可复现。
+on:
+  push:
+    branches: [master]
+    paths:
+      - "packages/smart-bookmark-mcp/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    branches: [master]
+    paths:
+      - "packages/smart-bookmark-mcp/**"
+      - ".github/workflows/ci.yml"
+
+jobs:
+  test:
+    name: Test smart-bookmark-mcp
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/smart-bookmark-mcp
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/smart-bookmark-mcp/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test

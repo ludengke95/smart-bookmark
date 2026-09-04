@@ -1,0 +1,38 @@
+name: Publish smart-bookmark-mcp
+
+# 监听子包版本 tag（如 smart-bookmark-mcp@1.0.1）自动发布到 npm。
+# 关键修复：原 Node.js Package 模板直连根包，但根包 private:true 且无 workspaces，
+# 在 monorepo 下 `npm publish` 会失败；这里 working-directory 切到子包再发布。
+# 需要在仓库 Settings → Secrets 配置 NPM_TOKEN（npm 账号的 Automation/Publish Token）。
+on:
+  push:
+    tags:
+      - "smart-bookmark-mcp@*"
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: packages/smart-bookmark-mcp
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+          cache: npm
+          cache-dependency-path: packages/smart-bookmark-mcp/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Publish
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
