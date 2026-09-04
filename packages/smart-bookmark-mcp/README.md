@@ -10,6 +10,8 @@ extension (over a local WebSocket).
 > The extension itself must be installed and its new-tab page kept active. The bridge only proxies
 > between your AI client and the extension — it does not store or read your bookmarks on its own.
 
+> 📘 中文配置手册（Chinese config guide）：[../../doc/MCP配置使用手册.md](../../doc/MCP配置使用手册.md)
+
 ## Install / Run
 
 No build step, no dependencies. Either run it directly:
@@ -110,6 +112,24 @@ Add the bridge to your MCP client config. The client launches it over stdio.
 
 The actual tool definitions and bookmark operations live in the extension; the bridge is a thin,
 transport-only proxy so it stays compatible with the extension's protocol version.
+
+## Verify the connection
+
+1. Fully restart the AI client after saving the config.
+2. In the client's MCP / tools panel you should see the `smart-bookmark` server, with bookmark-related tools listed.
+3. If the extension is not yet connected, `tools/list` returns an empty catalog (no error); once it connects, the bridge sends `notifications/tools/list_changed` so the client refreshes automatically.
+
+## Troubleshooting
+
+- **`ENOENT` / `command not found` on launch** — you used the bare command `smart-bookmark-mcp`, but the bin is not installed globally or is not on the client process's PATH. Use `"command": "npx"` + `"args": ["-y", "@ludengke95/smart-bookmark-mcp"]` so npx resolves it without relying on PATH.
+- **Empty tool list** — confirm the extension is installed and its new-tab page is open.
+- **Port conflict / launch failure** — pick another port: `--port 9000`, or set the `PORT` env var.
+- **Node version too old** — the bridge requires Node.js >= 18; verify with `node -v`.
+
+## Security
+
+- The bridge only listens on `127.0.0.1` locally — **do not expose the port to the public internet**.
+- The current version performs **no client authentication** (per-client auth/routing is planned). The WebSocket handshake is protocol compliance only, not a security boundary.
 
 ## 🚧 Planned improvements
 
