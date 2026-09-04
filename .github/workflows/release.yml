@@ -1,0 +1,46 @@
+name: Create Release
+
+# 推送 smart-bookmark-mcp@<version> 标签（如 smart-bookmark-mcp@1.0.1）时，
+# 自动打包 npm tarball 并创建 GitHub Release。
+# 创建的 Release 会触发 publish.yml 的 release: types:[published] → 自动 npm publish，
+# 从而形成「打标签 → 建 Release → 发 npm」的完整自动化发布链。
+on:
+  push:
+    tags:
+      - "smart-bookmark-mcp@*"
+
+permissions:
+  contents: write # softprops/action-gh-release 需要写权限来创建 Release
+
+jobs:
+  release:
+    name: Build and create release
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/smart-bookmark-mcp
+    steps:
+      - name: Checkout 代码
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/smart-bookmark-mcp/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: 打包 npm tarball
+        run: npm pack
+
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # 基于触发本次 workflow 的标签创建 Release
+          files: packages/smart-bookmark-mcp/*.tgz
+          generate_release_notes: true # 自动生成 Release 说明
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
