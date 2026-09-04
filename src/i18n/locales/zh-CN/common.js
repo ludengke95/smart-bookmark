@@ -107,9 +107,10 @@ export default {
     placeholder: '请选择...'
   },
   themes: {
-    paperSand: '纸本暖沙 (Paper Sand)',
-    ceramicLight: '陶瓷素白 (Ceramic Light)',
-    obsidianDark: '深曜黑 (Obsidian Dark)'
+    // key 与 THEMES.id（kebab-case）保持一致，供 t('themes.' + theme.id) 动态取值
+    'paper-sand': '纸本暖沙',
+    'ceramic-light': '陶瓷素白',
+    'obsidian-dark': '深曜黑'
   },
   errors: {
     apiHttpError: '接口返回错误 (HTTP {status})',

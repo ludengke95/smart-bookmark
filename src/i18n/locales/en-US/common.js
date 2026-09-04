@@ -107,9 +107,10 @@ export default {
     placeholder: 'Please select...'
   },
   themes: {
-    paperSand: 'Paper Sand',
-    ceramicLight: 'Ceramic Light',
-    obsidianDark: 'Obsidian Dark'
+    // keys mirror THEMES.id (kebab-case) for t('themes.' + theme.id) lookups
+    'paper-sand': 'Paper Sand',
+    'ceramic-light': 'Ceramic Light',
+    'obsidian-dark': 'Obsidian Dark'
   },
   errors: {
     apiHttpError: 'API returned an error (HTTP {status})',

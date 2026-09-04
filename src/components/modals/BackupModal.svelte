@@ -150,14 +150,14 @@
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2">
                     <span class="font-medium text-text-primary truncate">{formatSnapshotReason(snap)}</span>
-                    {#if snap.locked}
+                    {#if snap.isLocked}
                       <span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20 font-medium">{t('backup.locked')}</span>
                     {/if}
                   </div>
                   <div class="flex items-center gap-3 text-[11px] text-text-tertiary font-mono mt-0.5">
                     <span>{formatTime(snap.timestamp)}</span>
                     <span>·</span>
-                    <span>{t('backup.itemSummary', { bookmarks: snap.bookmarks?.length || 0, groups: snap.groups?.length || 0 })}</span>
+                    <span>{t('backup.itemSummary', { bookmarks: snap.counts?.bookmarks ?? 0, groups: snap.counts?.groups ?? 0 })}</span>
                   </div>
                 </div>
 
@@ -166,9 +166,9 @@
                     type="button"
                     onclick={() => handleToggleLock(snap.id)}
                     class="p-1.5 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
-                    title={snap.locked ? t('backup.unlockTooltip') : t('backup.lockTooltip')}
+                    title={snap.isLocked ? t('backup.unlockTooltip') : t('backup.lockTooltip')}
                   >
-                    {#if snap.locked}
+                    {#if snap.isLocked}
                       <span class="text-amber-500 text-xs">🔒</span>
                     {:else}
                       <span class="text-xs">🔓</span>
@@ -183,7 +183,7 @@
                     {t('backup.restore')}
                   </button>
 
-                  {#if !snap.locked}
+                  {#if !snap.isLocked}
                     <button
                       type="button"
                       onclick={() => handleDeleteSnapshot(snap.id)}
