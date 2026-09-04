@@ -132,6 +132,7 @@ src/
 - [User Manual (English)](./doc/en/user-manual.md) | [用户使用手册 (中文)](./doc/用户使用手册.md)
 - [Requirements & Specifications (English)](./doc/en/requirements-spec.md) | [需求文档 (中文)](./doc/书签应用-需求文档.md)
 - [Frontend Design Specification (English)](./doc/en/frontend-design-spec.md) | [前端设计规范 (中文)](./doc/前端设计规范.md)
+- 🗺️ [Roadmap: Planned & In-Progress Features (English)](./ROADMAP_EN.md) | [Roadmap 中文](./ROADMAP.md)
 
 ---
 
