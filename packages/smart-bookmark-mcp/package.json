@@ -1,0 +1,32 @@
+{
+  "name": "@ludengke95/smart-bookmark-mcp",
+  "version": "1.0.0",
+  "description": "MCP (Model Context Protocol) bridge server for the Smart Bookmark Chrome extension. Exposes your bookmarks/groups/tags to AI clients (Cursor, Claude Desktop, Windsurf) over Stdio + a zero-dependency WebSocket proxy.",
+  "type": "module",
+  "bin": {
+    "smart-bookmark-mcp": "./mcp-bridge.js"
+  },
+  "files": [
+    "mcp-bridge.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "bookmark",
+    "chrome-extension",
+    "cursor",
+    "claude-desktop",
+    "windsurf"
+  ],
+  "author": "ludengke95 <ludengke95@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ludengke95/smart-bookmark.git"
+  }
+}
