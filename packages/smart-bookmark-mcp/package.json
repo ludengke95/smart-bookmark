@@ -9,11 +9,16 @@
   "files": [
     "mcp-bridge.js",
     "extension-transport.js",
+    "register-mcp.mjs",
+    "unregister-mcp.mjs",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "register-mcp": "node ./register-mcp.mjs",
+    "postinstall": "node ./register-mcp.mjs",
+    "preuninstall": "node ./unregister-mcp.mjs"
   },
   "engines": {
     "node": ">=18"
