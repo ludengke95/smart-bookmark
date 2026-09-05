@@ -11,6 +11,7 @@
     "extension-transport.js",
     "install-cli.mjs",
     "README.md",
+    "README_EN.md",
     "LICENSE"
   ],
   "scripts": {
