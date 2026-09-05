@@ -155,6 +155,97 @@ export async function reorderBookmarks(orderedBookmarkIds) {
   return reordered;
 }
 
+/**
+ * 全局重命名 / 合并标签
+ * 将所有书签中的 oldTag 重命名为 newTag；如果该书签已有 newTag 则自动合并去重
+ */
+export async function renameTag(oldTag, newTag) {
+  const oldT = String(oldTag || '').trim();
+  const newT = String(newTag || '').trim();
+  if (!oldT || !newT || oldT === newT) {
+    return { success: false, modifiedCount: 0, message: 'Invalid tag names' };
+  }
+
+  const backupSettings = await getBackupSettings();
+  if (backupSettings.preActionAutoBackup) {
+    try {
+      await createSnapshot(null, 'auto_tag_manage');
+    } catch (e) {
+      console.warn('Tag rename snapshot failed:', e);
+    }
+  }
+
+  const bookmarks = await getBookmarks();
+  let modifiedCount = 0;
+  const updated = bookmarks.map(bm => {
+    if (!Array.isArray(bm.tags) || !bm.tags.includes(oldT)) {
+      return bm;
+    }
+    const nextTags = Array.from(new Set(bm.tags.map(t => (t === oldT ? newT : t)).filter(Boolean)));
+    modifiedCount++;
+    return {
+      ...bm,
+      tags: nextTags,
+      updatedAt: Date.now()
+    };
+  });
+
+  if (modifiedCount > 0) {
+    await setStorageData(STORAGE_KEYS.BOOKMARKS, updated);
+  }
+
+  return {
+    success: true,
+    modifiedCount,
+    bookmarks: updated
+  };
+}
+
+/**
+ * 全局删除标签
+ * 从所有书签中彻底移除指定标签
+ */
+export async function deleteTag(tagToDelete) {
+  const targetTag = String(tagToDelete || '').trim();
+  if (!targetTag) {
+    return { success: false, modifiedCount: 0, message: 'Invalid tag name' };
+  }
+
+  const backupSettings = await getBackupSettings();
+  if (backupSettings.preActionAutoBackup) {
+    try {
+      await createSnapshot(null, 'auto_tag_manage');
+    } catch (e) {
+      console.warn('Tag delete snapshot failed:', e);
+    }
+  }
+
+  const bookmarks = await getBookmarks();
+  let modifiedCount = 0;
+  const updated = bookmarks.map(bm => {
+    if (!Array.isArray(bm.tags) || !bm.tags.includes(targetTag)) {
+      return bm;
+    }
+    const nextTags = bm.tags.filter(t => t !== targetTag);
+    modifiedCount++;
+    return {
+      ...bm,
+      tags: nextTags,
+      updatedAt: Date.now()
+    };
+  });
+
+  if (modifiedCount > 0) {
+    await setStorageData(STORAGE_KEYS.BOOKMARKS, updated);
+  }
+
+  return {
+    success: true,
+    modifiedCount,
+    bookmarks: updated
+  };
+}
+
 export async function clearAllData() {
   const currentBookmarks = await getBookmarks();
   const currentGroups = await getGroups();

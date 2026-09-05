@@ -7,6 +7,7 @@ export default {
     tabs: {
       general: 'General',
       groups: 'Groups',
+      tags: 'Tags',
       ai: '✨ AI & MCP',
       danger: 'Danger Zone'
     },

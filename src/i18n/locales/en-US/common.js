@@ -47,6 +47,24 @@ export default {
     renameTooltip: 'Rename',
     deleteTooltip: 'Delete group'
   },
+  tags: {
+    title: 'Tag Management',
+    searchPlaceholder: 'Search tags...',
+    noTags: 'No tags yet. Tags added to bookmarks will appear here.',
+    noMatch: 'No matching tags found',
+    bookmarkCount: '{count} bookmark(s)',
+    renameTag: 'Rename Tag',
+    renamePlaceholder: 'Enter new tag name...',
+    mergeNotice: 'If the target tag exists, it will be automatically merged and deduplicated',
+    deleteConfirm: 'Are you sure you want to remove tag "{tag}" from all bookmarks? Bookmarks themselves will not be deleted.',
+    deleted: 'Tag "{tag}" removed',
+    renamed: 'Tag updated to "{tag}"',
+    merged: 'Tag "{oldTag}" merged into "{newTag}"',
+    nameRequired: 'Tag name cannot be empty',
+    sameName: 'New tag name is identical to the current name',
+    renameTooltip: 'Rename or merge tag',
+    deleteTooltip: 'Delete tag'
+  },
   bookmark: {
     addTitle: 'Add New Bookmark',
     editTitle: 'Edit Bookmark',

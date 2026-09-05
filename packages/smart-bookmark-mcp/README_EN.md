@@ -153,7 +153,7 @@ transport-only proxy so it stays compatible with the extension's protocol versio
 
 ## Available Tools
 
-The extension declares the following 13 MCP tools to connected AI models:
+The extension declares the following 17 MCP tools to connected AI models:
 
 | Tool | Type | Description |
 |---|---|---|
@@ -165,6 +165,10 @@ The extension declares the following 13 MCP tools to connected AI models:
 | `delete_bookmark` | Mutation | Delete a single bookmark by ID. Returns deleted bookmark info. |
 | `batch_delete_bookmarks` | Mutation | Delete multiple bookmarks in bulk by array of IDs. |
 | `create_group` | Mutation | Create a custom bookmark group. Returns newly created group with ID. |
+| `update_group` | Mutation | Rename or update an existing custom bookmark group (built-in groups cannot be modified). |
+| `delete_group` | Mutation | Delete a custom bookmark group. Bookmarks inside are safely moved to the unorganized group. |
+| `rename_tag` | Mutation | Globally rename or merge a tag across all bookmarks (merges duplicates, auto-creates backup snapshot). |
+| `delete_tag` | Mutation | Globally remove a tag from all bookmarks across the library (auto-creates backup snapshot). |
 | `batch_organize_bookmarks` | Mutation | Batch migrate groups and append/replace tags. Automatically creates a safety snapshot before execution. |
 | `list_snapshots` | Recovery | List available safety backup snapshots with metadata (ID, time, reason, counts) for recovery. |
 | `rollback_snapshot` | Recovery | Roll back all bookmarks, groups, and settings to a selected safety snapshot. |

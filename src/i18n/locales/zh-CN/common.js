@@ -47,6 +47,24 @@ export default {
     renameTooltip: '重命名',
     deleteTooltip: '删除分组'
   },
+  tags: {
+    title: '标签管理',
+    searchPlaceholder: '搜索标签...',
+    noTags: '暂无标签，在书签中添加标签后即可在此管理',
+    noMatch: '未找到匹配的标签',
+    bookmarkCount: '{count} 个书签',
+    renameTag: '重命名标签',
+    renamePlaceholder: '输入新标签名称...',
+    mergeNotice: '如果目标标签已存在，将自动合并并去重',
+    deleteConfirm: '确定要从所有书签中删除标签 "{tag}" 吗？此操作不删除书签本身。',
+    deleted: '标签 "{tag}" 已删除',
+    renamed: '标签已更新为 "{tag}"',
+    merged: '标签 "{oldTag}" 已合并至 "{newTag}"',
+    nameRequired: '标签名称不能为空',
+    sameName: '新标签名称与原名称相同',
+    renameTooltip: '重命名或合并标签',
+    deleteTooltip: '删除标签'
+  },
   bookmark: {
     addTitle: '添加新书签',
     editTitle: '编辑书签',

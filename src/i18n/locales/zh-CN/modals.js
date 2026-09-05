@@ -7,6 +7,7 @@ export default {
     tabs: {
       general: '常规偏好',
       groups: '分组管理',
+      tags: '标签管理',
       ai: '✨ AI 与 MCP',
       danger: '数据重置'
     },

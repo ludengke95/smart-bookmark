@@ -9,9 +9,12 @@ import {
   saveAllBookmarks as storageSaveAllBms,
   getGroups,
   saveGroup as storageSaveGroup,
+  updateGroup as storageUpdateGroup,
   deleteGroup as storageDeleteGroup,
   reorderGroups as storageReorderGroups,
   reorderBookmarks as storageReorderBookmarks,
+  renameTag as storageRenameTag,
+  deleteTag as storageDeleteTag,
   batchImportData as storageBatchImportData,
   batchApplyAiGroups as storageBatchApplyAiGroups,
   batchApplyAiTags as storageBatchApplyAiTags,
@@ -386,6 +389,11 @@ class AppState {
     return this.groups;
   }
 
+  async updateGroup(grpId, newName) {
+    this.groups = await storageUpdateGroup(grpId, newName);
+    return this.groups;
+  }
+
   async deleteGroup(grpId) {
     this.groups = await storageDeleteGroup(grpId);
     this.bookmarks = await getBookmarks();
@@ -403,6 +411,34 @@ class AppState {
       next.add(grpId);
     }
     this.collapsedGroups = next;
+  }
+
+  // ==========================================
+  // 标签治理操作
+  // ==========================================
+
+  async renameTag(oldTag, newTag) {
+    const res = await storageRenameTag(oldTag, newTag);
+    if (res.success) {
+      this.bookmarks = res.bookmarks;
+      this.snapshots = await getSnapshots();
+      if (this.activeTag === oldTag) {
+        this.activeTag = newTag.trim();
+      }
+    }
+    return res;
+  }
+
+  async deleteTag(tagToDelete) {
+    const res = await storageDeleteTag(tagToDelete);
+    if (res.success) {
+      this.bookmarks = res.bookmarks;
+      this.snapshots = await getSnapshots();
+      if (this.activeTag === tagToDelete) {
+        this.activeTag = 'all';
+      }
+    }
+    return res;
   }
 
   // ==========================================
