@@ -21,4 +21,4 @@ jobs:
           fetch-depth: 0 # 需要完整历史以校验 PR 内全部提交
 
       - name: 校验提交信息
-        uses: wagoid/commitlint-gh-action@v6
+        uses: wagoid/commitlint-github-action@v6
