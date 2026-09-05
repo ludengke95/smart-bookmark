@@ -6,12 +6,67 @@ import { DEFAULT_MCP_WS_PORT } from '../constants/index.js';
 export default defineBackground(() => {
   console.log('[Background] Smart Bookmark service worker active');
 
-  // 初始化 MCP 外部服务连接 (若用户开启了 MCP)
-  getSettings().then(settings => {
-    if (settings?.mcp?.enabled !== false) {
-      mcpClient.connect(settings?.mcp?.wsPort || DEFAULT_MCP_WS_PORT);
+  const MCP_KEEPALIVE_ALARM = 'mcp_keepalive_alarm';
+
+  // 同步 MCP 状态与保活闹钟：开启时守护保活，未开启或关闭时彻底释放资源与停止闹钟
+  function syncMcpKeepalive(enabled, port) {
+    if (enabled) {
+      // 开启保活闹钟
+      try {
+        chrome.alarms?.get(MCP_KEEPALIVE_ALARM, (alarm) => {
+          if (!alarm) {
+            chrome.alarms.create(MCP_KEEPALIVE_ALARM, { periodInMinutes: 0.4 }); // 约 24 秒
+          }
+        });
+      } catch (e) {
+        console.warn('[Background] Alarms init warning:', e);
+      }
+      if (!mcpClient.isConnected && !mcpClient.isConnecting) {
+        mcpClient.connect(port || DEFAULT_MCP_WS_PORT);
+      }
+    } else {
+      // 未开启 MCP：注销闹钟，断开连接，允许 Service Worker 正常休眠零额外开销
+      try {
+        chrome.alarms?.clear(MCP_KEEPALIVE_ALARM);
+      } catch {
+        // ignore
+      }
+      if (mcpClient.isConnected || mcpClient.isConnecting) {
+        mcpClient.disconnect();
+      }
     }
+  }
+
+  // 初始化检查
+  getSettings().then(settings => {
+    const isMcpEnabled = settings?.mcp?.enabled === true;
+    syncMcpKeepalive(isMcpEnabled, settings?.mcp?.wsPort);
   }).catch(() => {});
+
+  // 监听设置动态变更 (用户在设置中开启或关闭 MCP 时即时响应)
+  chrome.storage?.onChanged?.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes?.smart_bm_settings?.newValue) {
+      const newSettings = changes.smart_bm_settings.newValue;
+      const isMcpEnabled = newSettings?.mcp?.enabled === true;
+      syncMcpKeepalive(isMcpEnabled, newSettings?.mcp?.wsPort);
+    }
+  });
+
+  // MV3 周期性保活触发 (仅在用户开启 MCP 状态下生效)
+  chrome.alarms?.onAlarm?.addListener((alarm) => {
+    if (alarm.name === MCP_KEEPALIVE_ALARM) {
+      getSettings().then(settings => {
+        if (settings?.mcp?.enabled === true) {
+          if (!mcpClient.isConnected && !mcpClient.isConnecting) {
+            mcpClient.connect(settings?.mcp?.wsPort || DEFAULT_MCP_WS_PORT);
+          }
+        } else {
+          // 若设置已关闭但闹钟偶发触发，确保清理
+          syncMcpKeepalive(false);
+        }
+      }).catch(() => {});
+    }
+  });
 
   const HOME_PAGE_PATH = '/home.html';
 
