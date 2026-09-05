@@ -103,6 +103,29 @@ export async function deleteBookmark(bookmarkId) {
   return list;
 }
 
+export async function batchDeleteBookmarks(bookmarkIds) {
+  if (!Array.isArray(bookmarkIds) || bookmarkIds.length === 0) {
+    return { deletedCount: 0, deletedIds: [] };
+  }
+  const idSet = new Set(bookmarkIds.map(String));
+  const list = await getBookmarks();
+  const remaining = [];
+  const deletedIds = [];
+
+  for (const b of list) {
+    if (idSet.has(String(b.id))) {
+      deletedIds.push(b.id);
+    } else {
+      remaining.push(b);
+    }
+  }
+
+  if (deletedIds.length > 0) {
+    await setStorageData(STORAGE_KEYS.BOOKMARKS, remaining);
+  }
+  return { deletedCount: deletedIds.length, deletedIds };
+}
+
 export async function saveAllBookmarks(bookmarks) {
   await setStorageData(STORAGE_KEYS.BOOKMARKS, bookmarks);
   return bookmarks;

@@ -149,6 +149,26 @@ Add the bridge to your MCP client config. The client launches it over stdio.
 The actual tool definitions and bookmark operations live in the extension; the bridge is a thin,
 transport-only proxy so it stays compatible with the extension's protocol version.
 
+## Available Tools
+
+The extension declares the following 13 MCP tools to connected AI models:
+
+| Tool | Type | Description |
+|---|---|---|
+| `list_bookmarks` | Query | List bookmarks with keyword search (name/tag/URL), group filter, tag filter, and pagination (`limit`, `offset`). |
+| `get_groups` | Query | List all custom and built-in groups with bookmark count per group and assignability flags. |
+| `get_tags` | Query | List all tags with usage frequency and click counts, sorted by popularity. |
+| `create_bookmark` | Mutation | Create a bookmark with primary URL, group, tags, and multi-endpoint routing (intranet/extranet/direct). Returns generated `id`. |
+| `update_bookmark` | Mutation | Update bookmark title, primary URL, multi-endpoints, group, and tags (`replace`, `append`, or `remove`). |
+| `delete_bookmark` | Mutation | Delete a single bookmark by ID. Returns deleted bookmark info. |
+| `batch_delete_bookmarks` | Mutation | Delete multiple bookmarks in bulk by array of IDs. |
+| `create_group` | Mutation | Create a custom bookmark group. Returns newly created group with ID. |
+| `batch_organize_bookmarks` | Mutation | Batch migrate groups and append/replace tags. Automatically creates a safety snapshot before execution. |
+| `list_snapshots` | Recovery | List available safety backup snapshots with metadata (ID, time, reason, counts) for recovery. |
+| `rollback_snapshot` | Recovery | Roll back all bookmarks, groups, and settings to a selected safety snapshot. |
+| `get_network_topology` | System | Get detected LAN IPs, local network interfaces, and cached latency history. |
+| `export_full_data` | Backup | Export complete JSON backup of all bookmarks, groups, and settings. |
+
 ## Verify the connection
 
 1. Fully restart the AI client after saving the config.
