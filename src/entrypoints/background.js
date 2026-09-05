@@ -7,11 +7,37 @@ export default defineBackground(() => {
   console.log('[Background] Smart Bookmark service worker active');
 
   // 初始化 MCP 外部服务连接 (若用户开启了 MCP)
-  getSettings().then(settings => {
-    if (settings?.mcp?.enabled !== false) {
-      mcpClient.connect(settings?.mcp?.wsPort || DEFAULT_MCP_WS_PORT);
+  function checkAndConnectMcp() {
+    getSettings().then(settings => {
+      if (settings?.mcp?.enabled !== false) {
+        mcpClient.connect(settings?.mcp?.wsPort || DEFAULT_MCP_WS_PORT);
+      }
+    }).catch(() => {});
+  }
+
+  checkAndConnectMcp();
+
+  // MV3 Background Service Worker 保活与连接自愈守护
+  // Chrome 会在无事件 30s 左右挂起 SW，利用 chrome.alarms 周期唤醒并保活
+  const MCP_KEEPALIVE_ALARM = 'mcp_keepalive_alarm';
+  try {
+    chrome.alarms?.get(MCP_KEEPALIVE_ALARM, (alarm) => {
+      if (!alarm) {
+        chrome.alarms.create(MCP_KEEPALIVE_ALARM, { periodInMinutes: 0.4 }); // 约 24 秒
+      }
+    });
+  } catch (e) {
+    console.warn('[Background] Alarms init warning:', e);
+  }
+
+  chrome.alarms?.onAlarm?.addListener((alarm) => {
+    if (alarm.name === MCP_KEEPALIVE_ALARM) {
+      // 检查并在需要时恢复 MCP 连接
+      if (!mcpClient.isConnected && !mcpClient.isConnecting) {
+        checkAndConnectMcp();
+      }
     }
-  }).catch(() => {});
+  });
 
   const HOME_PAGE_PATH = '/home.html';
 

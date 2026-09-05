@@ -164,7 +164,26 @@ const server = http.createServer((req, res) => {
 
 const wss = new WebSocketServer({ server });
 
+// 定期心跳检测与保活 (防止 TCP 连接因静默空闲被系统/防火墙掐断，并辅助 MV3 SW 活跃判定)
+const heartbeatInterval = setInterval(() => {
+  for (const entry of extensionClients) {
+    if (entry.ws.isAlive === false) {
+      process.stderr.write(`[MCP Bridge] Extension heartbeat timeout, terminating socket\n`);
+      entry.ws.terminate();
+      continue;
+    }
+    entry.ws.isAlive = false;
+    entry.ws.ping();
+  }
+}, 20000);
+heartbeatInterval.unref();
+
 wss.on('connection', async (ws) => {
+  ws.isAlive = true;
+  ws.on('pong', () => {
+    ws.isAlive = true;
+  });
+
   const entry = { ws, client: null };
   const transport = new ExtensionClientTransport(ws);
   const client = new Client(
@@ -215,6 +234,8 @@ async function cleanupAndExit(code = 0) {
     process.exit(code);
   }, 2000);
   forceTimer.unref();
+
+  clearInterval(heartbeatInterval);
 
   // 1. Close all extension WebSocket connections
   for (const entry of extensionClients) {
