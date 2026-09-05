@@ -145,6 +145,13 @@ aiServer.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // --- HTTP status endpoint + WebSocket upgrade ---------------------------------
 const server = http.createServer((req, res) => {
+  if (req.method === 'POST' && req.url === '/shutdown') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, message: 'Shutting down MCP bridge' }));
+    setImmediate(() => cleanupAndExit(0));
+    return;
+  }
+
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({
     name: 'smart-bookmark-mcp-bridge',
@@ -196,6 +203,88 @@ wss.on('connection', async (ws) => {
 // --- Wire the AI-facing server to stdio ---------------------------------
 const stdioTransport = new StdioServerTransport();
 await aiServer.connect(stdioTransport);
+
+// --- Graceful shutdown & resource cleanup ---------------------------------
+let isShuttingDown = false;
+async function cleanupAndExit(code = 0) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  // Fallback watchdog timer to prevent process hanging during shutdown
+  const forceTimer = setTimeout(() => {
+    process.exit(code);
+  }, 2000);
+  forceTimer.unref();
+
+  // 1. Close all extension WebSocket connections
+  for (const entry of extensionClients) {
+    try {
+      entry.client?.close?.();
+      entry.ws?.terminate?.();
+    } catch {
+      // ignore
+    }
+  }
+  extensionClients.clear();
+
+  // 2. Close WebSocket server and HTTP listener to release the port
+  try {
+    wss.close();
+  } catch {
+    // ignore
+  }
+
+  await new Promise((resolve) => {
+    server.close(() => resolve());
+  });
+
+  // 3. Close AI MCP server
+  try {
+    await aiServer.close();
+  } catch {
+    // ignore
+  }
+
+  process.exit(code);
+}
+
+// Stdio pipe closed or errored by the AI client (e.g. Cursor / Claude Desktop / WorkBuddy)
+process.stdin.on('end', () => cleanupAndExit(0));
+process.stdin.on('close', () => cleanupAndExit(0));
+process.stdin.on('error', () => cleanupAndExit(0));
+
+// Process termination signals
+process.on('SIGINT', () => cleanupAndExit(0));
+process.on('SIGTERM', () => cleanupAndExit(0));
+process.on('SIGHUP', () => cleanupAndExit(0));
+
+// Periodically monitor parent process health (especially on Windows where child
+// processes launched via cmd.exe can become orphaned when the AI agent terminates).
+if (process.ppid && process.ppid > 1) {
+  const parentWatcher = setInterval(() => {
+    try {
+      // Sending signal 0 checks if the parent process still exists without killing it
+      process.kill(process.ppid, 0);
+    } catch {
+      clearInterval(parentWatcher);
+      cleanupAndExit(0);
+    }
+  }, 3000);
+  parentWatcher.unref();
+}
+
+// Fail fast on listen error (e.g. EADDRINUSE)
+function handleServerError(err) {
+  if (err.code === 'EADDRINUSE') {
+    process.stderr.write(`[MCP Bridge] Port ${PORT} is already in use. Please terminate any running instances first.\n`);
+  } else {
+    process.stderr.write(`[MCP Bridge] Server error: ${err.message}\n`);
+  }
+  process.exit(1);
+}
+
+server.on('error', handleServerError);
+wss.on('error', handleServerError);
 
 server.listen(PORT, HOST, () => {
   process.stderr.write(`\n🚀 Smart Bookmark MCP bridge server started!\n`);
