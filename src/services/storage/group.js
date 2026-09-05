@@ -174,6 +174,22 @@ export async function batchImportData({ newGroups = [], newBookmarks = [] }) {
   };
 }
 
+export async function updateGroup(groupId, newName) {
+  if (groupId === PINNED_GROUP_ID || groupId === UNGROUPED_GROUP_ID) {
+    throw serviceError('builtinGroupNoDelete', 'System built-in groups cannot be modified');
+  }
+  const name = String(newName || '').trim();
+  if (!name) {
+    throw serviceError('invalidParams', 'Group name cannot be empty');
+  }
+  const groups = await getGroups();
+  const target = groups.find(g => g.id === groupId);
+  if (!target) {
+    throw serviceError('groupNotFound', `Group with ID "${groupId}" not found`);
+  }
+  return await saveGroup({ id: groupId, name });
+}
+
 export async function deleteGroup(groupId) {
   if (groupId === PINNED_GROUP_ID || groupId === UNGROUPED_GROUP_ID) {
     throw serviceError('builtinGroupNoDelete', 'System built-in groups cannot be deleted');

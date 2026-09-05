@@ -7,7 +7,7 @@ import { mcpClient } from '../src/services/mcp/client.js';
 console.log('--- 1. 验证 MCP 工具定义 (Tool Definitions) ---');
 const tools = mcpClient.getToolDefinitions();
 assert.ok(Array.isArray(tools), 'tools should be an array');
-assert.equal(tools.length, 13, `expected 13 tools, got ${tools.length}`);
+assert.equal(tools.length, 17, `expected 17 tools, got ${tools.length}`);
 
 const toolNames = new Set(tools.map(t => t.name));
 const expectedNames = [
@@ -19,6 +19,10 @@ const expectedNames = [
   'delete_bookmark',
   'batch_delete_bookmarks',
   'create_group',
+  'update_group',
+  'delete_group',
+  'rename_tag',
+  'delete_tag',
   'batch_organize_bookmarks',
   'list_snapshots',
   'rollback_snapshot',
@@ -29,7 +33,7 @@ const expectedNames = [
 for (const name of expectedNames) {
   assert.ok(toolNames.has(name), `Missing expected tool: ${name}`);
 }
-console.log('✓ 13 个 MCP 工具宣告完整且名称正确');
+console.log('✓ 17 个 MCP 工具宣告完整且名称正确');
 
 console.log('--- 2. 验证每个工具 inputSchema 结构 ---');
 for (const tool of tools) {
@@ -56,6 +60,18 @@ assert.deepEqual(batchDel.inputSchema.required, ['ids'], 'batch_delete_bookmarks
 
 const rollbackSnap = tools.find(t => t.name === 'rollback_snapshot');
 assert.deepEqual(rollbackSnap.inputSchema.required, ['snapshotId'], 'rollback_snapshot requires snapshotId');
+
+const updateGroupTool = tools.find(t => t.name === 'update_group');
+assert.deepEqual(updateGroupTool.inputSchema.required, ['id', 'name'], 'update_group requires id, name');
+
+const deleteGroupTool = tools.find(t => t.name === 'delete_group');
+assert.deepEqual(deleteGroupTool.inputSchema.required, ['id'], 'delete_group requires id');
+
+const renameTagTool = tools.find(t => t.name === 'rename_tag');
+assert.deepEqual(renameTagTool.inputSchema.required, ['oldTag', 'newTag'], 'rename_tag requires oldTag, newTag');
+
+const deleteTagTool = tools.find(t => t.name === 'delete_tag');
+assert.deepEqual(deleteTagTool.inputSchema.required, ['tag'], 'delete_tag requires tag');
 
 console.log('✓ 新增参数与新增工具 Schema 校验全部通过');
 

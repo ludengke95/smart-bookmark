@@ -13,6 +13,10 @@ import {
   batchDeleteBookmarks,
   getGroups,
   saveGroup,
+  updateGroup,
+  deleteGroup,
+  renameTag,
+  deleteTag,
   getAllTagsWithCount,
   batchUpdateBookmarks,
   batchApplyAiGroups,
@@ -348,6 +352,52 @@ class McpClient {
         }
       },
       {
+        name: 'update_group',
+        description: 'Rename or update an existing custom bookmark group (system built-in groups cannot be renamed)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', description: 'ID of the group to update' },
+            name: { type: 'string', description: 'New name for the group' }
+          },
+          required: ['id', 'name']
+        }
+      },
+      {
+        name: 'delete_group',
+        description: 'Delete a custom bookmark group by its ID. Bookmarks in this group are safely preserved and moved to the unorganized group (system built-in groups cannot be deleted)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', description: 'ID of the group to delete' }
+          },
+          required: ['id']
+        }
+      },
+      {
+        name: 'rename_tag',
+        description: 'Globally rename or merge a tag across all bookmarks (merges duplicates if bookmark already has new tag, automatically creates backup snapshot)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            oldTag: { type: 'string', description: 'Current tag name to rename' },
+            newTag: { type: 'string', description: 'Target new tag name' }
+          },
+          required: ['oldTag', 'newTag']
+        }
+      },
+      {
+        name: 'delete_tag',
+        description: 'Globally remove a tag from all bookmarks across the library (automatically creates backup snapshot)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            tag: { type: 'string', description: 'Tag name to delete from all bookmarks' }
+          },
+          required: ['tag']
+        }
+      },
+      {
         name: 'batch_organize_bookmarks',
         description: 'Batch-refactor bookmarks: update groups and tags in bulk (a safety snapshot is created automatically before execution)',
         inputSchema: {
@@ -571,6 +621,68 @@ class McpClient {
           success: true,
           message: `Group "${trimmedName}" created successfully`,
           group: createdGroup
+        };
+      }
+
+      case 'update_group': {
+        const trimmedName = String(args.name).trim();
+        if (!trimmedName) throw new Error('Group name cannot be empty');
+        if (args.id === PINNED_GROUP_ID || args.id === UNGROUPED_GROUP_ID) {
+          throw new Error('System built-in groups cannot be renamed');
+        }
+        const updatedGroups = await updateGroup(args.id, trimmedName);
+        const target = updatedGroups.find(g => g.id === args.id);
+        return {
+          success: true,
+          message: `Group "${trimmedName}" (${args.id}) updated successfully`,
+          group: target || { id: args.id, name: trimmedName }
+        };
+      }
+
+      case 'delete_group': {
+        if (args.id === PINNED_GROUP_ID || args.id === UNGROUPED_GROUP_ID) {
+          throw new Error('System built-in groups cannot be deleted');
+        }
+        const groupsBefore = await getGroups();
+        const target = groupsBefore.find(g => g.id === args.id);
+        if (!target) {
+          return { success: false, message: `Group with ID "${args.id}" not found` };
+        }
+        await deleteGroup(args.id);
+        return {
+          success: true,
+          message: `Group "${target.name}" (${args.id}) deleted successfully, bookmarks migrated to unorganized group`,
+          deletedGroup: { id: target.id, name: target.name }
+        };
+      }
+
+      case 'rename_tag': {
+        const oldTag = String(args.oldTag || '').trim();
+        const newTag = String(args.newTag || '').trim();
+        if (!oldTag || !newTag) {
+          throw new Error('Both oldTag and newTag must be non-empty strings');
+        }
+        const res = await renameTag(oldTag, newTag);
+        return {
+          success: true,
+          message: `Tag "${oldTag}" renamed to "${newTag}" across ${res.modifiedCount} bookmark(s)`,
+          modifiedCount: res.modifiedCount,
+          oldTag,
+          newTag
+        };
+      }
+
+      case 'delete_tag': {
+        const tag = String(args.tag || '').trim();
+        if (!tag) {
+          throw new Error('Tag must be a non-empty string');
+        }
+        const res = await deleteTag(tag);
+        return {
+          success: true,
+          message: `Tag "${tag}" removed from ${res.modifiedCount} bookmark(s)`,
+          modifiedCount: res.modifiedCount,
+          deletedTag: tag
         };
       }
 
