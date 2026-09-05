@@ -57,7 +57,7 @@ fix(zip): 插件包命名加 v 前缀
 
 ## 4. 发布流程
 
-1. 在 `release/vX.Y.Z` 分支更新版本号（根包 `package.json` 与子包 `packages/smart-bookmark-mcp/package.json` 按需同步）。
+1. 在 `release/vX.Y.Z` 分支更新版本号（仅修改根包 `package.json`，子包版本按「版本升级规范 §5.1」由发布脚本同步）。
 2. 合入 `master` 后打 tag 并推送：
 
    ```bash
@@ -69,7 +69,43 @@ fix(zip): 插件包命名加 v 前缀
    - `release.yml`：构建扩展 + 打包 mcp → 用 conventional-changelog **自动生成 Release 正文**并创建 GitHub Release（附源码包 / 插件包 / mcp 包）。
    - `publish.yml`：Release 发布后自动 `npm publish`（依赖仓库 Secret `NPM_TOKEN`）。
 
-## 5. 本地开发
+## 5. 版本升级规范
+
+仓库存在三个版本面：扩展版本（用户可见，来自 `manifest.version`）、根包版本（`package.json`，用于 zip 命名）、npm 子包版本（`packages/smart-bookmark-mcp/package.json`）。为避免版本漂移，统一遵循以下规则。
+
+### 5.1 单一真相源
+
+- 根包 `package.json` 的 `version` 为**唯一版本真相源**。
+- `wxt.config.js` 的 `manifest.version` 须**派生自根包 `package.json`**（而非硬编码），确保扩展内部版本号与 zip 命名 `{{packageVersion}}` 永远一致。
+- npm 子包版本与根包**联动（lockstep）**：发布时由脚本把根包 `version` 同步写入子包 `package.json`，二者同号、同步发布。
+
+### 5.2 语义化版本映射
+
+采用三段式 `MAJOR.MINOR.PATCH`（Chrome `manifest.version` 仅支持 0–4 段数字）：
+
+| bump | 触发条件 |
+|------|---------|
+| **MAJOR** | 破坏性变更：manifest 权限增删、`storage` key 结构变化、桥接协议不兼容 |
+| **MINOR** | 向后兼容的新功能 |
+| **PATCH** | 向后兼容的缺陷修复 |
+
+### 5.3 标签与发布
+
+- 单一 tag 命名：`vX.Y.Z`（不为子包另设前缀）。
+- 打 tag 即触发现有自动化链：`release.yml`（构建扩展 + 打包 mcp + 自动生成 Release 正文并创建 GitHub Release）与 `publish.yml`（Release 发布后 `npm publish`）。
+- 暂不支持预发布通道（如 `1.1.0-beta.1`）；后续如需商店 Beta 渠道再补充。
+
+### 5.4 桥接协议兼容闸门
+
+无论版本如何 bump，桥接协议变更须在扩展端与 Node 端各维护一份 `PROTOCOL_VERSION` 常量。ws 握手时双向校验：不匹配时桥主动返回明确的「请升级扩展/桥到 vX」错误，避免静默失联。协议不兼容的变更必须升级 **MAJOR**。
+
+### 5.5 发布步骤（纪律）
+
+1. 在 `release/vX.Y.Z` 分支，仅修改根包 `package.json` 的 `version`（子包由发布脚本同步）。
+2. 合入 `master`，打 `vX.Y.Z` 并推送触发自动化链（见 §4）。
+3. 人工上架：本地 `npm run zip` 后，去 Chrome Web Store 后台上传 `smart-bookmark-vX.Y.Z-chrome.zip` 并发布（商店不接受自动发布）。
+
+## 6. 本地开发
 
 - 运行环境：Node 22。
 - 安装依赖：根包 `npm ci`；子包 `cd packages/smart-bookmark-mcp && npm ci`。

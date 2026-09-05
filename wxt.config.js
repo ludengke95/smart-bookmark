@@ -1,4 +1,14 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { defineConfig } from 'wxt';
+
+// 版本单一真相源：扩展 manifest.version 派生自根包 package.json，
+// 避免扩展内部版本号与 zip 命名（{{packageVersion}}）漂移。
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const { version } = JSON.parse(
+  readFileSync(join(__dirname, 'package.json'), 'utf-8')
+);
 
 export default defineConfig({
   srcDir: 'src',
@@ -14,7 +24,7 @@ export default defineConfig({
     action: {
       default_title: '__MSG_actionTitle__'
     },
-    version: '1.0.0',
+    version,
     permissions: [
       'storage',
       'unlimitedStorage',

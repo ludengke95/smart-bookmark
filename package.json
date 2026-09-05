@@ -11,7 +11,8 @@
     "zip": "wxt zip",
     "compile": "wxt compile",
     "mcp": "node scripts/mcp-bridge.js",
-    "release:notes": "conventional-changelog -p angular -r 1 -o RELEASE_NOTES.md"
+    "release:notes": "conventional-changelog -p angular -r 1 -o RELEASE_NOTES.md",
+    "version:sync": "node scripts/sync-versions.mjs"
   },
   "keywords": [],
   "author": "ludengke95 <ludengke95@gmail.com>",
