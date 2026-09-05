@@ -33,6 +33,25 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
+      # 0) 同步子包版本到根包，并校验 tag 版本一致性（策略 A 兜底）
+      #    - 子包 version 由脚本同步为根包 version（lockstep）
+      #    - 断言：打出的 tag 版本 == 根包 version == 子包 version
+      - name: Sync & verify versions
+        run: |
+          node scripts/sync-versions.mjs
+          TAG_V="${GITHUB_REF_NAME#v}"
+          ROOT_V=$(node -p "require('./package.json').version")
+          SUB_V=$(node -p "require('./packages/smart-bookmark-mcp/package.json').version")
+          echo "tag=$TAG_V root=$ROOT_V sub=$SUB_V"
+          if [ "$TAG_V" != "$ROOT_V" ]; then
+            echo "::error::tag version ($TAG_V) does not match root package version ($ROOT_V)"
+            exit 1
+          fi
+          if [ "$ROOT_V" != "$SUB_V" ]; then
+            echo "::error::root package version ($ROOT_V) does not match sub-package version ($SUB_V)"
+            exit 1
+          fi
+
       # 1) 插件包：安装根依赖并构建 + 打包 Chrome 扩展
       - name: Install root dependencies
         run: npm ci
