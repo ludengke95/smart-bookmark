@@ -1,89 +1,75 @@
 # @ludengke95/smart-bookmark-mcp
 
-MCP (Model Context Protocol) bridge server for the **Smart Bookmark** Chrome extension.
+> **Languages**: [English](./README_EN.md) | 简体中文
 
-It lets AI clients such as **Cursor**, **Claude Desktop**, and **Windsurf** read and manage your
-bookmarks, groups, and tags through a standardized MCP interface. The bridge runs locally as a
-Node.js process and relays MCP JSON-RPC calls (over stdio) to the Smart Bookmark
-extension (over a local WebSocket). It is built on the official
-[`@modelcontextprotocol/sdk`](https://www.npmjs.com/package/@modelcontextprotocol/sdk) and the
-mature [`ws`](https://www.npmjs.com/package/ws) WebSocket library — no hand-rolled protocol code.
+**Smart Bookmark** Chrome 扩展的官方 MCP (Model Context Protocol) 本地桥接服务。
 
-> The extension itself must be installed and its new-tab page kept active. The bridge only proxies
-> between your AI client and the extension — it does not store or read your bookmarks on its own.
+本服务允许各类主流大模型客户端（如 **Cursor**、**Claude Desktop**、**Windsurf**、**WorkBuddy** 等）通过标准化的 MCP 协议安全读取和管理你的书签、分组与标签。桥接服务作为轻量级本地 Node.js 进程运行，通过标准输入输出（Stdio）与大模型客户端通信，并通过本地 WebSocket 与 Smart Bookmark 浏览器扩展透明转发 JSON-RPC 调用。底层基于官方 [`@modelcontextprotocol/sdk`](https://www.npmjs.com/package/@modelcontextprotocol/sdk) 与成熟的 [`ws`](https://www.npmjs.com/package/ws) 库构建。
 
-> 📘 中文配置手册（Chinese config guide）：[../../doc/MCP配置使用手册.md](../../doc/MCP配置使用手册.md)
+> 必须在浏览器中安装并打开 Smart Bookmark 扩展的新标签页。桥接服务仅负责大模型客户端与扩展之间的通信桥接与代理，本身不在本地存储任何书签数据。
 
-## Install / Run
+> 📘 完整图文配置教程请查阅：[../../doc/MCP配置使用手册.md](../../doc/MCP配置使用手册.md)
 
-No build step (the published package is plain ESM + a bin). It pulls two runtime dependencies
-(`@modelcontextprotocol/sdk` and `ws`) on install. Two ways to install and run — **global install
-is recommended** (the bin lands on your PATH, so client configs can use the bare command and startup
-is faster):
+## 安装与启动
 
-### Method 1 (recommended): global install
+该 npm 包为纯原生 ESM 结构，无需额外构建步骤。安装时仅拉取 `@modelcontextprotocol/sdk` 和 `ws` 两个极轻量依赖。提供两种安装使用方式 —— **推荐使用全局安装**（可直接在 PATH 中使用 `smart-bookmark-mcp` 命令，启动更快）：
+
+### 方式 1（推荐）：全局安装
 
 ```bash
 npm install -g @ludengke95/smart-bookmark-mcp
 smart-bookmark-mcp server
 ```
 
-### Method 2 (manual): npx on demand
+### 方式 2：按需免安装（npx）
 
 ```bash
 npx -y @ludengke95/smart-bookmark-mcp server
 ```
 
-(No install needed, but it fetches the published package from npm on every launch — requires network.)
+> `smart-bookmark-mcp` 支持子命令调用：`server` 启动桥接服务（不带参数时的默认行为）；`install` 启动交互式配置向导，自动为你写入目标客户端的配置文件。
 
-> `smart-bookmark-mcp` is a subcommand CLI: `server` starts the bridge (also the default when run bare), and `install` launches the interactive setup wizard that writes client configs for you (choose language / client / scope / LAN).
+### 交互式自动配置向导
 
-### Interactive setup wizard
-
-Instead of editing each client's config by hand, run the wizard — it prompts for
-**language → clients (multi-select) → scope → LAN**, writes the config into each
-selected file, and prints a universal JSON:
+无需手动查找并编辑各 AI 客户端的 JSON 配置文件，直接运行向导即可 —— 支持选择 **语言 → 目标客户端（可多选）→ 配置范围（全局/项目级）→ 是否开启局域网监听**，自动将配置写入对应文件：
 
 ```bash
 smart-bookmark-mcp install
 ```
 
-Non-interactive / CI form:
+非交互式 / CI 自动化形式：
 
 ```bash
 smart-bookmark-mcp install --target claude,workbuddy --location global --yes
-smart-bookmark-mcp install --target all --location global --lan --yes   # enable LAN (0.0.0.0)
+smart-bookmark-mcp install --target all --location global --lan --yes   # 开启局域网监听 (0.0.0.0)
 smart-bookmark-mcp install --help
 ```
 
-Flags: `--target <ids>` (`all`/`auto`/`none` or comma-separated ids/indices),
-`--location global|project`, `--lan`/`--no-lan`, `--yes`, `--help`.
-The wizard writes `command: "npx"` snippets; if installed globally you can switch
-`command` to `smart-bookmark-mcp`.
+参数说明：`--target <ids>`（`all`/`auto`/`none` 或英文逗号分隔的客户端 ID）、`--location global|project`、`--lan`/`--no-lan`、`--yes`、`--help`。向导默认生成 `command: "npx"` 配置；若已全局安装，可直接将 command 改为 `smart-bookmark-mcp`。
 
-### Options
+### 启动选项（CLI Flags / 环境变量）
 
-| Flag / Env        | Default        | Description                          |
+| 参数 / 环境变量    | 默认值         | 说明                                 |
 | ----------------- | -------------- | ------------------------------------ |
-| `--host <host>`   | `127.0.0.1`    | WebSocket bind host                 |
-| `--host=<host>`   | `127.0.0.1`    | (equals form)                       |
-| `--port <port>`   | `8333`         | WebSocket bind port                 |
-| `--port=<port>`   | `8333`         | (equals form)                       |
-| `HOST` (env)      | `127.0.0.1`    | WebSocket bind host                 |
-| `PORT` (env)      | `8333`         | WebSocket bind port                 |
+| `--host <host>`   | `127.0.0.1`    | WebSocket 监听地址                   |
+| `--host=<host>`   | `127.0.0.1`    | （等号传参形式）                     |
+| `--port <port>`   | `8333`         | WebSocket 监听端口                   |
+| `--port=<port>`   | `8333`         | （等号传参形式）                     |
+| `HOST` (环境变量) | `127.0.0.1`    | WebSocket 监听地址                   |
+| `PORT` (环境变量) | `8333`         | WebSocket 监听端口                   |
 
-Example:
+示例：
 
 ```bash
 smart-bookmark-mcp server --host 127.0.0.1 --port 9000
 ```
 
-A plain HTTP `GET` on the WebSocket port returns a small status JSON
-(`{ "name": "smart-bookmark-mcp-bridge", "status": "running", ... }`).
+服务启动后，直接向 WebSocket 端口发送 HTTP `GET` 请求会返回简单的健康检查 JSON 状态：
+`{ "name": "smart-bookmark-mcp-bridge", "status": "running", ... }`。
 
-## Connect an AI client
+## 配置接入 AI 客户端
 
-Add the bridge to your MCP client config. The client launches it over stdio.
+将以下配置片段加入到对应 AI 客户端的 MCP 配置文件中。大模型客户端会在启动时自动通过 stdio 拉起桥接进程。
 
 ### Claude Desktop (`claude_desktop_config.json`)
 
@@ -98,7 +84,7 @@ Add the bridge to your MCP client config. The client launches it over stdio.
 }
 ```
 
-### Cursor (`.cursor/mcp.json` or Settings → MCP)
+### Cursor (`.cursor/mcp.json` 或设置中的 MCP 面板)
 
 ```json
 {
@@ -111,7 +97,7 @@ Add the bridge to your MCP client config. The client launches it over stdio.
 }
 ```
 
-### Custom host / port
+### 自定义端口 / 远程主机
 
 ```json
 {
@@ -124,82 +110,66 @@ Add the bridge to your MCP client config. The client launches it over stdio.
 }
 ```
 
-## How it works
+## 工作原理
 
 ```
-[AI client] --stdio(JSON-RPC)--> [mcp-bridge.js] --WebSocket--> [Smart Bookmark extension]
+[大模型客户端 (AI Client)] --stdio(JSON-RPC)--> [mcp-bridge.js] --WebSocket--> [Smart Bookmark 扩展]
 ```
 
-1. The AI client starts the bridge over stdio; the bridge speaks MCP JSON-RPC to the client using
-   the official `@modelcontextprotocol/sdk` `Server`.
-2. The bridge opens an RFC 6455 WebSocket server (via the `ws` library) on `127.0.0.1:8333`.
-3. The Smart Bookmark extension connects to that WebSocket and runs an MCP server over it; the
-   bridge connects as an MCP `Client` (one per extension connection, via a custom transport).
-4. `tools/list` and `tools/call` from the AI client are proxied to the extension's MCP server, and
-   the responses are written back to stdout.
+1. AI 客户端通过标准输入输出（stdio）启动桥接进程，桥接服务通过官方 `@modelcontextprotocol/sdk` 的 `Server` 与客户端进行 MCP JSON-RPC 交互。
+2. 桥接服务在 `127.0.0.1:8333` 打开一个标准 RFC 6455 WebSocket 服务（基于 `ws` 库）。
+3. Smart Bookmark 扩展连接到该 WebSocket 并运行扩展端 MCP 服务；桥接服务作为 MCP `Client`（通过定制 Transport）接入。
+4. AI 客户端发起的 `tools/list` 和 `tools/call` 请求被透明转发到扩展端执行，执行结果再经由 stdout 写回给 AI 客户端。
 
-### Extension not connected yet?
+### 扩展尚未打开时的表现
 
-- `tools/list` returns an empty catalog (`{ "tools": [] }`) instead of an error, so the AI client
-  keeps the stdio connection alive while the browser is still starting.
-- When the extension connects or disconnects, the bridge sends `notifications/tools/list_changed`
-  so the client can refetch `tools/list` automatically.
-- `tools/call` still requires the extension to be connected and returns a `-32000` error if it is not.
+- `tools/list` 会返回空列表（`{ "tools": [] }`）而非报错，避免 AI 客户端在浏览器尚未启动时直接崩溃断开。
+- 当扩展连接或断开时，桥接器会主动向 AI 客户端发送 `notifications/tools/list_changed` 通知，触发客户端自动重新拉取最新的工具目录。
+- 若在扩展未连接时调用具体工具 `tools/call`，会返回友好的 `-32000` 错误提示。
 
-The actual tool definitions and bookmark operations live in the extension; the bridge is a thin,
-transport-only proxy so it stays compatible with the extension's protocol version.
+## 支持的 MCP 工具列表
 
-## Available Tools
+扩展端向接入的 AI 客户端宣告了以下 13 个 MCP 工具：
 
-The extension declares the following 13 MCP tools to connected AI models:
-
-| Tool | Type | Description |
+| 工具名称 (Tool) | 分类 | 说明 |
 |---|---|---|
-| `list_bookmarks` | Query | List bookmarks with keyword search (name/tag/URL), group filter, tag filter, and pagination (`limit`, `offset`). |
-| `get_groups` | Query | List all custom and built-in groups with bookmark count per group and assignability flags. |
-| `get_tags` | Query | List all tags with usage frequency and click counts, sorted by popularity. |
-| `create_bookmark` | Mutation | Create a bookmark with primary URL, group, tags, and multi-endpoint routing (intranet/extranet/direct). Returns generated `id`. |
-| `update_bookmark` | Mutation | Update bookmark title, primary URL, multi-endpoints, group, and tags (`replace`, `append`, or `remove`). |
-| `delete_bookmark` | Mutation | Delete a single bookmark by ID. Returns deleted bookmark info. |
-| `batch_delete_bookmarks` | Mutation | Delete multiple bookmarks in bulk by array of IDs. |
-| `create_group` | Mutation | Create a custom bookmark group. Returns newly created group with ID. |
-| `batch_organize_bookmarks` | Mutation | Batch migrate groups and append/replace tags. Automatically creates a safety snapshot before execution. |
-| `list_snapshots` | Recovery | List available safety backup snapshots with metadata (ID, time, reason, counts) for recovery. |
-| `rollback_snapshot` | Recovery | Roll back all bookmarks, groups, and settings to a selected safety snapshot. |
-| `get_network_topology` | System | Get detected LAN IPs, local network interfaces, and cached latency history. |
-| `export_full_data` | Backup | Export complete JSON backup of all bookmarks, groups, and settings. |
+| `list_bookmarks` | 查询 | 查询书签列表，支持按关键词（书签名称/标签/多入口URL）、分组 ID、标签组合过滤，内置 `limit`（默认 50，最大 200）与 `offset` 分页保护。 |
+| `get_groups` | 查询 | 获取所有自定义分组与内置分组（常用组、未分组），包含各分组的书签统计数与可分配标记。 |
+| `get_tags` | 查询 | 获取所有已使用的标签、使用频次与点击统计，按使用热度降序返回。 |
+| `create_bookmark` | 变更 | 创建新书签，支持配置主入口 URL、所属分组、标签列表与多入口网络拓扑（内网/外网/直连）。返回包含生成主键 `id` 的完整对象。 |
+| `update_bookmark` | 变更 | 更新现有书签的标题、主入口 URL、多入口寻径列表、所属分组与标签（支持 `replace` 替换、`append` 追加、`remove` 移除三种模式）。 |
+| `delete_bookmark` | 变更 | 根据书签 ID 删除单条书签，返回被删除书签的名称与 ID。 |
+| `batch_delete_bookmarks` | 变更 | 根据 ID 数组批量删除多个书签，单次事务高效执行。 |
+| `create_group` | 变更 | 创建新的自定义书签分组，直接返回创建好的分组详情及其 ID。 |
+| `batch_organize_bookmarks` | 变更 | 批量执行书签智能重构：迁移分组与增删标签。执行前会自动生成一次安全快照防灾。 |
+| `list_snapshots` | 容灾 | 查看历史安全备份快照列表（包含 ID、时间、备份原因、书签及分组计数）。 |
+| `rollback_snapshot` | 容灾 | 一键将书签、分组与设置回滚恢复到指定快照，提供误操作兜底保障。 |
+| `get_network_topology` | 系统 | 获取扩展探测到的本地局域网物理网卡信息、已探测内网 IP 列表及延迟测速缓存。 |
+| `export_full_data` | 备份 | 导出包含所有书签、分组与设置的完整备份 JSON 数据。 |
 
-## Verify the connection
+## 连接验证
 
-1. Fully restart the AI client after saving the config.
-2. In the client's MCP / tools panel you should see the `smart-bookmark` server, with bookmark-related tools listed.
-3. If the extension is not yet connected, `tools/list` returns an empty catalog (no error); once it connects, the bridge sends `notifications/tools/list_changed` so the client refreshes automatically.
+1. 修改并保存 AI 客户端配置后，**彻底重启 AI 客户端**。
+2. 在客户端的 MCP / Tools 工具列表中应能看到 `smart-bookmark` 服务及上述书签工具。
+3. 如果未打开扩展，工具列表显示为空；一旦在 Chrome 中打开 Smart Bookmark 新标签页，客户端将自动刷新并显现所有可用工具。
 
-## Troubleshooting
+## 常见问题排查
 
-- **`ENOENT` / `command not found` on launch** — you used the bare command `smart-bookmark-mcp`, but the bin is not installed globally or is not on the client process's PATH. Install it globally first: `npm install -g @ludengke95/smart-bookmark-mcp` (recommended — see above). If you prefer not to install globally, use `"command": "npx"` + `"args": ["-y", "@ludengke95/smart-bookmark-mcp", "server"]` so npx resolves it without relying on PATH.
-- **Empty tool list** — confirm the extension is installed and its new-tab page is open.
-- **Port conflict / launch failure** — pick another port: `--port 9000`, or set the `PORT` env var.
-- **Node version too old** — the bridge requires Node.js >= 20.12 (the interactive wizard uses `@clack/prompts`); verify with `node -v`.
+- **启动报 `ENOENT` / `command not found`**：若配置中直接使用了命令名 `smart-bookmark-mcp`，请确保已全局安装 `npm install -g @ludengke95/smart-bookmark-mcp` 并已配置到 PATH；或者改用 `"command": "npx"` + `"args": ["-y", "@ludengke95/smart-bookmark-mcp", "server"]`。
+- **工具列表为空**：请确认 Chrome 浏览器已安装 Smart Bookmark 扩展且**新标签页保持打开**。
+- **端口冲突或启动失败**：换用其他端口启动，如添加参数 `--port 9000` 或配置环境变量 `PORT=9000`。
+- **Node 版本过低**：桥接服务与安装向导要求 Node.js >= 20.12，请使用 `node -v` 检查版本。
 
-## Security
+## 安全提示
 
-- The bridge only listens on `127.0.0.1` locally — **do not expose the port to the public internet**.
-- The current version performs **no client authentication** (per-client auth/routing is planned). The WebSocket handshake is protocol compliance only, not a security boundary.
+- 本地桥接器默认仅监听在 `127.0.0.1` 环回地址 —— **请勿将端口暴露至公网**。
+- 当前版本未对本地 WebSocket 连接启用身份鉴权机制，WebSocket 握手仅用于协议规范合规。
 
-## 🚧 Planned improvements
-
-Per-client routing and authentication are **not implemented yet**. The bridge currently
-broadcasts every `tools/call` to **all** connected extensions and performs no client identity or
-auth check (the WebSocket SHA-1 handshake is protocol compliance only, not a security boundary).
-See the project roadmap for the proposed fix and current status:
-[Roadmap (English)](../../ROADMAP_EN.md) | [Roadmap (中文)](../../ROADMAP.md).
-
-## Requirements
+## 运行环境要求
 
 - Node.js >= 20.12
-- The Smart Bookmark extension installed, with its new-tab page open.
+- 安装了 Smart Bookmark 扩展的 Chrome 浏览器，且新标签页处于开启状态。
 
-## License
+## 开源协议
 
-MIT © ludengke95
+MIT License © ludengke95
