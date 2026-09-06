@@ -1,7 +1,7 @@
 /**
  * 数据快照、备份与完整 JSON 导入导出
  */
-import { getStorageData, setStorageData, STORAGE_KEYS, getSettings } from './base.js';
+import { getStorageData, setStorageData, withStorageLock, STORAGE_KEYS, getSettings } from './base.js';
 import {
   DEFAULT_BOOKMARKS,
   DEFAULT_GROUPS,
@@ -44,93 +44,100 @@ function formatSnapshotTime(ts) {
 }
 
 export async function createSnapshot(reason = '', type = 'manual', isLocked = false) {
-  const bookmarks = await getBookmarks();
-  const groups = await getGroups();
-  const settings = await getSettings();
-  const backupSettings = await getBackupSettings();
-  const maxLimit = backupSettings.maxSnapshots || 15;
+  return withStorageLock(async () => {
+    const bookmarks = await getBookmarks();
+    const groups = await getGroups();
+    const settings = await getSettings();
+    const backupSettings = await getBackupSettings();
+    const maxLimit = backupSettings.maxSnapshots || 15;
 
-  const now = Date.now();
-  const newSnapshot = {
-    id: 'snap_' + now + '_' + Math.random().toString(36).substr(2, 4),
-    timestamp: now,
-    timeStr: formatSnapshotTime(now),
-    reason,
-    type,
-    isLocked: !!isLocked,
-    counts: {
-      bookmarks: bookmarks.length,
-      groups: groups.length
-    },
-    data: {
-      bookmarks,
-      groups,
-      settings
-    }
-  };
+    const now = Date.now();
+    const newSnapshot = {
+      id: 'snap_' + now + '_' + Math.random().toString(36).substr(2, 4),
+      timestamp: now,
+      timeStr: formatSnapshotTime(now),
+      reason,
+      type,
+      isLocked: !!isLocked,
+      counts: {
+        bookmarks: bookmarks.length,
+        groups: groups.length
+      },
+      data: {
+        bookmarks,
+        groups,
+        settings
+      }
+    };
 
-  const snapshots = await getSnapshots();
-  let updatedList = [newSnapshot, ...snapshots];
+    const snapshots = await getSnapshots();
+    let updatedList = [newSnapshot, ...snapshots];
 
-  if (updatedList.length > maxLimit) {
-    while (updatedList.length > maxLimit) {
-      let removeIndex = -1;
-      for (let i = updatedList.length - 1; i >= 0; i--) {
-        if (!updatedList[i].isLocked) {
-          removeIndex = i;
+    if (updatedList.length > maxLimit) {
+      while (updatedList.length > maxLimit) {
+        let removeIndex = -1;
+        for (let i = updatedList.length - 1; i >= 0; i--) {
+          if (!updatedList[i].isLocked) {
+            removeIndex = i;
+            break;
+          }
+        }
+        if (removeIndex >= 0) {
+          updatedList.splice(removeIndex, 1);
+        } else {
           break;
         }
       }
-      if (removeIndex >= 0) {
-        updatedList.splice(removeIndex, 1);
-      } else {
-        break;
-      }
     }
-  }
 
-  await setStorageData(STORAGE_KEYS.BACKUPS, updatedList);
-  return newSnapshot;
+    await setStorageData(STORAGE_KEYS.BACKUPS, updatedList);
+    return newSnapshot;
+  });
 }
 
 export async function deleteSnapshot(snapshotId) {
-  const snapshots = await getSnapshots();
-  const filtered = snapshots.filter(s => s.id !== snapshotId);
-  await setStorageData(STORAGE_KEYS.BACKUPS, filtered);
-  return filtered;
+  return withStorageLock(async () => {
+    const snapshots = await getSnapshots();
+    const filtered = snapshots.filter(s => s.id !== snapshotId);
+    await setStorageData(STORAGE_KEYS.BACKUPS, filtered);
+    return filtered;
+  });
 }
 
 export async function toggleSnapshotLock(snapshotId) {
-  const snapshots = await getSnapshots();
-  const target = snapshots.find(s => s.id === snapshotId);
-  if (target) {
-    target.isLocked = !target.isLocked;
-    await setStorageData(STORAGE_KEYS.BACKUPS, snapshots);
-  }
-  return snapshots;
+  return withStorageLock(async () => {
+    const snapshots = await getSnapshots();
+    const target = snapshots.find(s => s.id === snapshotId);
+    if (target) {
+      target.isLocked = !target.isLocked;
+      await setStorageData(STORAGE_KEYS.BACKUPS, snapshots);
+    }
+    return snapshots;
+  });
 }
 
 export async function rollbackToSnapshot(snapshotId) {
-  const snapshots = await getSnapshots();
-  const target = snapshots.find(s => s.id === snapshotId);
-  if (!target || !target.data) {
-    throw serviceError('snapshotNotFound', 'Target snapshot data not found');
-  }
+  return withStorageLock(async () => {
+    const snapshots = await getSnapshots();
+    const target = snapshots.find(s => s.id === snapshotId);
+    if (!target || !target.data) {
+      throw serviceError('snapshotNotFound', 'Target snapshot data not found');
+    }
 
-  const curBms = await getBookmarks();
-  await createSnapshot(null, 'auto_prerollback');
+    await createSnapshot(null, 'auto_prerollback');
 
-  if (target.data.bookmarks) {
-    await setStorageData(STORAGE_KEYS.BOOKMARKS, target.data.bookmarks);
-  }
-  if (target.data.groups) {
-    await setStorageData(STORAGE_KEYS.GROUPS, target.data.groups);
-  }
-  if (target.data.settings) {
-    await setStorageData(STORAGE_KEYS.SETTINGS, target.data.settings);
-  }
+    if (target.data.bookmarks) {
+      await setStorageData(STORAGE_KEYS.BOOKMARKS, target.data.bookmarks);
+    }
+    if (target.data.groups) {
+      await setStorageData(STORAGE_KEYS.GROUPS, target.data.groups);
+    }
+    if (target.data.settings) {
+      await setStorageData(STORAGE_KEYS.SETTINGS, target.data.settings);
+    }
 
-  return target;
+    return target;
+  });
 }
 
 export async function checkDailyAutoBackup() {

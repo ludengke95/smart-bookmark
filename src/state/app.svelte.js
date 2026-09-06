@@ -32,7 +32,8 @@ import {
   toggleSnapshotLock as storageToggleSnapshotLock,
   rollbackToSnapshot as storageRollbackToSnapshot,
   resetToDefaultData as storageResetDefaultData,
-  clearAllData as storageClearAll
+  clearAllData as storageClearAll,
+  STORAGE_KEYS
 } from '../services/storage.js';
 import { detectAllLocalIps } from '../services/ip-detector.js';
 import { probeAllUrls } from '../services/ping-probe.js';
@@ -69,6 +70,7 @@ class AppState {
   detailedStats = $state({ totalClicksMap: {}, sevenDaysMap: {}, lastClickedMap: {} });
   collapsedGroups = $state(new Set());
   isLoaded = $state(false);
+  _storageListening = false;
 
   // MCP 连接状态
   mcpStatus = $state({ isConnected: false, isConnecting: false, lastError: null });
@@ -214,6 +216,9 @@ class AppState {
       this.currentLocalIp = cache.localIp;
     }
 
+    // 挂载底层存储变更监听总线，实现前台多 Tab 与后台 Service Worker 的无缝响应式同步
+    this.setupStorageListener();
+
     this.isLoaded = true;
 
     // 订阅 MCP 状态并按需尝试连接 (默认关闭，仅在用户开启时连接)
@@ -230,6 +235,48 @@ class AppState {
 
     if (!isCacheFresh || !hasCachedResults) {
       this.refreshNetwork();
+    }
+  }
+
+  // 监听 chrome.storage.onChanged 事件 (单向拉取同步，杜绝循环写回与旧缓存覆盖)
+  setupStorageListener() {
+    if (this._storageListening) return;
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
+        chrome.storage.onChanged.addListener(async (changes, areaName) => {
+          if (areaName !== 'local') return;
+
+          if (changes[STORAGE_KEYS.BOOKMARKS]) {
+            this.bookmarks = await getBookmarks();
+          }
+
+          if (changes[STORAGE_KEYS.GROUPS]) {
+            this.groups = await getGroups();
+          }
+
+          if (changes[STORAGE_KEYS.SETTINGS]) {
+            this.settings = changes[STORAGE_KEYS.SETTINGS].newValue || DEFAULT_SETTINGS;
+            if (this.settings.language) {
+              i18n.init(this.settings.language);
+            }
+            if (this.settings.theme) {
+              this.applyThemeToDOM(this.settings.theme);
+            }
+          }
+
+          if (changes[STORAGE_KEYS.BACKUPS]) {
+            this.snapshots = changes[STORAGE_KEYS.BACKUPS].newValue || [];
+          }
+
+          if (changes[STORAGE_KEYS.DAILY_CLICKS] || changes[STORAGE_KEYS.TOTAL_CLICKS]) {
+            this.clickStats = await getClickStats('30d');
+            this.detailedStats = await getDetailedStats();
+          }
+        });
+        this._storageListening = true;
+      }
+    } catch (err) {
+      console.warn('Storage onChanged listener setup failed:', err);
     }
   }
 
