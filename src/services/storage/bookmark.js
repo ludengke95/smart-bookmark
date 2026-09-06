@@ -1,7 +1,7 @@
 /**
  * 书签 (Bookmarks) CRUD
  */
-import { getStorageData, setStorageData, STORAGE_KEYS } from './base.js';
+import { getStorageData, setStorageData, withStorageLock, STORAGE_KEYS } from './base.js';
 import {
   DEFAULT_BOOKMARKS,
   DEFAULT_GROUPS,
@@ -50,109 +50,119 @@ export async function getBookmarks() {
 }
 
 export async function saveBookmark(bookmark) {
-  const list = await getBookmarks();
-  const bookmarkId = bookmark.id ? String(bookmark.id) : ('bm_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8));
-  const index = bookmark.id ? list.findIndex(b => b.id === bookmark.id) : -1;
+  return withStorageLock(async () => {
+    const list = await getBookmarks();
+    const bookmarkId = bookmark.id ? String(bookmark.id) : ('bm_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8));
+    const index = bookmark.id ? list.findIndex(b => b.id === bookmark.id) : -1;
 
-  let cleanEndpoints = [];
-  if (Array.isArray(bookmark.endpoints) && bookmark.endpoints.length > 0) {
-    cleanEndpoints = bookmark.endpoints.map((ep, idx) => {
-      if (!ep) return null;
-      if (typeof ep === 'string') {
-        const u = ep.trim();
-        return u ? { url: u, order: idx, type: 'extranet' } : null;
-      }
-      if (typeof ep === 'object' && ep.url) {
-        const u = String(ep.url).trim();
-        return u ? { ...ep, url: u } : null;
-      }
-      return null;
-    }).filter(Boolean);
-  }
-  if (cleanEndpoints.length === 0 && bookmark.url) {
-    const u = String(bookmark.url).trim();
-    if (u) {
-      cleanEndpoints = [{ url: u, order: 0, type: 'extranet' }];
+    let cleanEndpoints = [];
+    if (Array.isArray(bookmark.endpoints) && bookmark.endpoints.length > 0) {
+      cleanEndpoints = bookmark.endpoints.map((ep, idx) => {
+        if (!ep) return null;
+        if (typeof ep === 'string') {
+          const u = ep.trim();
+          return u ? { url: u, order: idx, type: 'extranet' } : null;
+        }
+        if (typeof ep === 'object' && ep.url) {
+          const u = String(ep.url).trim();
+          return u ? { ...ep, url: u } : null;
+        }
+        return null;
+      }).filter(Boolean);
     }
-  }
+    if (cleanEndpoints.length === 0 && bookmark.url) {
+      const u = String(bookmark.url).trim();
+      if (u) {
+        cleanEndpoints = [{ url: u, order: 0, type: 'extranet' }];
+      }
+    }
 
-  const cleanBm = {
-    groupId: UNGROUPED_GROUP_ID,
-    tags: [],
-    order: typeof bookmark.order === 'number' ? bookmark.order : list.length,
-    ...bookmark,
-    id: bookmarkId,
-    endpoints: cleanEndpoints,
-    updatedAt: Date.now()
-  };
+    const cleanBm = {
+      groupId: UNGROUPED_GROUP_ID,
+      tags: [],
+      order: typeof bookmark.order === 'number' ? bookmark.order : list.length,
+      ...bookmark,
+      id: bookmarkId,
+      endpoints: cleanEndpoints,
+      updatedAt: Date.now()
+    };
 
-  if (index >= 0) {
-    list[index] = { ...list[index], ...cleanBm };
-  } else {
-    cleanBm.createdAt = bookmark.createdAt || Date.now();
-    list.push(cleanBm);
-  }
-  await setStorageData(STORAGE_KEYS.BOOKMARKS, list);
-  return list;
+    if (index >= 0) {
+      list[index] = { ...list[index], ...cleanBm };
+    } else {
+      cleanBm.createdAt = bookmark.createdAt || Date.now();
+      list.push(cleanBm);
+    }
+    await setStorageData(STORAGE_KEYS.BOOKMARKS, list);
+    return list;
+  });
 }
 
 export async function deleteBookmark(bookmarkId) {
-  let list = await getBookmarks();
-  list = list.filter(b => b.id !== bookmarkId);
-  await setStorageData(STORAGE_KEYS.BOOKMARKS, list);
-  return list;
+  return withStorageLock(async () => {
+    let list = await getBookmarks();
+    list = list.filter(b => b.id !== bookmarkId);
+    await setStorageData(STORAGE_KEYS.BOOKMARKS, list);
+    return list;
+  });
 }
 
 export async function batchDeleteBookmarks(bookmarkIds) {
-  if (!Array.isArray(bookmarkIds) || bookmarkIds.length === 0) {
-    return { deletedCount: 0, deletedIds: [] };
-  }
-  const idSet = new Set(bookmarkIds.map(String));
-  const list = await getBookmarks();
-  const remaining = [];
-  const deletedIds = [];
-
-  for (const b of list) {
-    if (idSet.has(String(b.id))) {
-      deletedIds.push(b.id);
-    } else {
-      remaining.push(b);
+  return withStorageLock(async () => {
+    if (!Array.isArray(bookmarkIds) || bookmarkIds.length === 0) {
+      return { deletedCount: 0, deletedIds: [] };
     }
-  }
+    const idSet = new Set(bookmarkIds.map(String));
+    const list = await getBookmarks();
+    const remaining = [];
+    const deletedIds = [];
 
-  if (deletedIds.length > 0) {
-    await setStorageData(STORAGE_KEYS.BOOKMARKS, remaining);
-  }
-  return { deletedCount: deletedIds.length, deletedIds };
+    for (const b of list) {
+      if (idSet.has(String(b.id))) {
+        deletedIds.push(b.id);
+      } else {
+        remaining.push(b);
+      }
+    }
+
+    if (deletedIds.length > 0) {
+      await setStorageData(STORAGE_KEYS.BOOKMARKS, remaining);
+    }
+    return { deletedCount: deletedIds.length, deletedIds };
+  });
 }
 
 export async function saveAllBookmarks(bookmarks) {
-  await setStorageData(STORAGE_KEYS.BOOKMARKS, bookmarks);
-  return bookmarks;
+  return withStorageLock(async () => {
+    await setStorageData(STORAGE_KEYS.BOOKMARKS, bookmarks);
+    return bookmarks;
+  });
 }
 
 export async function reorderBookmarks(orderedBookmarkIds) {
-  const bookmarks = await getBookmarks();
-  const bmMap = new Map(bookmarks.map(b => [b.id, b]));
-  const reordered = [];
-  let orderIndex = 0;
+  return withStorageLock(async () => {
+    const bookmarks = await getBookmarks();
+    const bmMap = new Map(bookmarks.map(b => [b.id, b]));
+    const reordered = [];
+    let orderIndex = 0;
 
-  for (const id of orderedBookmarkIds) {
-    if (bmMap.has(id)) {
-      const b = bmMap.get(id);
-      b.order = orderIndex++;
-      reordered.push(b);
-      bmMap.delete(id);
+    for (const id of orderedBookmarkIds) {
+      if (bmMap.has(id)) {
+        const b = bmMap.get(id);
+        b.order = orderIndex++;
+        reordered.push(b);
+        bmMap.delete(id);
+      }
     }
-  }
 
-  for (const remaining of bmMap.values()) {
-    remaining.order = orderIndex++;
-    reordered.push(remaining);
-  }
+    for (const remaining of bmMap.values()) {
+      remaining.order = orderIndex++;
+      reordered.push(remaining);
+    }
 
-  await setStorageData(STORAGE_KEYS.BOOKMARKS, reordered);
-  return reordered;
+    await setStorageData(STORAGE_KEYS.BOOKMARKS, reordered);
+    return reordered;
+  });
 }
 
 /**

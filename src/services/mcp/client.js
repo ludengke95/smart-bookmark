@@ -21,6 +21,7 @@ import {
   batchUpdateBookmarks,
   batchApplyAiGroups,
   batchApplyAiTags,
+  batchOrganizeBookmarks,
   getProbeCache,
   exportFullBackupJson,
   importFullBackupJson,
@@ -420,12 +421,18 @@ class McpClient {
               items: {
                 type: 'object',
                 properties: {
-                  bookmarkId: { type: 'string' },
-                  suggestedTags: { type: 'array', items: { type: 'string' } }
+                  bookmarkId: { type: ['string', 'number'] },
+                  suggestedTags: { type: ['array', 'string'], items: { type: 'string' } },
+                  tags: { type: ['array', 'string'], items: { type: 'string' } }
                 },
-                required: ['bookmarkId', 'suggestedTags']
+                required: ['bookmarkId']
               },
-              description: 'Tag update plan'
+              description: 'Tag update plan (supports suggestedTags or tags array/comma string)'
+            },
+            tagMode: {
+              type: 'string',
+              enum: ['append', 'replace'],
+              description: 'Tagging strategy: append (default, merge existing tags) or replace (overwrite tags)'
             }
           }
         }
@@ -687,23 +694,20 @@ class McpClient {
       }
 
       case 'batch_organize_bookmarks': {
-        await createSnapshot('[MCP AI] Pre-refactor snapshot before LLM batch governance', 'auto_mcp');
-        let groupResult = null;
-        let tagResult = null;
-
-        if (Array.isArray(args.groupPlan) && args.groupPlan.length > 0) {
-          groupResult = await batchApplyAiGroups(args.groupPlan);
-        }
-        if (Array.isArray(args.tagPlan) && args.tagPlan.length > 0) {
-          tagResult = await batchApplyAiTags(args.tagPlan, 'append');
-        }
+        const res = await batchOrganizeBookmarks({
+          groupPlan: args.groupPlan,
+          tagPlan: args.tagPlan,
+          tagMode: args.tagMode || 'append',
+          snapshotReason: '[MCP AI] Pre-refactor snapshot before LLM batch governance',
+          snapshotType: 'auto_mcp'
+        });
 
         return {
           success: true,
-          message: 'External LLM governance plan applied successfully',
-          groupChanges: groupResult?.modifiedCount || 0,
-          newGroupsCreated: groupResult?.newGroupsCreated || 0,
-          tagChanges: tagResult?.modifiedCount || 0
+          message: 'External LLM governance plan applied atomically',
+          groupChanges: res.groupChanges,
+          newGroupsCreated: res.newGroupsCreated,
+          tagChanges: res.tagChanges
         };
       }
 
