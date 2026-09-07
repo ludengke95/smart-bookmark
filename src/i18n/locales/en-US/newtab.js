@@ -37,7 +37,10 @@ export default {
     engineTooltip: 'Switch search engine',
     engineSwitch: 'Click to switch search engine',
     clearQuery: 'Clear search',
-    directJump: '⚡ Direct: {name}'
+    directJump: '⚡ Direct: {name}',
+    searchWithEngine: 'Search with {engine}',
+    directBookmark: 'Direct to bookmark',
+    optimalRoute: 'Optimal route'
   },
   sort: {
     tooltip: 'Switch bookmark sorting order',

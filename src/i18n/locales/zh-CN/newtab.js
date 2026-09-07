@@ -37,7 +37,10 @@ export default {
     engineTooltip: '切换搜索引擎',
     engineSwitch: '点击切换搜索引擎',
     clearQuery: '清空搜索',
-    directJump: '⚡ 直达: {name}'
+    directJump: '⚡ 直达: {name}',
+    searchWithEngine: '使用 {engine} 搜索',
+    directBookmark: '直达书签',
+    optimalRoute: '最优线路'
   },
   sort: {
     tooltip: '切换书签排序方式',
