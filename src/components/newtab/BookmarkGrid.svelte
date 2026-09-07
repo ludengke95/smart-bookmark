@@ -16,6 +16,11 @@
     (appState.settings.bookmarkSortOrder || 'custom') === 'custom' && appState.activeTag === 'all' && !appState.searchQuery
   );
 
+  // 是否正处于关键词搜索或单标签筛选过滤状态
+  let isFiltering = $derived(
+    Boolean(appState.searchQuery?.trim() || appState.activeTag !== 'all')
+  );
+
   function handleDragStart(e, bm) {
     if (!isCustomSort) return;
     draggedBookmarkId = bm.id;
@@ -135,8 +140,8 @@
 
     <!-- 2. 全部分组流 (Group Flow) -->
     {#each appState.groupedBookmarks as { group, bookmarks } (group.id || group.name)}
-      <!-- 当分组是内置 PINNED 时，且我们在上面已经展示了常用，跳过普通分组渲染以避免重复 -->
-      {#if group.id !== PINNED_GROUP_ID && (bookmarks.length > 0 || appState.activeTag === 'all')}
+      <!-- 当分组是内置 PINNED 时跳过（已在上方置顶常用展示）；处于过滤状态时仅展示有匹配书签的分组(>0)；非过滤状态下仅展示有书签或非空的自定义分组 -->
+      {#if group.id !== PINNED_GROUP_ID && (bookmarks.length > 0 || (!isFiltering && group.id !== UNGROUPED_GROUP_ID))}
         <section class="space-y-3">
           <!-- 分组标题栏 -->
           <div class="flex items-center justify-between gap-3 group/header">
