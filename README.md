@@ -43,15 +43,17 @@
   - **深曜暗夜 (`obsidian-dark`)**：深空石墨，沉静暗黑。
 - **三大分类体系**：
   - **「常用」动态组**：根据访问热度自动计算置顶呈现；
-  - **「自定义分组」**：自由创建、排序与折叠；
+  - **「自定义分组」**：自由创建、排序与折叠，支持智能隐藏空分组；
   - **「未分组」**：未分类书签自动兜底聚合。
-- **多选标签筛选**：按使用频次排序的热度标签栏，支持多标签联合过滤。
-- **全能聚合搜索**：即时本地书签秒级检索 + 一键回车调用 Google / Bing / 百度 / GitHub 搜索引擎。
+- **独立实体标签与热度排序**：支持独立标签实体管理、按点击热度综合排序，主页标签栏支持紧凑单行展示与展开/折叠交互，支持多标签联合精准过滤。
+- **全能双轨聚合搜索**：即时本地书签秒级检索 + 搜索引擎直达双轨交互（一键回车调用 Google / Bing / 百度 / GitHub）。
 
-### 6. 🔒 纯本地安全架构（Local-First）与快照容灾
-- 数据 100% 存储于本机（`chrome.storage.local`），无需注册，零云端上传。
-- 支持关键操作前自动快照、每日快照与一键回滚。
-- 完整支持浏览器原生书签一键导入（带疑似重复智能标记）与全量 JSON 备份/恢复。
+### 6. 🔒 纯本地安全架构（Local-First）与 Dexie.js (IndexedDB)
+- **高性能本地数据库**：数据 100% 存储于本机 IndexedDB（基于 **Dexie.js 4.x**），突破扩展存储容量限制，零云端依赖。
+- **全局 Proxy 写入脱敏**：内置 DBCore 中间件，自动对写入实体执行结构化深度克隆，彻底杜绝 Svelte 5 Runes `$state` Proxy 导致的 `DataCloneError`。
+- **跨上下文实时同步**：基于原生 `BroadcastChannel` 实现多 NewTab 标签页、Popup 与 Service Worker 之间的毫秒级状态同步。
+- **快照容灾机制**：支持关键操作前自动快照、每日快照与一键回滚。
+- **完整导入与导出**：支持浏览器原生书签一键导入（带疑似重复智能标记）与全量 JSON 备份/恢复。
 
 ---
 
@@ -79,6 +81,21 @@ npm run build
 
 # 打包为可分发的 zip 压缩包至 .output/
 npm run zip
+
+# 仅语法与类型编译检查
+npm run compile
+```
+
+### 4. 本地 MCP 联动与子包验证
+```bash
+# 启动本地 MCP 桥接服务端（与 Claude Desktop / Cursor 联动）
+npm run mcp
+
+# 核心算法冒烟测试
+node test/verify-core.js
+
+# MCP 子包单元测试
+cd packages/smart-bookmark-mcp && npm test
 ```
 
 ---
@@ -106,14 +123,17 @@ newtab/
 │   │   ├── ping-probe.js        # 并发可达性探针与延迟测速
 │   │   ├── favicon-fetcher.js   # 站点图标抓取与 Base64 处理
 │   │   ├── icons-library.js     # 技术品牌离线矢量图标库
-│   │   ├── storage/             # 存储层按功能域拆分
-│   │   │   ├── base.js          #   存储原语 + 初始化 + 设置
-│   │   │   ├── bookmark.js      #   书签 CRUD（含清空前快照保护）
+│   │   ├── storage/             # Dexie.js (IndexedDB) 存储层
+│   │   │   ├── db.js            #   Dexie 实例与 6 张表定义 + 全局写入脱敏中间件
+│   │   │   ├── sync.js          #   基于 BroadcastChannel 的跨上下文同步总线
+│   │   │   ├── base.js          #   存储原语 + 数据深度脱敏克隆 + 设置
+│   │   │   ├── bookmark.js      #   书签 CRUD（含级联与快照防护）
+│   │   │   ├── tag.js           #   独立标签实体管理与热度计算
 │   │   │   ├── group.js         #   分组 CRUD + 批量导入
 │   │   │   ├── stats.js         #   点击统计 + 网络探测缓存
 │   │   │   ├── backup.js        #   快照 / 自动备份 / JSON 导入导出
 │   │   │   ├── ai.js            #   AI 批量治理落地
-│   │   │   └── index.js         #   barrel 聚合
+│   │   │   └── index.js         #   统一聚合导出入口
 │   │   ├── storage.js           # 兼容转发入口（旧 import 路径不变）
 │   │   ├── ai/                  # AI 智能整理
 │   │   │   ├── organizer.js     #   分组/标签分析流水线编排
