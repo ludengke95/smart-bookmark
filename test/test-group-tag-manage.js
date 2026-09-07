@@ -1,3 +1,4 @@
+import './setup.js';
 import assert from 'node:assert/strict';
 import {
   getBookmarks,
@@ -130,6 +131,7 @@ async function run() {
   assert.equal(mcpDeleteTag.modifiedCount, 1);
 
   console.log('✓ MCP 工具 executeTool 全部测试通过！');
+  process.exit(0);
 }
 
 run().catch(err => {

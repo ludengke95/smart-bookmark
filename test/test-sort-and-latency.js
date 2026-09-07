@@ -1,3 +1,4 @@
+import './setup.js';
 import assert from 'node:assert';
 import { formatLatencyChinese, PINNED_GROUP_ID, UNGROUPED_GROUP_ID } from '../src/constants/index.js';
 import {
@@ -70,6 +71,7 @@ async function runTests() {
   console.log('\n==============================');
   console.log('🎉 排序与延迟映射自动化测试 100% 通过！');
   console.log('==============================');
+  process.exit(0);
 }
 
 runTests().catch(err => {

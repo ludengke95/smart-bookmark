@@ -367,8 +367,10 @@
       importStatusText = t('import.writingStorage');
       importProgress = 100;
 
-      // 3. 单次原子批量写入
-      const res = await appState.batchImportBookmarks(groupsToCreate, preparedBookmarks);
+      // 3. 单次原子批量写入（脱敏 Svelte 5 Proxy 状态）
+      const rawGroups = $state.snapshot(groupsToCreate);
+      const rawBookmarks = $state.snapshot(preparedBookmarks);
+      const res = await appState.batchImportBookmarks(rawGroups, rawBookmarks);
       toast.show(t('import.importSuccess', { count: res.importedCount || preparedBookmarks.length }));
       open = false;
     } catch (e) {

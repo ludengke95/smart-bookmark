@@ -1,6 +1,7 @@
 /**
  * MCP Tools 定义与执行逻辑冒烟验证脚本
  */
+import './setup.js';
 import assert from 'node:assert/strict';
 import { mcpClient } from '../src/services/mcp/client.js';
 
@@ -78,3 +79,4 @@ console.log('✓ 新增参数与新增工具 Schema 校验全部通过');
 console.log('\n==============================');
 console.log('🎉 所有 MCP 接口规范测试 100% 通过！');
 console.log('==============================');
+process.exit(0);

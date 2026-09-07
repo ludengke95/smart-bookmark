@@ -1,7 +1,9 @@
 /**
  * 数据快照、备份与完整 JSON 导入导出
+ *
+ * 基于 Dexie.js 实现快照持久化、自动淘汰与全量 JSON 备份回滚。
  */
-import { getStorageData, setStorageData, withStorageLock, STORAGE_KEYS, getSettings } from './base.js';
+import { withStorageLock, getSettings, deepCloneToRaw } from './base.js';
 import {
   DEFAULT_BOOKMARKS,
   DEFAULT_GROUPS,
@@ -9,162 +11,217 @@ import {
   DEFAULT_BACKUP_SETTINGS,
   BACKUP_INTERVAL_MS
 } from '../../constants/index.js';
-import { getBookmarks } from './bookmark.js';
-import { getGroups } from './group.js';
+import { db } from './db.js';
+import { broadcastStorageChange } from './sync.js';
+import { getBookmarks, normalizeBookmarkEntity } from './bookmark.js';
+import { getGroups, normalizeGroupEntity } from './group.js';
+import { getAllTags, normalizeTagEntity } from './tag.js';
 import { resetAllStats } from './stats.js';
 import { serviceError } from '../errors.js';
 
-// 保持原有公开 API 兼容：重导出默认备份配置
 export { DEFAULT_BACKUP_SETTINGS };
 
 export async function getBackupSettings() {
-  return await getStorageData(STORAGE_KEYS.BACKUP_SETTINGS, DEFAULT_BACKUP_SETTINGS);
+  const record = await db.appSettings.get('backup_settings');
+  return record?.value ? { ...DEFAULT_BACKUP_SETTINGS, ...record.value } : DEFAULT_BACKUP_SETTINGS;
 }
 
 export async function saveBackupSettings(partial) {
-  const current = await getBackupSettings();
-  const updated = { ...current, ...partial };
-  await setStorageData(STORAGE_KEYS.BACKUP_SETTINGS, updated);
-  return updated;
+  return await withStorageLock(async () => {
+    const current = await getBackupSettings();
+    const updated = { ...current, ...partial };
+    await db.appSettings.put({ key: 'backup_settings', value: updated });
+    return updated;
+  });
 }
 
+/**
+ * 获取所有快照列表 (按时间逆序)
+ */
 export async function getSnapshots() {
-  return await getStorageData(STORAGE_KEYS.BACKUPS, []);
+  return await db.snapshots.orderBy('timestamp').reverse().toArray();
 }
 
 function formatSnapshotTime(ts) {
   const d = new Date(ts);
-  const Y = d.getFullYear();
-  const M = String(d.getMonth() + 1).padStart(2, '0');
-  const D = String(d.getDate()).padStart(2, '0');
-  const h = String(d.getHours()).padStart(2, '0');
-  const m = String(d.getMinutes()).padStart(2, '0');
-  const s = String(d.getSeconds()).padStart(2, '0');
-  return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-export async function createSnapshot(reason = '', type = 'manual', isLocked = false) {
-  return withStorageLock(async () => {
-    const bookmarks = await getBookmarks();
-    const groups = await getGroups();
-    const settings = await getSettings();
+/**
+ * 创建原子快照
+ */
+export async function createSnapshot(reason = null, type = 'manual', isLocked = false) {
+  return await withStorageLock(async () => {
     const backupSettings = await getBackupSettings();
-    const maxLimit = backupSettings.maxSnapshots || 15;
-
     const now = Date.now();
-    const newSnapshot = {
-      id: 'snap_' + now + '_' + Math.random().toString(36).substr(2, 4),
+    const [bookmarks, groups, tags, settings] = await Promise.all([
+      db.bookmarks.toArray(),
+      db.groups.toArray(),
+      db.tags.toArray(),
+      getSettings()
+    ]);
+
+    const snapshotId = `snap_${now}_${Math.random().toString(36).substring(2, 8)}`;
+    const snapshot = {
+      id: snapshotId,
       timestamp: now,
       timeStr: formatSnapshotTime(now),
-      reason,
+      reason: reason || (type === 'manual' ? '用户手动创建' : '系统自动备份'),
       type,
-      isLocked: !!isLocked,
+      isLocked: Boolean(isLocked),
       counts: {
         bookmarks: bookmarks.length,
-        groups: groups.length
+        groups: groups.length,
+        tags: tags.length
       },
       data: {
         bookmarks,
         groups,
+        tags,
         settings
       }
     };
 
-    const snapshots = await getSnapshots();
-    let updatedList = [newSnapshot, ...snapshots];
+    await db.transaction('rw', db.snapshots, async () => {
+      await db.snapshots.put(snapshot);
 
-    if (updatedList.length > maxLimit) {
-      while (updatedList.length > maxLimit) {
-        let removeIndex = -1;
-        for (let i = updatedList.length - 1; i >= 0; i--) {
-          if (!updatedList[i].isLocked) {
-            removeIndex = i;
-            break;
-          }
-        }
-        if (removeIndex >= 0) {
-          updatedList.splice(removeIndex, 1);
-        } else {
-          break;
+      // 配额限制淘汰：仅删除未锁定的最旧快照
+      const maxSnapshots = Math.max(3, backupSettings.maxSnapshots || 15);
+      const all = await db.snapshots.orderBy('timestamp').toArray();
+
+      if (all.length > maxSnapshots) {
+        const unlocked = all.filter(s => !s.isLocked);
+        const overflowCount = all.length - maxSnapshots;
+        const toDeleteIds = unlocked.slice(0, overflowCount).map(s => s.id);
+        if (toDeleteIds.length > 0) {
+          await db.snapshots.bulkDelete(toDeleteIds);
         }
       }
-    }
+    });
 
-    await setStorageData(STORAGE_KEYS.BACKUPS, updatedList);
-    return newSnapshot;
+    broadcastStorageChange({ type: 'SNAPSHOTS_CHANGED', action: 'create', id: snapshotId });
+    return snapshot;
   });
 }
 
+/**
+ * 删除单个快照
+ */
 export async function deleteSnapshot(snapshotId) {
-  return withStorageLock(async () => {
-    const snapshots = await getSnapshots();
-    const filtered = snapshots.filter(s => s.id !== snapshotId);
-    await setStorageData(STORAGE_KEYS.BACKUPS, filtered);
-    return filtered;
+  return await withStorageLock(async () => {
+    await db.snapshots.delete(snapshotId);
+    broadcastStorageChange({ type: 'SNAPSHOTS_CHANGED', action: 'delete', id: snapshotId });
+    return await getSnapshots();
   });
 }
 
+/**
+ * 切换快照锁定状态
+ */
 export async function toggleSnapshotLock(snapshotId) {
-  return withStorageLock(async () => {
-    const snapshots = await getSnapshots();
-    const target = snapshots.find(s => s.id === snapshotId);
-    if (target) {
-      target.isLocked = !target.isLocked;
-      await setStorageData(STORAGE_KEYS.BACKUPS, snapshots);
+  return await withStorageLock(async () => {
+    const snap = await db.snapshots.get(snapshotId);
+    if (snap) {
+      snap.isLocked = !snap.isLocked;
+      await db.snapshots.put(snap);
+      broadcastStorageChange({ type: 'SNAPSHOTS_CHANGED', action: 'toggle_lock', id: snapshotId });
     }
-    return snapshots;
+    return await getSnapshots();
   });
 }
 
+/**
+ * 快照一键回滚
+ */
 export async function rollbackToSnapshot(snapshotId) {
-  return withStorageLock(async () => {
-    const snapshots = await getSnapshots();
-    const target = snapshots.find(s => s.id === snapshotId);
+  return await withStorageLock(async () => {
+    const target = await db.snapshots.get(snapshotId);
     if (!target || !target.data) {
-      throw serviceError('snapshotNotFound', 'Target snapshot data not found');
+      throw serviceError('snapshotNotFound', `Snapshot "${snapshotId}" not found`);
     }
 
-    await createSnapshot(null, 'auto_prerollback');
-
-    if (target.data.bookmarks) {
-      await setStorageData(STORAGE_KEYS.BOOKMARKS, target.data.bookmarks);
-    }
-    if (target.data.groups) {
-      await setStorageData(STORAGE_KEYS.GROUPS, target.data.groups);
-    }
-    if (target.data.settings) {
-      await setStorageData(STORAGE_KEYS.SETTINGS, target.data.settings);
+    // 回滚前自动创建安全快照
+    try {
+      await createSnapshot(null, 'auto_prerollback');
+    } catch (e) {
+      console.warn('Pre-rollback auto snapshot failed:', e);
     }
 
+    await db.transaction('rw', [db.bookmarks, db.groups, db.tags, db.appSettings], async () => {
+      if (Array.isArray(target.data.bookmarks)) {
+        await db.bookmarks.clear();
+        const safeBms = target.data.bookmarks.map((b, idx) => normalizeBookmarkEntity(b, idx)).filter(Boolean);
+        await db.bookmarks.bulkPut(safeBms);
+      }
+      if (Array.isArray(target.data.groups)) {
+        await db.groups.clear();
+        const safeGrps = target.data.groups.map((g, idx) => normalizeGroupEntity(g, idx)).filter(Boolean);
+        await db.groups.bulkPut(safeGrps);
+      }
+      if (Array.isArray(target.data.tags)) {
+        await db.tags.clear();
+        const safeTags = target.data.tags.map((t, idx) => normalizeTagEntity(t, idx)).filter(Boolean);
+        await db.tags.bulkPut(safeTags);
+      }
+      if (target.data.settings) {
+        await db.appSettings.put({ key: 'settings', value: target.data.settings });
+      }
+    });
+
+    broadcastStorageChange({ type: 'ALL_CHANGED', action: 'rollback' });
     return target;
   });
 }
 
+/**
+ * 定期自动备份检查
+ */
 export async function checkDailyAutoBackup() {
-  const settings = await getBackupSettings();
-  if (settings.autoBackupInterval === 'off') return;
+  try {
+    const settings = await getBackupSettings();
+    if (!settings.autoBackupInterval || settings.autoBackupInterval === 'never') {
+      return;
+    }
 
-  const now = Date.now();
-  const lastTime = settings.lastAutoBackupTime || 0;
-  const intervalMs = BACKUP_INTERVAL_MS[settings.autoBackupInterval] || BACKUP_INTERVAL_MS.daily;
+    const intervalMs = BACKUP_INTERVAL_MS[settings.autoBackupInterval] || (24 * 60 * 60 * 1000);
+    const now = Date.now();
+    const lastBackupTime = settings.lastAutoBackupTime || 0;
 
-  if (now - lastTime >= intervalMs) {
-    await createSnapshot(null, 'auto_daily');
-    await saveBackupSettings({ lastAutoBackupTime: now });
+    if (now - lastBackupTime >= intervalMs) {
+      await createSnapshot(null, 'auto_daily');
+      await saveBackupSettings({ lastAutoBackupTime: now });
+    }
+  } catch (err) {
+    console.warn('Auto backup check failed:', err);
   }
 }
 
+/**
+ * 导出全部数据为 JSON 字符串
+ */
 export async function exportFullBackupJson() {
-  const bookmarks = await getBookmarks();
-  const groups = await getGroups();
-  const settings = await getSettings();
-  const clickStats = await getStorageData(STORAGE_KEYS.TOTAL_CLICKS, {});
-  const lastClicked = await getStorageData(STORAGE_KEYS.LAST_CLICKED, {});
+  const [bookmarks, groups, tags, settings, bookmarkStats] = await Promise.all([
+    getBookmarks(),
+    getGroups(),
+    getAllTags(),
+    getSettings(),
+    db.bookmarkStats.toArray()
+  ]);
+
+  const clickStats = {};
+  const lastClicked = {};
+  for (const s of bookmarkStats) {
+    clickStats[s.bookmarkId] = s.totalClicks || 0;
+    lastClicked[s.bookmarkId] = s.lastClicked || 0;
+  }
+
   const exportPayload = {
-    version: '1.0.0',
+    version: '2.0.0',
     exportTime: new Date().toISOString(),
     bookmarks,
     groups,
+    tags,
     settings,
     clickStats,
     lastClicked
@@ -172,45 +229,87 @@ export async function exportFullBackupJson() {
   return JSON.stringify(exportPayload, null, 2);
 }
 
+/**
+ * 从 JSON 字符串恢复全部数据
+ */
 export async function importFullBackupJson(jsonString) {
   try {
-    const data = typeof jsonString === 'string' ? JSON.parse(jsonString) : jsonString;
-    if (!data || typeof data !== 'object') {
-      return { success: false, error: 'JSON 数据格式无效' };
+    const payload = JSON.parse(jsonString);
+    if (!payload || typeof payload !== 'object') {
+      return { success: false, message: 'Invalid JSON format' };
     }
 
-    if (Array.isArray(data.bookmarks)) {
-      await setStorageData(STORAGE_KEYS.BOOKMARKS, data.bookmarks);
-    }
-    if (Array.isArray(data.groups)) {
-      await setStorageData(STORAGE_KEYS.GROUPS, data.groups);
-    }
-    if (data.settings && typeof data.settings === 'object') {
-      await setStorageData(STORAGE_KEYS.SETTINGS, data.settings);
-    }
-    if (data.clickStats && typeof data.clickStats === 'object') {
-      await setStorageData(STORAGE_KEYS.TOTAL_CLICKS, data.clickStats);
-    }
-    if (data.lastClicked && typeof data.lastClicked === 'object') {
-      await setStorageData(STORAGE_KEYS.LAST_CLICKED, data.lastClicked);
+    const hasBookmarks = Array.isArray(payload.bookmarks);
+    const hasGroups = Array.isArray(payload.groups);
+
+    if (!hasBookmarks && !hasGroups) {
+      return { success: false, message: 'JSON contains no bookmarks or groups' };
     }
 
-    return {
-      success: true,
-      count: Array.isArray(data.bookmarks) ? data.bookmarks.length : 0
-    };
-  } catch (e) {
-    return { success: false, error: e.message };
+    // 导入前自动创建安全快照
+    await createSnapshot(null, 'auto_preimport');
+
+    await withStorageLock(async () => {
+      await db.transaction('rw', [db.bookmarks, db.groups, db.tags, db.appSettings, db.bookmarkStats], async () => {
+        if (hasGroups) {
+          await db.groups.clear();
+          const safeGrps = payload.groups.map((g, idx) => normalizeGroupEntity(g, idx)).filter(Boolean);
+          await db.groups.bulkPut(safeGrps);
+        }
+        if (Array.isArray(payload.tags)) {
+          await db.tags.clear();
+          const safeTags = payload.tags.map((t, idx) => normalizeTagEntity(t, idx)).filter(Boolean);
+          await db.tags.bulkPut(safeTags);
+        }
+        if (hasBookmarks) {
+          await db.bookmarks.clear();
+          const safeBms = payload.bookmarks.map((b, idx) => normalizeBookmarkEntity(b, idx)).filter(Boolean);
+          await db.bookmarks.bulkPut(safeBms);
+        }
+        if (payload.settings) {
+          await db.appSettings.put({ key: 'settings', value: payload.settings });
+        }
+        if (payload.clickStats) {
+          await db.bookmarkStats.clear();
+          const statsItems = Object.entries(payload.clickStats).map(([bmId, total]) => ({
+            bookmarkId: String(bmId),
+            totalClicks: typeof total === 'number' ? total : 0,
+            lastClicked: typeof payload.lastClicked?.[bmId] === 'number' ? payload.lastClicked[bmId] : 0
+          }));
+          if (statsItems.length > 0) {
+            await db.bookmarkStats.bulkPut(statsItems);
+          }
+        }
+      });
+
+      broadcastStorageChange({ type: 'ALL_CHANGED', action: 'import_json' });
+    });
+
+    return { success: true };
+  } catch (err) {
+    return { success: false, message: err.message };
   }
 }
 
+/**
+ * 恢复出厂默认数据
+ */
 export async function resetToDefaultData() {
   const currentBms = await getBookmarks();
   if (currentBms.length > 0) {
     await createSnapshot(null, 'auto_prereset');
   }
-  await setStorageData(STORAGE_KEYS.BOOKMARKS, DEFAULT_BOOKMARKS);
-  await setStorageData(STORAGE_KEYS.GROUPS, DEFAULT_GROUPS);
-  await setStorageData(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS);
-  await resetAllStats();
+
+  await withStorageLock(async () => {
+    await Promise.all([
+      db.bookmarks.clear(),
+      db.tags.clear(),
+      db.groups.clear(),
+      resetAllStats()
+    ]);
+    await db.groups.bulkPut(DEFAULT_GROUPS);
+    await db.bookmarks.bulkPut(DEFAULT_BOOKMARKS);
+    await db.appSettings.put({ key: 'settings', value: DEFAULT_SETTINGS });
+    broadcastStorageChange({ type: 'ALL_CHANGED', action: 'reset_default' });
+  });
 }

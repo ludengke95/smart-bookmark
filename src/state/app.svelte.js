@@ -33,6 +33,8 @@ import {
   rollbackToSnapshot as storageRollbackToSnapshot,
   resetToDefaultData as storageResetDefaultData,
   clearAllData as storageClearAll,
+  getAllTags,
+  onStorageChange,
   STORAGE_KEYS
 } from '../services/storage.js';
 import { detectAllLocalIps } from '../services/ip-detector.js';
@@ -58,6 +60,7 @@ import { i18n } from '../i18n/index.svelte.js';
 class AppState {
   bookmarks = $state([]);
   groups = $state([]);
+  tags = $state([]);
   settings = $state(DEFAULT_SETTINGS);
   snapshots = $state([]);
   activeTag = $state('all');
@@ -90,7 +93,7 @@ class AppState {
     return DEFAULT_SEARCH_ENGINES.find(e => e.id === engineId) || DEFAULT_SEARCH_ENGINES[0];
   });
 
-  // 派生状态：所有标签及频次统计
+  // 派生状态：所有标签及频次统计 (结合 tags 实体表与点击热度)
   allTags = $derived.by(() => {
     const tagCountMap = {};
     const tagClickMap = {};
@@ -103,11 +106,21 @@ class AppState {
       }
     }
 
-    return Object.keys(tagCountMap).map(tag => ({
-      name: tag,
-      count: tagCountMap[tag],
-      clickCount: tagClickMap[tag] || 0
-    })).sort((a, b) => b.clickCount - a.clickCount || b.count - a.count);
+    const knownNames = new Set(this.tags.map(t => t.name));
+    for (const t of Object.keys(tagCountMap)) {
+      knownNames.add(t);
+    }
+
+    return Array.from(knownNames).map(tagName => {
+      const entity = this.tags.find(t => t.name === tagName);
+      return {
+        id: entity?.id || ('tag_' + tagName),
+        name: tagName,
+        color: entity?.color || '',
+        count: tagCountMap[tagName] || 0,
+        clickCount: tagClickMap[tagName] || 0
+      };
+    }).sort((a, b) => b.clickCount - a.clickCount || b.count - a.count);
   });
 
   // 派生状态：动态高频常用书签 (Pinned Bookmarks)
@@ -193,6 +206,7 @@ class AppState {
 
     this.groups = await getGroups();
     this.bookmarks = await getBookmarks();
+    this.tags = await getAllTags();
     this.clickStats = await getClickStats('30d');
     this.detailedStats = await getDetailedStats();
     this.snapshots = await getSnapshots();
@@ -238,21 +252,50 @@ class AppState {
     }
   }
 
-  // 监听 chrome.storage.onChanged 事件 (单向拉取同步，杜绝循环写回与旧缓存覆盖)
+  // 监听跨上下文广播与存储变更事件 (单向拉取同步，杜绝循环写回与旧缓存覆盖)
   setupStorageListener() {
     if (this._storageListening) return;
     try {
+      // 1. 订阅基于 BroadcastChannel 的跨 Tab/Popup 同步总线
+      this._cleanupSync = onStorageChange(async (event) => {
+        switch (event.type) {
+          case 'BOOKMARKS_CHANGED':
+            this.bookmarks = await getBookmarks();
+            break;
+          case 'TAGS_CHANGED':
+            this.tags = await getAllTags();
+            break;
+          case 'GROUPS_CHANGED':
+            this.groups = await getGroups();
+            break;
+          case 'SETTINGS_CHANGED':
+            this.settings = event.data || await getSettings();
+            if (this.settings.language) i18n.init(this.settings.language);
+            if (this.settings.theme) this.applyThemeToDOM(this.settings.theme);
+            break;
+          case 'STATS_CHANGED':
+            this.clickStats = await getClickStats('30d');
+            this.detailedStats = await getDetailedStats();
+            break;
+          case 'SNAPSHOTS_CHANGED':
+            this.snapshots = await getSnapshots();
+            break;
+          case 'ALL_CHANGED':
+            this.groups = await getGroups();
+            this.bookmarks = await getBookmarks();
+            this.tags = await getAllTags();
+            this.settings = await getSettings();
+            this.snapshots = await getSnapshots();
+            this.clickStats = await getClickStats('30d');
+            this.detailedStats = await getDetailedStats();
+            break;
+        }
+      });
+
+      // 2. 兼容扩展原生 chrome.storage.onChanged 事件 (若存在)
       if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
         chrome.storage.onChanged.addListener(async (changes, areaName) => {
           if (areaName !== 'local') return;
-
-          if (changes[STORAGE_KEYS.BOOKMARKS]) {
-            this.bookmarks = await getBookmarks();
-          }
-
-          if (changes[STORAGE_KEYS.GROUPS]) {
-            this.groups = await getGroups();
-          }
 
           if (changes[STORAGE_KEYS.SETTINGS]) {
             this.settings = changes[STORAGE_KEYS.SETTINGS].newValue || DEFAULT_SETTINGS;
@@ -263,20 +306,11 @@ class AppState {
               this.applyThemeToDOM(this.settings.theme);
             }
           }
-
-          if (changes[STORAGE_KEYS.BACKUPS]) {
-            this.snapshots = changes[STORAGE_KEYS.BACKUPS].newValue || [];
-          }
-
-          if (changes[STORAGE_KEYS.DAILY_CLICKS] || changes[STORAGE_KEYS.TOTAL_CLICKS]) {
-            this.clickStats = await getClickStats('30d');
-            this.detailedStats = await getDetailedStats();
-          }
         });
-        this._storageListening = true;
       }
+      this._storageListening = true;
     } catch (err) {
-      console.warn('Storage onChanged listener setup failed:', err);
+      console.warn('Storage listener setup failed:', err);
     }
   }
 

@@ -1,21 +1,78 @@
 /**
  * 书签 (Bookmarks) CRUD
+ *
+ * 基于 Dexie.js 实现行级高效持久化，
+ * 消除整表反序列化与 I/O 放大，并与 Tag 表联动维护 tagIds。
  */
-import { getStorageData, setStorageData, withStorageLock, STORAGE_KEYS } from './base.js';
+import { withStorageLock, deepCloneToRaw } from './base.js';
 import {
   DEFAULT_BOOKMARKS,
-  DEFAULT_GROUPS,
-  PINNED_GROUP_ID,
   UNGROUPED_GROUP_ID
 } from '../../constants/index.js';
-import { getGroups } from './group.js';
-import { getBackupSettings, createSnapshot } from './backup.js';
+import { db } from './db.js';
+import { broadcastStorageChange } from './sync.js';
+import { ensureTagsExist, renameTag as storageRenameTag, deleteTag as storageDeleteTag } from './tag.js';
 
+/**
+ * 规范化书签数据实体（阻断非标字段与原型链污染）
+ */
+export function normalizeBookmarkEntity(bm, fallbackOrder = 0) {
+  if (!bm || typeof bm !== 'object') return null;
+  const now = Date.now();
+  const id = bm.id ? String(bm.id) : ('bm_' + now + '_' + Math.random().toString(36).substring(2, 8));
+
+  let endpoints = [];
+  if (Array.isArray(bm.endpoints) && bm.endpoints.length > 0) {
+    endpoints = bm.endpoints.map((ep, idx) => {
+      if (!ep) return null;
+      if (typeof ep === 'string') {
+        const u = ep.trim();
+        return u ? { url: u, order: idx, type: 'extranet' } : null;
+      }
+      if (typeof ep === 'object' && ep.url) {
+        const u = String(ep.url).trim();
+        return u ? {
+          url: u,
+          order: typeof ep.order === 'number' ? ep.order : idx,
+          type: String(ep.type || 'extranet')
+        } : null;
+      }
+      return null;
+    }).filter(Boolean);
+  }
+  if (endpoints.length === 0 && bm.url) {
+    const u = String(bm.url).trim();
+    if (u) {
+      endpoints = [{ url: u, order: 0, type: 'extranet' }];
+    }
+  }
+
+  const tags = Array.isArray(bm.tags) ? bm.tags.map(t => String(t || '').trim()).filter(Boolean) : [];
+  const tagIds = Array.isArray(bm.tagIds) ? bm.tagIds.map(t => String(t || '').trim()).filter(Boolean) : [];
+
+  return {
+    id,
+    name: String(bm.name || '').trim(),
+    groupId: bm.groupId ? String(bm.groupId) : UNGROUPED_GROUP_ID,
+    tagIds,
+    tags,
+    iconKey: String(bm.iconKey || ''),
+    customIconBase64: String(bm.customIconBase64 || ''),
+    endpoints,
+    order: typeof bm.order === 'number' ? bm.order : fallbackOrder,
+    createdAt: typeof bm.createdAt === 'number' ? bm.createdAt : now,
+    updatedAt: typeof bm.updatedAt === 'number' ? bm.updatedAt : now
+  };
+}
+
+/**
+ * 获取所有书签列表 (按 order 升序，并做防御性字段清洗)
+ */
 export async function getBookmarks() {
-  const list = await getStorageData(STORAGE_KEYS.BOOKMARKS, DEFAULT_BOOKMARKS);
-  const rawList = Array.isArray(list) ? list : DEFAULT_BOOKMARKS;
-  // 数据清洗：确保每个书签都有唯一 ID、规范有效的 endpoints 数组和 groupId
-  return rawList.map(bm => {
+  const rawList = await db.bookmarks.orderBy('order').toArray();
+  const list = rawList.length > 0 ? rawList : DEFAULT_BOOKMARKS;
+
+  return list.map(bm => {
     if (!bm || typeof bm !== 'object') return null;
     let endpoints = [];
     if (Array.isArray(bm.endpoints) && bm.endpoints.length > 0) {
@@ -38,22 +95,25 @@ export async function getBookmarks() {
         endpoints = [{ url: u, order: 0, type: 'extranet' }];
       }
     }
+
     return {
       ...bm,
       id: bm.id ? String(bm.id) : ('bm_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8)),
       groupId: bm.groupId || UNGROUPED_GROUP_ID,
       tags: Array.isArray(bm.tags) ? bm.tags : [],
+      tagIds: Array.isArray(bm.tagIds) ? bm.tagIds : [],
       order: typeof bm.order === 'number' ? bm.order : 0,
       endpoints
     };
   }).filter(Boolean);
 }
 
+/**
+ * 保存单个书签 (新增或修改，行级写入)
+ */
 export async function saveBookmark(bookmark) {
-  return withStorageLock(async () => {
-    const list = await getBookmarks();
+  return await withStorageLock(async () => {
     const bookmarkId = bookmark.id ? String(bookmark.id) : ('bm_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8));
-    const index = bookmark.id ? list.findIndex(b => b.id === bookmark.id) : -1;
 
     let cleanEndpoints = [];
     if (Array.isArray(bookmark.endpoints) && bookmark.endpoints.length > 0) {
@@ -77,208 +137,116 @@ export async function saveBookmark(bookmark) {
       }
     }
 
-    const cleanBm = {
+    // 标签处理：确保对应标签在 Tag 表中存在实体，并取得 tagIds
+    const rawTags = Array.isArray(bookmark.tags) ? bookmark.tags : [];
+    const matchedTags = await ensureTagsExist(rawTags);
+    const tagIds = matchedTags.map(t => t.id);
+    const tagNames = matchedTags.map(t => t.name);
+
+    const existing = await db.bookmarks.get(bookmarkId);
+    let order = typeof bookmark.order === 'number' ? bookmark.order : existing?.order;
+    if (order === undefined) {
+      order = await db.bookmarks.count();
+    }
+
+    const merged = {
       groupId: UNGROUPED_GROUP_ID,
-      tags: [],
-      order: typeof bookmark.order === 'number' ? bookmark.order : list.length,
+      ...existing,
       ...bookmark,
       id: bookmarkId,
       endpoints: cleanEndpoints,
+      tags: tagNames,
+      tagIds,
+      order,
+      createdAt: bookmark.createdAt || existing?.createdAt || Date.now(),
       updatedAt: Date.now()
     };
+    const cleanBm = normalizeBookmarkEntity(merged, order);
 
-    if (index >= 0) {
-      list[index] = { ...list[index], ...cleanBm };
-    } else {
-      cleanBm.createdAt = bookmark.createdAt || Date.now();
-      list.push(cleanBm);
-    }
-    await setStorageData(STORAGE_KEYS.BOOKMARKS, list);
-    return list;
+    await db.bookmarks.put(cleanBm);
+    broadcastStorageChange({ type: 'BOOKMARKS_CHANGED', action: 'save', id: bookmarkId, data: cleanBm });
+
+    // 保持原有方法签名返回值（返回全量列表）
+    return await getBookmarks();
   });
 }
 
+/**
+ * 删除单个书签
+ */
 export async function deleteBookmark(bookmarkId) {
-  return withStorageLock(async () => {
-    let list = await getBookmarks();
-    list = list.filter(b => b.id !== bookmarkId);
-    await setStorageData(STORAGE_KEYS.BOOKMARKS, list);
-    return list;
+  return await withStorageLock(async () => {
+    await db.bookmarks.delete(bookmarkId);
+    broadcastStorageChange({ type: 'BOOKMARKS_CHANGED', action: 'delete', id: bookmarkId });
+    return await getBookmarks();
   });
 }
 
+/**
+ * 批量删除书签
+ */
 export async function batchDeleteBookmarks(bookmarkIds) {
-  return withStorageLock(async () => {
+  return await withStorageLock(async () => {
     if (!Array.isArray(bookmarkIds) || bookmarkIds.length === 0) {
       return { deletedCount: 0, deletedIds: [] };
     }
-    const idSet = new Set(bookmarkIds.map(String));
-    const list = await getBookmarks();
-    const remaining = [];
-    const deletedIds = [];
-
-    for (const b of list) {
-      if (idSet.has(String(b.id))) {
-        deletedIds.push(b.id);
-      } else {
-        remaining.push(b);
-      }
-    }
-
-    if (deletedIds.length > 0) {
-      await setStorageData(STORAGE_KEYS.BOOKMARKS, remaining);
-    }
-    return { deletedCount: deletedIds.length, deletedIds };
+    const idSet = Array.from(new Set(bookmarkIds.map(String)));
+    await db.bookmarks.bulkDelete(idSet);
+    broadcastStorageChange({ type: 'BOOKMARKS_CHANGED', action: 'batch_delete', count: idSet.length });
+    return { deletedCount: idSet.length, deletedIds: idSet };
   });
 }
 
+/**
+ * 批量/全量保存书签
+ */
 export async function saveAllBookmarks(bookmarks) {
-  return withStorageLock(async () => {
-    await setStorageData(STORAGE_KEYS.BOOKMARKS, bookmarks);
-    return bookmarks;
+  return await withStorageLock(async () => {
+    const safeList = (Array.isArray(bookmarks) ? bookmarks : [])
+      .map((bm, index) => normalizeBookmarkEntity(bm, index))
+      .filter(Boolean);
+
+    await db.transaction('rw', db.bookmarks, async () => {
+      await db.bookmarks.clear();
+      await db.bookmarks.bulkPut(safeList);
+    });
+    broadcastStorageChange({ type: 'BOOKMARKS_CHANGED', action: 'save_all' });
+    return safeList;
   });
 }
 
+/**
+ * 拖拽重排序
+ */
 export async function reorderBookmarks(orderedBookmarkIds) {
-  return withStorageLock(async () => {
-    const bookmarks = await getBookmarks();
-    const bmMap = new Map(bookmarks.map(b => [b.id, b]));
-    const reordered = [];
-    let orderIndex = 0;
+  return await withStorageLock(async () => {
+    if (!Array.isArray(orderedBookmarkIds) || orderedBookmarkIds.length === 0) {
+      return await getBookmarks();
+    }
 
-    for (const id of orderedBookmarkIds) {
-      if (bmMap.has(id)) {
-        const b = bmMap.get(id);
-        b.order = orderIndex++;
-        reordered.push(b);
-        bmMap.delete(id);
+    await db.transaction('rw', db.bookmarks, async () => {
+      const bms = await db.bookmarks.toArray();
+      const bmMap = new Map(bms.map(b => [b.id, b]));
+      const updated = [];
+
+      orderedBookmarkIds.forEach((id, index) => {
+        const target = bmMap.get(id);
+        if (target) {
+          target.order = index;
+          target.updatedAt = Date.now();
+          updated.push(target);
+        }
+      });
+
+      if (updated.length > 0) {
+        await db.bookmarks.bulkPut(updated);
       }
-    }
+    });
 
-    for (const remaining of bmMap.values()) {
-      remaining.order = orderIndex++;
-      reordered.push(remaining);
-    }
-
-    await setStorageData(STORAGE_KEYS.BOOKMARKS, reordered);
-    return reordered;
+    broadcastStorageChange({ type: 'BOOKMARKS_CHANGED', action: 'reorder' });
+    return await getBookmarks();
   });
 }
 
-/**
- * 全局重命名 / 合并标签
- * 将所有书签中的 oldTag 重命名为 newTag；如果该书签已有 newTag 则自动合并去重
- */
-export async function renameTag(oldTag, newTag) {
-  const oldT = String(oldTag || '').trim();
-  const newT = String(newTag || '').trim();
-  if (!oldT || !newT || oldT === newT) {
-    return { success: false, modifiedCount: 0, message: 'Invalid tag names' };
-  }
-
-  const backupSettings = await getBackupSettings();
-  if (backupSettings.preActionAutoBackup) {
-    try {
-      await createSnapshot(null, 'auto_tag_manage');
-    } catch (e) {
-      console.warn('Tag rename snapshot failed:', e);
-    }
-  }
-
-  const bookmarks = await getBookmarks();
-  let modifiedCount = 0;
-  const updated = bookmarks.map(bm => {
-    if (!Array.isArray(bm.tags) || !bm.tags.includes(oldT)) {
-      return bm;
-    }
-    const nextTags = Array.from(new Set(bm.tags.map(t => (t === oldT ? newT : t)).filter(Boolean)));
-    modifiedCount++;
-    return {
-      ...bm,
-      tags: nextTags,
-      updatedAt: Date.now()
-    };
-  });
-
-  if (modifiedCount > 0) {
-    await setStorageData(STORAGE_KEYS.BOOKMARKS, updated);
-  }
-
-  return {
-    success: true,
-    modifiedCount,
-    bookmarks: updated
-  };
-}
-
-/**
- * 全局删除标签
- * 从所有书签中彻底移除指定标签
- */
-export async function deleteTag(tagToDelete) {
-  const targetTag = String(tagToDelete || '').trim();
-  if (!targetTag) {
-    return { success: false, modifiedCount: 0, message: 'Invalid tag name' };
-  }
-
-  const backupSettings = await getBackupSettings();
-  if (backupSettings.preActionAutoBackup) {
-    try {
-      await createSnapshot(null, 'auto_tag_manage');
-    } catch (e) {
-      console.warn('Tag delete snapshot failed:', e);
-    }
-  }
-
-  const bookmarks = await getBookmarks();
-  let modifiedCount = 0;
-  const updated = bookmarks.map(bm => {
-    if (!Array.isArray(bm.tags) || !bm.tags.includes(targetTag)) {
-      return bm;
-    }
-    const nextTags = bm.tags.filter(t => t !== targetTag);
-    modifiedCount++;
-    return {
-      ...bm,
-      tags: nextTags,
-      updatedAt: Date.now()
-    };
-  });
-
-  if (modifiedCount > 0) {
-    await setStorageData(STORAGE_KEYS.BOOKMARKS, updated);
-  }
-
-  return {
-    success: true,
-    modifiedCount,
-    bookmarks: updated
-  };
-}
-
-export async function clearAllData() {
-  const currentBookmarks = await getBookmarks();
-  const currentGroups = await getGroups();
-  const backupSettings = await getBackupSettings();
-  const hasCustomGroups = currentGroups.some(g => g.id !== PINNED_GROUP_ID && g.id !== UNGROUPED_GROUP_ID);
-  if (backupSettings.preActionAutoBackup && (currentBookmarks.length > 0 || hasCustomGroups)) {
-    try {
-      await createSnapshot(null, 'auto_preclear');
-    } catch (e) {
-      console.warn('Pre-clear auto snapshot failed:', e);
-    }
-  }
-
-  await setStorageData(STORAGE_KEYS.BOOKMARKS, DEFAULT_BOOKMARKS);
-  await setStorageData(STORAGE_KEYS.GROUPS, DEFAULT_GROUPS);
-  await setStorageData(STORAGE_KEYS.DAILY_CLICKS, {});
-  await setStorageData(STORAGE_KEYS.TOTAL_CLICKS, {});
-  await setStorageData(STORAGE_KEYS.LAST_CLICKED, {});
-  await setStorageData(STORAGE_KEYS.PROBE_CACHE, {
-    localIp: '',
-    timestamp: 0,
-    results: {}
-  });
-
-  return true;
-}
+// 重导出标签治理方法，保持向前兼容
+export { storageRenameTag as renameTag, storageDeleteTag as deleteTag };
