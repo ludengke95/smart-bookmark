@@ -22,31 +22,35 @@
 </script>
 
 {#if appState.bookmarks.length > 0}
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-col sm:flex-row items-center justify-between gap-2.5 select-none">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-2.5 select-none">
     <!-- 标签筛选胶囊区 -->
-    <nav aria-label={t('nav.tagFilter')} class="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 flex-1">
+    <nav aria-label={t('nav.tagFilter')} class="flex items-center gap-1.5 flex-1 min-w-0">
       <button
         type="button"
         onclick={() => (appState.activeTag = 'all')}
-        class="px-3 py-1 rounded-full text-xs transition-all {appState.activeTag === 'all'
+        class="flex-shrink-0 px-3 py-1 rounded-full text-xs transition-all {appState.activeTag === 'all'
           ? 'bg-accent text-accent-fg font-medium shadow-sm'
           : 'text-text-secondary hover:text-text-primary hover:bg-subtle'}"
       >
         {t('common.all')} ({appState.bookmarks.length})
       </button>
 
-      {#each appState.allTags as tag}
-        <button
-          type="button"
-          onclick={() => (appState.activeTag = appState.activeTag === tag.name ? 'all' : tag.name)}
-          class="px-3 py-1 rounded-full text-xs transition-all flex items-center gap-1 {appState.activeTag === tag.name
-            ? 'bg-accent text-accent-fg font-medium shadow-sm'
-            : 'text-text-secondary hover:text-text-primary hover:bg-subtle'}"
-        >
-          <span>{tag.name}</span>
-          <span class="opacity-60 text-[10px] font-mono">({tag.count})</span>
-        </button>
-      {/each}
+      {#if appState.allTags.length > 0}
+        <div class="flex flex-wrap items-center content-start gap-1.5 flex-1 min-w-0 h-[26px] py-[1px] overflow-hidden">
+          {#each appState.allTags as tag}
+            <button
+              type="button"
+              onclick={() => (appState.activeTag = appState.activeTag === tag.name ? 'all' : tag.name)}
+              class="flex-shrink-0 px-3 py-1 rounded-full text-xs transition-all flex items-center gap-1 {appState.activeTag === tag.name
+                ? 'bg-accent text-accent-fg font-medium shadow-sm'
+                : 'text-text-secondary hover:text-text-primary hover:bg-subtle'}"
+            >
+              <span>{tag.name}</span>
+              <span class="opacity-60 text-[10px] font-mono">({tag.count})</span>
+            </button>
+          {/each}
+        </div>
+      {/if}
     </nav>
 
     <!-- 排序规则下拉切换器 -->
