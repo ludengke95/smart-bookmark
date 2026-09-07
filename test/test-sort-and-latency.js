@@ -1,3 +1,4 @@
+import './setup.js';
 import assert from 'node:assert';
 import { formatLatencyChinese, PINNED_GROUP_ID, UNGROUPED_GROUP_ID } from '../src/constants/index.js';
 import {

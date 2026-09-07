@@ -1,6 +1,7 @@
 /**
  * MCP Tools 定义与执行逻辑冒烟验证脚本
  */
+import './setup.js';
 import assert from 'node:assert/strict';
 import { mcpClient } from '../src/services/mcp/client.js';
 

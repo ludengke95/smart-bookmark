@@ -14,6 +14,23 @@ export function generateTagId() {
 }
 
 /**
+ * 规范化标签实体
+ */
+export function normalizeTagEntity(tag, fallbackOrder = 0) {
+  if (!tag || typeof tag !== 'object') return null;
+  const now = Date.now();
+  const id = tag.id ? String(tag.id) : generateTagId();
+  return {
+    id,
+    name: String(tag.name || '').trim(),
+    color: String(tag.color || ''),
+    order: typeof tag.order === 'number' ? tag.order : fallbackOrder,
+    createdAt: typeof tag.createdAt === 'number' ? tag.createdAt : now,
+    updatedAt: typeof tag.updatedAt === 'number' ? tag.updatedAt : now
+  };
+}
+
+/**
  * 获取所有标签列表 (按 order 升序)
  * @returns {Promise<Array<{ id: string, name: string, color?: string, order: number, createdAt: number, updatedAt: number }>>}
  */
@@ -108,14 +125,14 @@ export async function saveTag(tag) {
     }
 
     const existingTag = await db.tags.get(id);
-    const cleanTag = {
+    const cleanTag = normalizeTagEntity({
       id,
       name,
       color: tag.color || existingTag?.color || '',
       order: typeof tag.order === 'number' ? tag.order : (existingTag?.order || 0),
       createdAt: existingTag?.createdAt || now,
       updatedAt: now
-    };
+    });
 
     await db.tags.put(cleanTag);
     broadcastStorageChange({ type: 'TAGS_CHANGED', action: 'save', id: cleanTag.id, data: cleanTag });

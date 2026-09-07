@@ -5,6 +5,8 @@
  * 实现多个 NewTab 页面、Popup 弹窗与 Service Worker 之间的毫秒级状态同步。
  */
 
+import { deepCloneToRaw } from './base.js';
+
 const SYNC_CHANNEL_NAME = 'smart_bookmark_sync_channel';
 
 let channelInstance = null;
@@ -28,8 +30,9 @@ export function broadcastStorageChange(event) {
   const channel = getChannel();
   if (!channel) return;
   try {
+    const safePayload = deepCloneToRaw(event);
     channel.postMessage({
-      ...event,
+      ...safePayload,
       timestamp: Date.now()
     });
   } catch (err) {

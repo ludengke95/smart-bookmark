@@ -1,11 +1,11 @@
 /**
- * Dexie.js (IndexedDB) 数据库实例与环境适配
+ * Dexie.js (IndexedDB) 数据库实例与核心数据表声明
  *
- * 在浏览器/Chrome 扩展环境下使用原生 indexedDB；
- * 在纯 Node.js 测试环境下，自动注入 fake-indexeddb 提供完整支持。
+ * 采用原生 IndexedDB，并通过 DBCore 全局中间件自动拦截并脱敏所有写入实体，
+ * 彻底杜绝 Svelte 5 Runes Proxy 或不可克隆对象引发的 DataCloneError。
  */
-import 'fake-indexeddb/auto';
 import Dexie from 'dexie';
+import { deepCloneToRaw } from './base.js';
 
 export class SmartBookmarkDB extends Dexie {
   constructor() {
@@ -31,6 +31,31 @@ export class SmartBookmarkDB extends Dexie {
 
       // 6. 系统杂项设置与缓存键值表
       appSettings: 'key'
+    });
+
+    // 注册 DBCore 全局脱敏中间件：拦截所有表的 add/put 操作（含批量）
+    this.use({
+      stack: 'dbcore',
+      name: 'SanitizeAndCloneMiddleware',
+      create(downlevelDatabase) {
+        return {
+          ...downlevelDatabase,
+          table(tableName) {
+            const downlevelTable = downlevelDatabase.table(tableName);
+            return {
+              ...downlevelTable,
+              mutate(req) {
+                if (req.type === 'add' || req.type === 'put') {
+                  if (Array.isArray(req.values)) {
+                    req.values = req.values.map(val => deepCloneToRaw(val));
+                  }
+                }
+                return downlevelTable.mutate(req);
+              }
+            };
+          }
+        };
+      }
     });
   }
 }

@@ -7,7 +7,7 @@ import { withStorageLock } from './base.js';
 import { PINNED_GROUP_ID, UNGROUPED_GROUP_ID } from '../../constants/index.js';
 import { db } from './db.js';
 import { broadcastStorageChange } from './sync.js';
-import { getBookmarks } from './bookmark.js';
+import { getBookmarks, normalizeBookmarkEntity } from './bookmark.js';
 import { getGroups } from './group.js';
 import { createSnapshot } from './backup.js';
 import { ensureTagsExist } from './tag.js';
@@ -90,14 +90,14 @@ export async function batchUpdateBookmarks(updates = []) {
         if (Array.isArray(nextBm.tags)) {
           nextBm.tagIds = nextBm.tags.map(t => tagEntityMap.get(t)?.id).filter(Boolean);
         }
-        updatedBookmarks.push(nextBm);
+        updatedBookmarks.push(normalizeBookmarkEntity(nextBm));
       } else {
-        updatedBookmarks.push(bm);
+        updatedBookmarks.push(normalizeBookmarkEntity(bm));
       }
     }
 
     if (modifiedCount > 0) {
-      await db.bookmarks.bulkPut(updatedBookmarks);
+      await db.bookmarks.bulkPut(updatedBookmarks.filter(Boolean));
       broadcastStorageChange({ type: 'BOOKMARKS_CHANGED', action: 'batch_update', count: modifiedCount });
     }
 
@@ -187,13 +187,13 @@ export async function batchApplyAiGroups(groupPlan = []) {
             bm.groupId = targetGroupId;
             bm.updatedAt = Date.now();
             appliedCount++;
-            modifiedBms.push(bm);
+            modifiedBms.push(normalizeBookmarkEntity(bm));
           }
         }
       }
 
       if (modifiedBms.length > 0) {
-        await db.bookmarks.bulkPut(modifiedBms);
+        await db.bookmarks.bulkPut(modifiedBms.filter(Boolean));
       }
 
       broadcastStorageChange({ type: 'GROUPS_CHANGED', action: 'ai_apply' });
@@ -255,12 +255,12 @@ export async function batchApplyAiTags(tagPlan = [], mode = 'append') {
         bm.tagIds = finalTagIds;
         bm.updatedAt = Date.now();
         appliedCount++;
-        modifiedBms.push(bm);
+        modifiedBms.push(normalizeBookmarkEntity(bm));
       }
     }
 
     if (modifiedBms.length > 0) {
-      await db.bookmarks.bulkPut(modifiedBms);
+      await db.bookmarks.bulkPut(modifiedBms.filter(Boolean));
     }
 
     broadcastStorageChange({ type: 'BOOKMARKS_CHANGED', action: 'ai_tag_apply' });

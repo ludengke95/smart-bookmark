@@ -1,3 +1,4 @@
+import './setup.js';
 import assert from 'node:assert';
 import { recordClick, getClickStats, getDetailedStats, resetAllStats, setStorageData, getBookmarks } from '../src/services/storage.js';
 

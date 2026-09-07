@@ -3,7 +3,7 @@
  *
  * 基于 Dexie.js 实现快照持久化、自动淘汰与全量 JSON 备份回滚。
  */
-import { withStorageLock, getSettings } from './base.js';
+import { withStorageLock, getSettings, deepCloneToRaw } from './base.js';
 import {
   DEFAULT_BOOKMARKS,
   DEFAULT_GROUPS,
@@ -13,9 +13,9 @@ import {
 } from '../../constants/index.js';
 import { db } from './db.js';
 import { broadcastStorageChange } from './sync.js';
-import { getBookmarks } from './bookmark.js';
-import { getGroups } from './group.js';
-import { getAllTags } from './tag.js';
+import { getBookmarks, normalizeBookmarkEntity } from './bookmark.js';
+import { getGroups, normalizeGroupEntity } from './group.js';
+import { getAllTags, normalizeTagEntity } from './tag.js';
 import { resetAllStats } from './stats.js';
 import { serviceError } from '../errors.js';
 
@@ -151,15 +151,18 @@ export async function rollbackToSnapshot(snapshotId) {
     await db.transaction('rw', [db.bookmarks, db.groups, db.tags, db.appSettings], async () => {
       if (Array.isArray(target.data.bookmarks)) {
         await db.bookmarks.clear();
-        await db.bookmarks.bulkPut(target.data.bookmarks);
+        const safeBms = target.data.bookmarks.map((b, idx) => normalizeBookmarkEntity(b, idx)).filter(Boolean);
+        await db.bookmarks.bulkPut(safeBms);
       }
       if (Array.isArray(target.data.groups)) {
         await db.groups.clear();
-        await db.groups.bulkPut(target.data.groups);
+        const safeGrps = target.data.groups.map((g, idx) => normalizeGroupEntity(g, idx)).filter(Boolean);
+        await db.groups.bulkPut(safeGrps);
       }
       if (Array.isArray(target.data.tags)) {
         await db.tags.clear();
-        await db.tags.bulkPut(target.data.tags);
+        const safeTags = target.data.tags.map((t, idx) => normalizeTagEntity(t, idx)).filter(Boolean);
+        await db.tags.bulkPut(safeTags);
       }
       if (target.data.settings) {
         await db.appSettings.put({ key: 'settings', value: target.data.settings });
@@ -250,15 +253,18 @@ export async function importFullBackupJson(jsonString) {
       await db.transaction('rw', [db.bookmarks, db.groups, db.tags, db.appSettings, db.bookmarkStats], async () => {
         if (hasGroups) {
           await db.groups.clear();
-          await db.groups.bulkPut(payload.groups);
+          const safeGrps = payload.groups.map((g, idx) => normalizeGroupEntity(g, idx)).filter(Boolean);
+          await db.groups.bulkPut(safeGrps);
         }
         if (Array.isArray(payload.tags)) {
           await db.tags.clear();
-          await db.tags.bulkPut(payload.tags);
+          const safeTags = payload.tags.map((t, idx) => normalizeTagEntity(t, idx)).filter(Boolean);
+          await db.tags.bulkPut(safeTags);
         }
         if (hasBookmarks) {
           await db.bookmarks.clear();
-          await db.bookmarks.bulkPut(payload.bookmarks);
+          const safeBms = payload.bookmarks.map((b, idx) => normalizeBookmarkEntity(b, idx)).filter(Boolean);
+          await db.bookmarks.bulkPut(safeBms);
         }
         if (payload.settings) {
           await db.appSettings.put({ key: 'settings', value: payload.settings });
@@ -266,9 +272,9 @@ export async function importFullBackupJson(jsonString) {
         if (payload.clickStats) {
           await db.bookmarkStats.clear();
           const statsItems = Object.entries(payload.clickStats).map(([bmId, total]) => ({
-            bookmarkId: bmId,
-            totalClicks: total,
-            lastClicked: payload.lastClicked?.[bmId] || 0
+            bookmarkId: String(bmId),
+            totalClicks: typeof total === 'number' ? total : 0,
+            lastClicked: typeof payload.lastClicked?.[bmId] === 'number' ? payload.lastClicked[bmId] : 0
           }));
           if (statsItems.length > 0) {
             await db.bookmarkStats.bulkPut(statsItems);

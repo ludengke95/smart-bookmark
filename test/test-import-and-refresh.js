@@ -1,3 +1,4 @@
+import './setup.js';
 import assert from 'node:assert';
 import { classifyUrl, sortEndpointsByTopology } from '../src/services/xor-matcher.js';
 import { UNGROUPED_GROUP_ID, PINNED_GROUP_ID, DEFAULT_GROUPS, DEFAULT_BOOKMARKS } from '../src/constants/index.js';

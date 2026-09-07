@@ -33,6 +33,31 @@ let storageQueueTail = Promise.resolve();
 let activeLockDepth = 0;
 
 /**
+ * 彻底剥离 Svelte 5 Runes Proxy / Vue 响应式代理或不可克隆属性，
+ * 保证数据 100% 符合浏览器 IndexedDB structuredClone 算法要求。
+ * @template T
+ * @param {T} data
+ * @returns {T}
+ */
+export function deepCloneToRaw(data) {
+  if (data === null || data === undefined) return data;
+  if (typeof data !== 'object') return data;
+  try {
+    return JSON.parse(JSON.stringify(data));
+  } catch (err) {
+    console.warn('[Storage] deepCloneToRaw fallback:', err);
+    if (Array.isArray(data)) {
+      return data.map(item => (typeof item === 'object' ? deepCloneToRaw(item) : item));
+    }
+    const copy = {};
+    for (const [k, v] of Object.entries(data)) {
+      copy[k] = typeof v === 'object' ? deepCloneToRaw(v) : v;
+    }
+    return copy;
+  }
+}
+
+/**
  * 存储层异步互斥事务锁 (支持可重入，防止嵌套死锁)
  *
  * @template T
@@ -188,7 +213,8 @@ export async function getSettings() {
 export async function saveSettings(partial) {
   return await withStorageLock(async () => {
     const current = await getSettings();
-    const updated = { ...current, ...partial };
+    const cleanPartial = deepCloneToRaw(partial) || {};
+    const updated = { ...current, ...cleanPartial };
     await db.appSettings.put({ key: 'settings', value: updated });
     broadcastStorageChange({ type: 'SETTINGS_CHANGED', data: updated });
     return updated;

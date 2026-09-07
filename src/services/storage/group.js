@@ -3,7 +3,7 @@
  *
  * 基于 Dexie.js 实现分组实体管理与关联级联维护。
  */
-import { withStorageLock } from './base.js';
+import { withStorageLock, deepCloneToRaw } from './base.js';
 import {
   DEFAULT_GROUPS,
   PINNED_GROUP_ID,
@@ -16,6 +16,23 @@ import { getClickStats } from './stats.js';
 import { getAllTags } from './tag.js';
 import { createSnapshot, getBackupSettings } from './backup.js';
 import { serviceError } from '../errors.js';
+
+/**
+ * 规范化分组数据实体
+ */
+export function normalizeGroupEntity(grp, fallbackOrder = 1) {
+  if (!grp || typeof grp !== 'object') return null;
+  const now = Date.now();
+  const id = grp.id ? String(grp.id) : ('grp_' + now + '_' + Math.random().toString(36).substring(2, 8));
+  return {
+    id,
+    name: String(grp.name || '').trim(),
+    order: typeof grp.order === 'number' ? grp.order : fallbackOrder,
+    isPinned: Boolean(grp.isPinned),
+    isUngrouped: Boolean(grp.isUngrouped),
+    isDefaultCollapsed: Boolean(grp.isDefaultCollapsed)
+  };
+}
 
 /**
  * 获取所有分组列表 (内置常用组首位，内置未分组末位)
@@ -70,7 +87,7 @@ export async function saveGroup(group) {
       order = customOrders.length > 0 ? Math.max(...customOrders) + 1 : 1;
     }
 
-    const cleanGroup = {
+    const cleanGroup = normalizeGroupEntity({
       ...existing,
       ...group,
       id: group.id ? String(group.id) : ('grp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8)),
@@ -78,7 +95,7 @@ export async function saveGroup(group) {
       order,
       isPinned: false,
       isUngrouped: false
-    };
+    }, order);
 
     await db.groups.put(cleanGroup);
     broadcastStorageChange({ type: 'GROUPS_CHANGED', action: 'save', id: cleanGroup.id, data: cleanGroup });
@@ -91,6 +108,9 @@ export async function saveGroup(group) {
  * 批量导入数据 (包含书签与分组)
  */
 export async function batchImportData({ newGroups = [], newBookmarks = [] }) {
+  const safeNewGroups = deepCloneToRaw(newGroups) || [];
+  const safeNewBookmarks = deepCloneToRaw(newBookmarks) || [];
+
   return await withStorageLock(async () => {
     const backupSettings = await getBackupSettings();
     if (backupSettings.preActionAutoBackup) {
@@ -112,7 +132,7 @@ export async function batchImportData({ newGroups = [], newBookmarks = [] }) {
       const normalizedGroups = [];
       const now = Date.now();
 
-      for (const g of newGroups) {
+      for (const g of safeNewGroups) {
         if (!g || !g.name) continue;
         const gName = String(g.name).trim();
         if (!gName) continue;
@@ -137,10 +157,10 @@ export async function batchImportData({ newGroups = [], newBookmarks = [] }) {
         await db.groups.bulkPut(normalizedGroups);
       }
 
-      if (newBookmarks.length > 0) {
+      if (safeNewBookmarks.length > 0) {
         // 提取全部导入标签，同步确保 Tag 表记录存在
         const allTagNames = [];
-        for (const bm of newBookmarks) {
+        for (const bm of safeNewBookmarks) {
           if (Array.isArray(bm.tags)) {
             allTagNames.push(...bm.tags);
           }
@@ -151,7 +171,6 @@ export async function batchImportData({ newGroups = [], newBookmarks = [] }) {
         const tagMap = new Map(existingTags.map(t => [t.name, t]));
         const newTags = [];
         let tagOrder = await db.tags.count();
-        const now = Date.now();
 
         for (const name of cleanTagNames) {
           if (!tagMap.has(name)) {
@@ -172,11 +191,11 @@ export async function batchImportData({ newGroups = [], newBookmarks = [] }) {
           await db.tags.bulkPut(newTags);
         }
 
-        // 规范化补齐每个导入书签的 id、groupId、tagIds
+        // 规范化投影每个导入书签，避免任何非标属性或嵌套 Proxy
         let currentBmOrder = await db.bookmarks.count();
-        const normalizedBookmarks = newBookmarks.map((bm, index) => {
-          const rawTags = Array.isArray(bm.tags) ? bm.tags : [];
-          const tagIds = rawTags.map(t => tagMap.get(String(t).trim())?.id).filter(Boolean);
+        const normalizedBookmarks = safeNewBookmarks.map((bm, index) => {
+          const rawTags = Array.isArray(bm.tags) ? bm.tags.map(t => String(t || '').trim()).filter(Boolean) : [];
+          const tagIds = rawTags.map(t => tagMap.get(t)?.id).filter(Boolean);
           const bId = bm.id ? String(bm.id) : ('bm_' + now + '_' + Math.random().toString(36).substring(2, 8));
 
           let groupId = bm.groupId;
@@ -186,12 +205,37 @@ export async function batchImportData({ newGroups = [], newBookmarks = [] }) {
           }
           if (!groupId) groupId = UNGROUPED_GROUP_ID;
 
+          let endpoints = [];
+          if (Array.isArray(bm.endpoints) && bm.endpoints.length > 0) {
+            endpoints = bm.endpoints.map((ep, idx) => {
+              if (!ep) return null;
+              if (typeof ep === 'string') {
+                const u = ep.trim();
+                return u ? { url: u, order: idx, type: 'extranet' } : null;
+              }
+              if (typeof ep === 'object' && ep.url) {
+                const u = String(ep.url).trim();
+                return u ? { url: u, order: typeof ep.order === 'number' ? ep.order : idx, type: ep.type || 'extranet' } : null;
+              }
+              return null;
+            }).filter(Boolean);
+          }
+          if (endpoints.length === 0 && bm.url) {
+            const u = String(bm.url).trim();
+            if (u) {
+              endpoints = [{ url: u, order: 0, type: 'extranet' }];
+            }
+          }
+
           return {
-            ...bm,
             id: bId,
+            name: String(bm.name || '').trim(),
             groupId,
             tagIds,
             tags: rawTags,
+            iconKey: String(bm.iconKey || ''),
+            customIconBase64: String(bm.customIconBase64 || ''),
+            endpoints,
             order: typeof bm.order === 'number' ? bm.order : (currentBmOrder + index),
             createdAt: bm.createdAt || now,
             updatedAt: bm.updatedAt || now
