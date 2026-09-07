@@ -63,7 +63,9 @@ export default {
     nameRequired: 'Tag name cannot be empty',
     sameName: 'New tag name is identical to the current name',
     renameTooltip: 'Rename or merge tag',
-    deleteTooltip: 'Delete tag'
+    deleteTooltip: 'Delete tag',
+    expandAll: 'Expand all tags',
+    collapseAll: 'Collapse tags'
   },
   bookmark: {
     addTitle: 'Add New Bookmark',
