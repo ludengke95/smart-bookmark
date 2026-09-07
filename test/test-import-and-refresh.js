@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import { classifyUrl, sortEndpointsByTopology } from '../src/services/xor-matcher.js';
 import { UNGROUPED_GROUP_ID, PINNED_GROUP_ID, DEFAULT_GROUPS, DEFAULT_BOOKMARKS } from '../src/constants/index.js';
-import { getBookmarks, saveBookmark, batchImportData, setStorageData, getStorageData } from '../src/services/storage.js';
+import { getBookmarks, saveBookmark, batchImportData, setStorageData, getStorageData, db } from '../src/services/storage.js';
 
 console.log('--- 测试 1: 验证 sortEndpointsByTopology 各种输入格式 ---');
 // 1. 标准对象数组
@@ -20,7 +20,7 @@ assert.strictEqual(r3.optimal?.url, 'https://google.com');
 // 4. 空数组返回无配置
 const r4 = sortEndpointsByTopology([]);
 assert.strictEqual(r4.optimal, null);
-assert.strictEqual(r4.reason, '无配置入口');
+assert.strictEqual(r4.reason, 'no-endpoints');
 
 console.log('✅ 寻径函数防御测试通过');
 
@@ -32,7 +32,7 @@ const mockRawStorageList = [
   { id: 'bm_3', name: '空 endpoints 但有 url', endpoints: [], url: 'https://developer.mozilla.org', groupId: UNGROUPED_GROUP_ID }
 ];
 
-await setStorageData('smart_bm_list', mockRawStorageList);
+await db.bookmarks.bulkPut(mockRawStorageList);
 
 // 模拟页面初次加载 / 刷新 (调用 getBookmarks)
 const loadedBookmarks = await getBookmarks();
@@ -75,3 +75,4 @@ for (const bm of refreshedBms) {
 }
 
 console.log('✅ 全部测试用例执行完毕，全部通过！');
+process.exit(0);

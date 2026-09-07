@@ -119,6 +119,7 @@ async function run() {
   console.log('✔ 测试 4 通过：MCP 工具端调用原子治理成功！\n');
 
   console.log('🎉 全部测试顺利通过！所有并发保护、原子事务与容错能力验证完毕。');
+  process.exit(0);
 }
 
 run().catch(err => {

@@ -1,15 +1,18 @@
 /**
- * 存储层基础原语 (Storage Primitives)
+ * 存储层基础原语与设置管理 (Storage Primitives & Settings)
  *
- * 提供统一异步读写、存储键常量、环境探测与初始化逻辑，
- * 以及设置偏好的基础读写（薄封装）。
+ * 基于 Dexie.js 实现底层持久化，保留 withStorageLock 可重入异步互斥锁，
+ * 提供系统设置、初始化与清空数据等核心接口。
  */
 import {
   DEFAULT_BOOKMARKS,
   DEFAULT_GROUPS,
   DEFAULT_SETTINGS
 } from '../../constants/index.js';
+import { db } from './db.js';
+import { broadcastStorageChange } from './sync.js';
 
+// 保留 STORAGE_KEYS 作为常量兼容导出
 export const STORAGE_KEYS = {
   BOOKMARKS: 'smart_bm_list',
   GROUPS: 'smart_bm_groups',
@@ -25,30 +28,15 @@ export const STORAGE_KEYS = {
   REMOTE_ICON_CACHE: 'smart_bm_remote_icon_cache'
 };
 
-// 辅助：判断是否在标准 Chrome 扩展环境中运行
-function isExtensionEnv() {
-  try {
-    return typeof chrome !== 'undefined' && !!chrome.runtime?.id && !!chrome.storage?.local;
-  } catch {
-    return false;
-  }
-}
-
-const memoryFallbackStore = {};
-
-// 全局存储互斥锁队列 (保证 Read-Modify-Write 事务原子串行化，从根源彻底杜绝并发踩踏与死锁)
+// 全局存储互斥锁队列 (保证复杂批量写入与事务原子排队)
 let storageQueueTail = Promise.resolve();
 let activeLockDepth = 0;
 
 /**
  * 存储层异步互斥事务锁 (支持可重入，防止嵌套死锁)
  *
- * 客户端扩展场景下，所有 Read-Modify-Write 复合操作按 FIFO 队列严格串行化：
- * 保证前一个写事务全部持久化后，下一个事务才开始读取，100% 杜绝并发踩踏丢数据 (Lost-Update)。
- * 同时支持递归重入：当前异步上下文若已持有锁，直接执行无需重复排队。
- *
  * @template T
- * @param {(() => Promise<T>) | any} fnOrKeys - 待执行的异步函数，兼容多参数调用
+ * @param {(() => Promise<T>) | any} fnOrKeys
  * @param {() => Promise<T>} [optionalFn]
  * @returns {Promise<T>}
  */
@@ -58,7 +46,6 @@ export async function withStorageLock(fnOrKeys, optionalFn) {
     throw new Error('withStorageLock expects an async function');
   }
 
-  // 可重入支持：若当前调用栈已在锁保护上下文内，直接执行，防止自身嵌套死锁
   if (activeLockDepth > 0) {
     return await asyncFn();
   }
@@ -72,7 +59,6 @@ export async function withStorageLock(fnOrKeys, optionalFn) {
   storageQueueTail = currentTaskPromise;
 
   try {
-    // 等待队列前置任务完成 (即使前序任务异常也不阻塞后续队列)
     await previousTail.catch(() => {});
     activeLockDepth++;
     return await asyncFn();
@@ -83,13 +69,34 @@ export async function withStorageLock(fnOrKeys, optionalFn) {
 }
 
 /**
- * 安全原子读取-修改-写回原语 (Atomic Read-Modify-Write)
- *
- * @template T
- * @param {string} key - 存储键名
- * @param {(current: any) => Promise<T> | T} updater - 接收当前值并返回更新后值的函数
- * @param {any} [fallbackValue] - 缺省初始值
- * @returns {Promise<T>} 更新后的值
+ * 兼容层：通用键值数据读取 (主要针对 appSettings 中的零散配置)
+ */
+export async function getStorageData(key, fallbackValue) {
+  try {
+    const record = await db.appSettings.get(key);
+    if (record && record.value !== undefined) {
+      return record.value;
+    }
+    return fallbackValue;
+  } catch (err) {
+    console.warn(`[Storage] getStorageData failed for ${key}:`, err);
+    return fallbackValue;
+  }
+}
+
+/**
+ * 兼容层：通用键值数据写入
+ */
+export async function setStorageData(key, value) {
+  try {
+    await db.appSettings.put({ key, value });
+  } catch (err) {
+    console.warn(`[Storage] setStorageData failed for ${key}:`, err);
+  }
+}
+
+/**
+ * 安全原子读取-修改-写回原语
  */
 export async function updateStorageData(key, updater, fallbackValue) {
   return withStorageLock(async () => {
@@ -102,100 +109,107 @@ export async function updateStorageData(key, updater, fallbackValue) {
   });
 }
 
-// 统一异步读取
-export async function getStorageData(key, fallbackValue) {
-  if (isExtensionEnv()) {
-    return new Promise((resolve) => {
-      try {
-        chrome.storage.local.get([key], (result) => {
-          if (chrome.runtime?.lastError) {
-            console.warn(`Storage get error for key ${key}:`, chrome.runtime.lastError);
-            resolve(fallbackValue);
-          } else {
-            resolve(result && result[key] !== undefined ? result[key] : fallbackValue);
-          }
-        });
-      } catch (err) {
-        console.warn('Storage context invalid, fallback to memory/local:', err);
-        resolve(fallbackValue);
-      }
-    });
-  } else if (typeof localStorage !== 'undefined') {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallbackValue;
-    } catch {
-      return fallbackValue;
-    }
-  } else {
-    return memoryFallbackStore[key] !== undefined
-      ? JSON.parse(JSON.stringify(memoryFallbackStore[key]))
-      : fallbackValue;
-  }
-}
-
-// 统一异步写入
-export async function setStorageData(key, value) {
-  if (isExtensionEnv()) {
-    return new Promise((resolve) => {
-      try {
-        chrome.storage.local.set({ [key]: value }, () => {
-          if (chrome.runtime?.lastError) {
-            console.warn(`Storage set error for key ${key}:`, chrome.runtime.lastError);
-          }
-          resolve();
-        });
-      } catch (err) {
-        console.warn('Storage context invalid during set:', err);
-        if (typeof localStorage !== 'undefined') {
-          try {
-            localStorage.setItem(key, JSON.stringify(value));
-          } catch {}
-        }
-        resolve();
-      }
-    });
-  } else if (typeof localStorage !== 'undefined') {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch (e) {
-      console.warn('LocalStorage save failed:', e);
-    }
-  } else {
-    memoryFallbackStore[key] = JSON.parse(JSON.stringify(value));
-  }
-}
-
 /**
  * 初始化存储
+ * 检查数据库各实体表，若为空则注入系统默认数据（包括分组、书签、独立 Tag 实体和偏好设置）
  */
 export async function initStorage() {
-  const bookmarks = await getStorageData(STORAGE_KEYS.BOOKMARKS, null);
-  if (bookmarks === null || !Array.isArray(bookmarks)) {
-    await setStorageData(STORAGE_KEYS.BOOKMARKS, DEFAULT_BOOKMARKS);
-  }
+  return await withStorageLock(async () => {
+    await db.transaction('rw', [db.groups, db.bookmarks, db.tags, db.appSettings], async () => {
+      // 1. 初始化分组
+      const groupCount = await db.groups.count();
+      if (groupCount === 0) {
+        await db.groups.bulkPut(DEFAULT_GROUPS);
+      }
 
-  const groups = await getStorageData(STORAGE_KEYS.GROUPS, null);
-  if (groups === null || !Array.isArray(groups)) {
-    await setStorageData(STORAGE_KEYS.GROUPS, DEFAULT_GROUPS);
-  }
+      // 2. 初始化书签与标签
+      const bmCount = await db.bookmarks.count();
+      if (bmCount === 0) {
+        const tagMap = new Map();
+        let tagOrder = 0;
+        const now = Date.now();
 
-  const settings = await getStorageData(STORAGE_KEYS.SETTINGS, null);
-  if (!settings) {
-    await setStorageData(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS);
-  }
+        // 规范化默认书签并提取 tags 建立 Tag 实体
+        const formattedBookmarks = DEFAULT_BOOKMARKS.map((bm, index) => {
+          const rawTags = Array.isArray(bm.tags) ? bm.tags : [];
+          const tagIds = [];
+
+          for (const tName of rawTags) {
+            const name = String(tName || '').trim();
+            if (!name) continue;
+            if (!tagMap.has(name)) {
+              tagOrder += 1;
+              const tagEntity = {
+                id: 'tag_' + now + '_' + Math.random().toString(36).substring(2, 8),
+                name,
+                order: tagOrder,
+                createdAt: now,
+                updatedAt: now
+              };
+              tagMap.set(name, tagEntity);
+            }
+            tagIds.push(tagMap.get(name).id);
+          }
+
+          return {
+            ...bm,
+            id: bm.id ? String(bm.id) : ('bm_' + now + '_' + Math.random().toString(36).substring(2, 8)),
+            order: typeof bm.order === 'number' ? bm.order : index,
+            tags: rawTags,
+            tagIds,
+            createdAt: bm.createdAt || now,
+            updatedAt: bm.updatedAt || now
+          };
+        });
+
+        if (tagMap.size > 0) {
+          await db.tags.bulkPut(Array.from(tagMap.values()));
+        }
+        await db.bookmarks.bulkPut(formattedBookmarks);
+      }
+
+      // 3. 初始化全局设置
+      const settingsRecord = await db.appSettings.get('settings');
+      if (!settingsRecord) {
+        await db.appSettings.put({ key: 'settings', value: DEFAULT_SETTINGS });
+      }
+    });
+  });
 }
 
 /**
  * 设置偏好读写
  */
 export async function getSettings() {
-  return await getStorageData(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS);
+  const record = await db.appSettings.get('settings');
+  return record?.value ? { ...DEFAULT_SETTINGS, ...record.value } : DEFAULT_SETTINGS;
 }
 
 export async function saveSettings(partial) {
-  const current = await getSettings();
-  const updated = { ...current, ...partial };
-  await setStorageData(STORAGE_KEYS.SETTINGS, updated);
-  return updated;
+  return await withStorageLock(async () => {
+    const current = await getSettings();
+    const updated = { ...current, ...partial };
+    await db.appSettings.put({ key: 'settings', value: updated });
+    broadcastStorageChange({ type: 'SETTINGS_CHANGED', data: updated });
+    return updated;
+  });
+}
+
+/**
+ * 清空所有数据并重新初始化出厂配置
+ */
+export async function clearAllData() {
+  return await withStorageLock(async () => {
+    await Promise.all([
+      db.bookmarks.clear(),
+      db.tags.clear(),
+      db.groups.clear(),
+      db.dailyClicks.clear(),
+      db.bookmarkStats.clear(),
+      db.snapshots.clear(),
+      db.appSettings.clear()
+    ]);
+    await initStorage();
+    broadcastStorageChange({ type: 'ALL_CHANGED' });
+  });
 }

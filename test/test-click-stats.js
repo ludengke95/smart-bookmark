@@ -68,3 +68,4 @@ const resetSum = Object.values(resetDetailed.totalClicksMap).reduce((acc, cur) =
 assert.strictEqual(resetSum, 0, '清空后累计总点击应为 0');
 
 console.log('✅ 点击统计、累计直达与访问排行榜测试全部通过！');
+process.exit(0);

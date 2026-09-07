@@ -78,3 +78,4 @@ console.log('✓ 新增参数与新增工具 Schema 校验全部通过');
 console.log('\n==============================');
 console.log('🎉 所有 MCP 接口规范测试 100% 通过！');
 console.log('==============================');
+process.exit(0);
