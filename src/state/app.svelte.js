@@ -93,7 +93,7 @@ class AppState {
     return DEFAULT_SEARCH_ENGINES.find(e => e.id === engineId) || DEFAULT_SEARCH_ENGINES[0];
   });
 
-  // 派生状态：所有标签及频次统计 (结合 tags 实体表与点击热度)
+  // 派生状态：所有标签及频次统计 (结合 tags 实体表与点击热度加权综合降序)
   allTags = $derived.by(() => {
     const tagCountMap = {};
     const tagClickMap = {};
@@ -113,14 +113,17 @@ class AppState {
 
     return Array.from(knownNames).map(tagName => {
       const entity = this.tags.find(t => t.name === tagName);
+      const count = tagCountMap[tagName] || 0;
+      const clickCount = tagClickMap[tagName] || 0;
       return {
         id: entity?.id || ('tag_' + tagName),
         name: tagName,
         color: entity?.color || '',
-        count: tagCountMap[tagName] || 0,
-        clickCount: tagClickMap[tagName] || 0
+        count,
+        clickCount,
+        score: clickCount * 10 + count
       };
-    }).sort((a, b) => b.clickCount - a.clickCount || b.count - a.count);
+    }).sort((a, b) => b.score - a.score || b.clickCount - a.clickCount || b.count - a.count || a.name.localeCompare(b.name));
   });
 
   // 派生状态：动态高频常用书签 (Pinned Bookmarks)

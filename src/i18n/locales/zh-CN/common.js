@@ -63,7 +63,9 @@ export default {
     nameRequired: '标签名称不能为空',
     sameName: '新标签名称与原名称相同',
     renameTooltip: '重命名或合并标签',
-    deleteTooltip: '删除标签'
+    deleteTooltip: '删除标签',
+    expandAll: '展开全部标签',
+    collapseAll: '收起标签栏'
   },
   bookmark: {
     addTitle: '添加新书签',

@@ -377,11 +377,15 @@ export async function getAllTagsWithCount() {
 
   return Array.from(knownTags).map(tagName => {
     const entity = tags.find(t => t.name === tagName);
+    const count = tagCountMap[tagName] || 0;
+    const clickCount = tagClickMap[tagName] || 0;
     return {
       id: entity?.id || ('tag_' + tagName),
       name: tagName,
-      count: tagCountMap[tagName] || 0,
-      clickCount: tagClickMap[tagName] || 0
+      color: entity?.color || '',
+      count,
+      clickCount,
+      score: clickCount * 10 + count
     };
-  }).sort((a, b) => b.clickCount - a.clickCount || b.count - a.count);
+  }).sort((a, b) => b.score - a.score || b.clickCount - a.clickCount || b.count - a.count || a.name.localeCompare(b.name));
 }
