@@ -40,7 +40,9 @@ export default {
     directJump: '⚡ Direct: {name}',
     searchWithEngine: 'Search with {engine}',
     directBookmark: 'Direct to bookmark',
-    optimalRoute: 'Optimal route'
+    optimalRoute: 'Optimal route',
+    shortcutEnter: 'Enter',
+    shortcutShiftEnter: 'Shift + Enter'
   },
   sort: {
     tooltip: 'Switch bookmark sorting order',

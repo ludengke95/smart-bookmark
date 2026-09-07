@@ -43,15 +43,18 @@
   - **Obsidian Dark (`obsidian-dark`)**: Deep charcoal graphite, focused night mode.
 - **Three-Tier Category Structure**:
   - **"Frequently Used"**: Auto-calculated based on access telemetry;
-  - **"Custom Groups"**: Create, sort, rename, and collapse with ease;
+  - **"Custom Groups"**: Create, sort, rename, and collapse with ease, including auto-hiding empty groups;
   - **"Ungrouped"**: Fallback container ensuring zero orphaned bookmarks.
-- **Omni Search Bar**: Instant local bookmark filtering combined with single-keystroke jump to Google, Bing, Baidu, or GitHub search.
+- **Independent Tags & Frequency Ranking**: Dedicated tag entity management, frequency-sorted tag pills with compact single-line truncation and toggleable expansion.
+- **Dual-Track Search Bar**: Instant local bookmark filtering combined with single-keystroke search engine direct queries (Google, Bing, Baidu, GitHub).
 - **Multilingual Support (i18n)**: Instant hot-switching between System Default (Auto), 简体中文 (zh-CN), and English (en-US).
 
-### 6. 🔒 100% Local-First Architecture & Safety Snapshots
-- All data resides strictly on the local machine (`chrome.storage.local`). No account required, zero remote telemetry, zero cloud lock-in.
-- Pre-operation automated snapshots, periodic backups, and one-click rollback.
-- Complete support for native browser bookmark importing (with smart duplicate indicators) and full JSON backup/restore.
+### 6. 🔒 100% Local-First Architecture & Dexie.js (IndexedDB)
+- **High-Performance Local DB**: All data resides strictly on the local machine via IndexedDB powered by **Dexie.js 4.x**. No account required, zero remote telemetry, zero cloud lock-in.
+- **Automatic Proxy Sanitization**: Built-in DBCore middleware deeply sanitizes incoming entities to prevent `DataCloneError` caused by Svelte 5 Runes `$state` Proxies.
+- **Cross-Context Realtime Sync**: Leverages native `BroadcastChannel` for millisecond-level state synchronization across multiple New Tab pages, Popup, and Service Worker.
+- **Safety Snapshots**: Pre-operation automated snapshots, periodic backups, and one-click rollback.
+- **Complete Import/Export**: Native browser bookmark importing (with smart duplicate indicators) and full JSON backup/restore.
 
 ---
 
@@ -108,8 +111,18 @@ src/
 │   ├── ip-detector.js       # WebRTC LAN IP sniffing
 │   ├── ping-probe.js        # Concurrent reachability probe & latency
 │   ├── favicon-fetcher.js / icons-library.js
-│   ├── storage/             # Storage layer by domain (base/bookmark/group/
-│   │                        #   stats/backup/ai + barrel), storage.js = compat entry
+│   ├── storage/             # Dexie.js (IndexedDB) storage layer
+│   │   ├── db.js            #   Dexie schema (6 tables) + DBCore sanitization middleware
+│   │   ├── sync.js          #   BroadcastChannel cross-context realtime sync
+│   │   ├── base.js          #   Primitives, deepCloneToRaw & settings
+│   │   ├── bookmark.js      #   Bookmark CRUD & cascading operations
+│   │   ├── tag.js           #   Tag entity management & click-frequency scoring
+│   │   ├── group.js         #   Group CRUD & batch operations
+│   │   ├── stats.js         #   Click telemetry & latency cache
+│   │   ├── backup.js        #   Snapshots, auto-backups & JSON import/export
+│   │   ├── ai.js            #   AI batch reorganization persistence
+│   │   └── index.js         #   Unified barrel exports
+│   ├── storage.js           # Compatibility entry (legacy imports preserved)
 │   ├── ai/                  # organizer.js (pipelines) / prompt-builder.js /
 │   │                        #   custom-engine.js (OpenAI-compatible driver)
 │   └── mcp/client.js        # MCP protocol client

@@ -269,7 +269,7 @@
             </span>
           </div>
           <kbd class="flex-shrink-0 px-2 py-0.5 rounded border border-border-subtle bg-subtle text-[10px] font-mono text-text-tertiary">
-            {t('search.shortcutEnter')} ↵
+            {t('search.shortcutEnter')}
           </kbd>
         </button>
 
