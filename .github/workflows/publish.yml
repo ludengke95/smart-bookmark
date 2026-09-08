@@ -1,18 +1,21 @@
 name: Publish smart-bookmark-mcp
 
-# 在 GitHub 上「发布 Release（Draft a new release → Publish release）」时自动发布到 npm。
-# 关键修复：原 Node.js Package 模板直连根包，但根包 private:true 且无 workspaces，
-# 在 monorepo 下 `npm publish` 会失败；这里 working-directory 切到子包再发布。
-# 需要在仓库 Settings → Secrets 配置 NPM_TOKEN（npm 账号的 Automation/Publish Token）。
-# 注意：Release 的 Tag 应与子包 package.json 的 version 对应（如 smart-bookmark-mcp@1.0.1）。
+# 自动发布到 npm 流水线：
+# 1) 响应 Create Release 工作流成功执行完成（workflow_run 级联，规避 GITHUB_TOKEN 的 loop protection 拦截）
+# 2) 支持手动触发（workflow_dispatch）随时在 Actions 界面一键执行/重试发包
+# 需要在仓库 Settings → Secrets 配置 NPM_TOKEN（npm 账号的 Automation/Publish Token）
 on:
-  release:
-    types: [published]
+  workflow_run:
+    workflows: ["Create Release"]
+    types: [completed]
+  workflow_dispatch:
 
 jobs:
   publish:
     name: Publish to npm
     runs-on: ubuntu-latest
+    # 闸门过滤：手动触发放行，或上游 Create Release 成功完成时放行
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
     defaults:
@@ -20,6 +23,8 @@ jobs:
         working-directory: packages/smart-bookmark-mcp
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
