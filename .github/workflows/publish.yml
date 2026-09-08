@@ -2,25 +2,20 @@ name: Publish smart-bookmark-mcp
 
 # 自动发布到 npm 流水线：
 # 1) 响应 Create Release 工作流成功执行完成（workflow_run 级联，规避 GITHUB_TOKEN 的 loop protection 拦截）
-# 2) 支持手动触发（workflow_dispatch）与常规 Release 发布事件作为兜底
+# 2) 支持手动触发（workflow_dispatch）随时在 Actions 界面一键执行/重试发包
 # 需要在仓库 Settings → Secrets 配置 NPM_TOKEN（npm 账号的 Automation/Publish Token）
 on:
   workflow_run:
     workflows: ["Create Release"]
     types: [completed]
   workflow_dispatch:
-  release:
-    types: [published]
 
 jobs:
   publish:
     name: Publish to npm
     runs-on: ubuntu-latest
-    # 闸门过滤：
-    # 1. 如果是由 workflow_run 触发，要求上游执行结果为 success
-    # 2. 如果是 workflow_dispatch 或 release 事件，直接放行
-    if: >
-      (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    # 闸门过滤：手动触发放行，或上游 Create Release 成功完成时放行
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
     defaults:
