@@ -3,6 +3,7 @@
   import { appState } from '../../state/app.svelte.js';
   import { toast } from '../../state/toast.svelte.js';
   import { classifyUrl } from '../../services/xor-matcher.js';
+  import { openInNewTab } from '../../services/navigation.js';
   import { PINNED_GROUP_ID, UNGROUPED_GROUP_ID } from '../../constants/index.js';
   import { t } from '../../i18n/index.svelte.js';
   import { getGroupName } from '../../i18n/utils.js';
@@ -134,11 +135,7 @@
     const route = appState.getBookmarkRoute(bm);
     if (route.optimal?.url) {
       appState.recordClick(bm.id);
-      if (typeof chrome !== 'undefined' && chrome.tabs) {
-        chrome.tabs.create({ url: route.optimal.url });
-      } else {
-        window.open(route.optimal.url, '_blank');
-      }
+      openInNewTab(route.optimal.url);
     } else {
       toast.show(t('popup.noValidEndpoint'));
     }
