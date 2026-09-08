@@ -32,6 +32,9 @@ export default defineConfig({
       'tabs',
       'alarms'
     ],
+    chrome_url_overrides: {
+      newtab: 'home.html'
+    },
     host_permissions: [
       '<all_urls>'
     ],
