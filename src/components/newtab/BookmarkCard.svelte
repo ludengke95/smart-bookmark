@@ -2,6 +2,7 @@
   import { appState } from '../../state/app.svelte.js';
   import { toast } from '../../state/toast.svelte.js';
   import { t } from '../../i18n/index.svelte.js';
+  import { openInNewTab } from '../../services/navigation.js';
   import IconRender from '../common/IconRender.svelte';
 
   let {
@@ -34,13 +35,29 @@
     appState.recordClick(bookmark.id);
     const latInfo = optimal?.latency ? ` (${optimal.latency}ms)` : '';
     toast.show(t('bookmark.directJumpToast', { target: `${optimal.targetIp || optimal.host || optimal.url}${latInfo}` }));
-    window.open(optimal.url, '_blank');
+    openInNewTab(optimal.url);
+  }
+
+  function handleAuxClick(e) {
+    // 鼠标中键 (button === 1) 点击触发新页面打开
+    if (e.button === 1) {
+      e.preventDefault();
+      handleCardClick(e);
+    }
   }
 
   function handleEndpointClick(ep) {
     appState.recordClick(bookmark.id);
     toast.show(t('bookmark.directEndpointToast', { url: ep.url }));
-    window.open(ep.url, '_blank');
+    openInNewTab(ep.url);
+  }
+
+  function handleEndpointAuxClick(e, ep) {
+    // 鼠标中键点击备用入口
+    if (e.button === 1) {
+      e.preventDefault();
+      handleEndpointClick(ep);
+    }
   }
 </script>
 
@@ -54,6 +71,7 @@
   {ondragleave}
   {ondrop}
   onclick={handleCardClick}
+  onauxclick={handleAuxClick}
   onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(e); }}
   class="group relative flex flex-col justify-between p-3 rounded-lg border border-border-subtle bg-surface hover:border-border-focus hover:shadow-sm transition-all duration-150 cursor-pointer select-none text-left"
 >
@@ -162,6 +180,7 @@
         <button
           type="button"
           onclick={() => handleEndpointClick(ep)}
+          onauxclick={(e) => handleEndpointAuxClick(e, ep)}
           class="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded hover:bg-subtle text-left transition-colors {ep === optimal ? 'bg-subtle/60 text-text-primary font-medium' : 'text-text-secondary'}"
         >
           <div class="flex items-center gap-1.5 min-w-0 truncate">

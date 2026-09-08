@@ -2,6 +2,7 @@
   import { appState } from '../../state/app.svelte.js';
   import { toast } from '../../state/toast.svelte.js';
   import { t } from '../../i18n/index.svelte.js';
+  import { openInNewTab } from '../../services/navigation.js';
   import IconRender from '../common/IconRender.svelte';
   import ModalShell from '../common/ModalShell.svelte';
   import ConfirmModal from '../common/ConfirmModal.svelte';
@@ -57,6 +58,14 @@
     return t('stats.daysAgo', { days });
   }
 
+  function handleBookmarkClick(bm) {
+    const route = appState.getBookmarkRoute(bm);
+    if (route.optimal?.url) {
+      appState.recordClick(bm.id);
+      openInNewTab(route.optimal.url);
+    }
+  }
+
   function handleClearStats() {
     clearConfirmOpen = true;
   }
@@ -99,7 +108,14 @@
 
         <div class="divide-y divide-border-subtle/50 border border-border-subtle rounded-xl bg-surface">
           {#each rankedBookmarks as bm, idx}
-            <div class="p-2.5 flex items-center justify-between gap-3">
+            <div
+              role="button"
+              tabindex="0"
+              onclick={() => handleBookmarkClick(bm)}
+              onauxclick={(e) => { if (e.button === 1) { e.preventDefault(); handleBookmarkClick(bm); } }}
+              onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleBookmarkClick(bm); }}
+              class="p-2.5 flex items-center justify-between gap-3 hover:bg-subtle/60 transition-colors cursor-pointer text-left"
+            >
               <div class="flex items-center gap-2.5 min-w-0 flex-1">
                 <!-- 序号 -->
                 <span class="w-4 text-center font-mono text-xs font-semibold {idx < 3 ? 'text-accent' : 'text-text-tertiary'}">

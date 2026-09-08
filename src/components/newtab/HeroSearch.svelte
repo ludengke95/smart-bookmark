@@ -4,6 +4,7 @@
   import { DEFAULT_SEARCH_ENGINES } from '../../constants/index.js';
   import { toast } from '../../state/toast.svelte.js';
   import { t, i18n } from '../../i18n/index.svelte.js';
+  import { openInNewTab } from '../../services/navigation.js';
 
   let currentTimeStr = $state('--:--');
   let currentDateStr = $state('');
@@ -70,7 +71,9 @@
     const q = (customQuery !== undefined ? customQuery : appState.searchQuery).trim();
     if (!q) return;
     const engine = appState.selectedEngine;
-    window.location.href = `${engine.url}${encodeURIComponent(q)}`;
+    openInNewTab(`${engine.url}${encodeURIComponent(q)}`);
+    isFocused = false;
+    searchInputEl?.blur();
   }
 
   function executeDirectBookmark(bm) {
@@ -79,7 +82,9 @@
     if (route.optimal?.url) {
       appState.recordClick(bm.id);
       toast.show(t('search.directJump', { name: bm.name }));
-      window.location.href = route.optimal.url;
+      openInNewTab(route.optimal.url);
+      isFocused = false;
+      searchInputEl?.blur();
     }
   }
 
@@ -235,6 +240,7 @@
         <button
           type="button"
           onclick={() => executeEngineSearch()}
+          onauxclick={(e) => { if (e.button === 1) { e.preventDefault(); executeEngineSearch(); } }}
           class="p-1.5 rounded-full bg-accent text-accent-fg hover:opacity-90 transition-opacity cursor-pointer"
           title={t('search.searchWithEngine', { engine: appState.selectedEngine.name })}
         >
@@ -254,6 +260,7 @@
         <button
           type="button"
           onmousedown={(e) => { e.preventDefault(); executeEngineSearch(); }}
+          onauxclick={(e) => { if (e.button === 1) { e.preventDefault(); executeEngineSearch(); } }}
           onmouseenter={() => (activeActionIndex = 0)}
           class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer {activeActionIndex === 0 ? 'bg-subtle text-text-primary' : 'text-text-secondary hover:bg-subtle/70'}"
         >
@@ -278,6 +285,7 @@
           <button
             type="button"
             onmousedown={(e) => { e.preventDefault(); executeDirectBookmark(targetBookmark); }}
+            onauxclick={(e) => { if (e.button === 1) { e.preventDefault(); executeDirectBookmark(targetBookmark); } }}
             onmouseenter={() => (activeActionIndex = 1)}
             class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer {activeActionIndex === 1 ? 'bg-subtle text-text-primary' : 'text-text-secondary hover:bg-subtle/70'}"
           >
