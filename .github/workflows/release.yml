@@ -88,10 +88,11 @@ jobs:
           npm ci
           npm pack
 
-      # 3) 由 Conventional Commits 自动生成 Release 正文
-      - name: Generate release notes（conventional-changelog）
+      # 3) 由 Conventional Commits 与 GitHub PR 自动生成分类 Release 正文 (Closes #15)
+      - name: Generate release notes
         run: npm run release:notes
-
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # 4) 创建 Release，附插件包 + mcp 包 + 自动生成的变更日志正文
       - name: 创建 Release
         uses: softprops/action-gh-release@v2
