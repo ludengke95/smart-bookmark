@@ -74,7 +74,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add package.json package-lock.json packages/smart-bookmark-mcp/package.json packages/smart-bookmark-mcp/package-lock.json RELEASE_NOTES.md
+          git add package.json package-lock.json packages/smart-bookmark-mcp/package.json packages/smart-bookmark-mcp/package-lock.json
           git commit -m "chore(release): bump version to ${NEW_V}"
           git push -u origin "$BRANCH" --force
 
