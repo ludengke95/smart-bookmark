@@ -87,9 +87,9 @@ jobs:
         id: pr-step
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BOT_TOKEN: ${{ secrets.RELEASE_BOT_TOKEN }}
           NEW_V: ${{ steps.bump.outputs.new_version }}
         run: |
-          # 确保 release 标签存在（避免因仓库缺少标签导致创建 PR 失败）
           gh label create "release" --color "0E8A16" --description "Automated Release PR" --force || true
 
           cat << 'EOF' > pr_body.md
@@ -128,8 +128,9 @@ jobs:
           rm -f pr_body.md
           echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
 
-          # 登记为排队自动合并
-          gh pr merge "$PR_URL" --auto --squash || echo "Notice: Auto-merge could not be set automatically; continuing..."
+          # 登记为排队自动合并（优先使用 BOT_TOKEN，确保哪怕自动合并触发也能激活下游 release 监听）
+          MERGE_AUTH="${BOT_TOKEN:-$GH_TOKEN}"
+          GH_TOKEN="$MERGE_AUTH" gh pr merge "$PR_URL" --auto --squash || echo "Notice: Auto-merge could not be set automatically; continuing..."
 
       # 7. 使用专用 RELEASE_BOT_TOKEN 审批并合并 PR（满足分支保护并确保 push 触发下游 Release 流水线）
       - name: Approve & Merge Release PR
@@ -141,9 +142,19 @@ jobs:
           if [ -n "$BOT_TOKEN" ]; then
             echo "Approving PR via RELEASE_BOT_TOKEN to satisfy branch protection requirements..."
             GH_TOKEN="$BOT_TOKEN" gh pr review "$PR_URL" --approve --body "✅ Automated zero-trust audit passed. Release approved by configured release token." || echo "Warning: Auto-approve failed or already approved."
+            echo "Waiting for PR checks to settle..."
+            for i in $(seq 1 18); do
+              PENDING=$(gh pr view "$PR_URL" --json statusCheckRollup --jq '[.statusCheckRollup[]? | select(.status != "COMPLETED")] | length' 2>/dev/null || echo "0")
+              if [ "$PENDING" = "0" ]; then
+                echo "All checks completed."
+                break
+              fi
+              echo "Waiting for $PENDING check(s) to complete ($i/18)..."
+              sleep 10
+            done
 
             echo "Merging PR via RELEASE_BOT_TOKEN to trigger release workflow..."
-            GH_TOKEN="$BOT_TOKEN" gh pr merge "$PR_URL" --squash || echo "Notice: Merge failed or already merged via auto-merge."
+            GH_TOKEN="$BOT_TOKEN" gh pr merge "$PR_URL" --squash || echo "Notice: Direct merge failed or already merged via auto-merge."
           else
             echo "Notice: RELEASE_BOT_TOKEN not configured. PR will wait for manual reviewer approval."
           fi
