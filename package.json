@@ -12,7 +12,9 @@
     "compile": "wxt compile",
     "mcp": "node scripts/mcp-bridge.js",
     "release:notes": "conventional-changelog -p angular -r 1 -o RELEASE_NOTES.md",
-    "version:sync": "node scripts/sync-versions.mjs"
+    "version:sync": "node scripts/sync-versions.mjs",
+    "release:prepare": "node scripts/bump-version.mjs",
+    "release:verify": "node scripts/verify-release-pr.mjs"
   },
   "keywords": [],
   "author": "ludengke95 <ludengke95@gmail.com>",

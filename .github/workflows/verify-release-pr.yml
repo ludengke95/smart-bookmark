@@ -1,0 +1,59 @@
+name: Verify Release PR
+
+# 发版 PR 零信任安全审计与质量门禁流水线：
+# 1) 仅响应同源仓库（拒绝外部 Fork 冒名冒充）且分支为 release/v* 的 PR
+# 2) 运行 verify-release-pr.mjs 执行文件白名单与 package.json 语义深度比对
+# 3) 跑算法单元测试、子包测试与插件构建
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "package.json"
+      - "packages/smart-bookmark-mcp/package.json"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  verify:
+    name: Verify Release Integrity & Safety
+    # 核心安全锁：仅当前主仓库内部的 release/v* 分支放行，外部 Fork 哪怕同名也严禁触发
+    if: github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'release/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # 1. 运行零信任白名单与语义审计脚本
+      - name: Run Security & Integrity Audit
+        run: node scripts/verify-release-pr.mjs
+
+      # 2. 依赖安装与核心逻辑验证
+      - name: Verify Core Tests & Extension Build
+        run: |
+          npm ci
+          node test/verify-core.js
+          npm --prefix packages/smart-bookmark-mcp ci
+          npm --prefix packages/smart-bookmark-mcp test
+          npm run build
+
+      # 3. 审计与测试全部通过，登记审查意见
+      - name: Record Audit Approval
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr comment "$PR_URL" --body "✅ **零信任安全审计与质量门禁全部通过！**
+- 文件范围白名单：100% 合规（无任何业务代码变动）
+- 版本语义检查：仅 version 字段合法变更
+- 多包版本一致性：根包与 MCP 子包严格对齐
+- 核心寻径测试 & Chrome 扩展构建：全部通过" || true
