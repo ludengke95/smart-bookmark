@@ -493,8 +493,7 @@
       <span class="text-text-secondary font-medium flex-shrink-0">{t('mcp.step1Bridge')}</span>
       <div class="flex items-center gap-1.5 min-w-0 max-w-[75%]">
         <code
-          class="px-2 py-0.5 rounded bg-subtle text-accent font-mono text-[10px] border border-border-subtle truncate select-all cursor-pointer hover:border-accent/40 transition-colors"
-          onclick={copyBridgeCommand}
+          class="px-2 py-0.5 rounded bg-subtle text-accent font-mono text-[10px] border border-border-subtle truncate select-all"
           title={bridgeCommand}
         >
           {bridgeCommand}
