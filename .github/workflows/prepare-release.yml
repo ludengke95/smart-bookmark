@@ -131,8 +131,8 @@ jobs:
           # 登记为排队自动合并
           gh pr merge "$PR_URL" --auto --squash || echo "Notice: Auto-merge could not be set automatically; continuing..."
 
-      # 7. 使用专用 RELEASE_BOT_TOKEN 代签审批（满足 master 分支 protection 的 1 reviewing approval 规则）
-      - name: Auto-approve Release PR
+      # 7. 使用专用 RELEASE_BOT_TOKEN 审批并合并 PR（满足分支保护并确保 push 触发下游 Release 流水线）
+      - name: Approve & Merge Release PR
         if: steps.pr-step.outputs.pr_url != ''
         env:
           BOT_TOKEN: ${{ secrets.RELEASE_BOT_TOKEN }}
@@ -141,6 +141,9 @@ jobs:
           if [ -n "$BOT_TOKEN" ]; then
             echo "Approving PR via RELEASE_BOT_TOKEN to satisfy branch protection requirements..."
             GH_TOKEN="$BOT_TOKEN" gh pr review "$PR_URL" --approve --body "✅ Automated zero-trust audit passed. Release approved by configured release token." || echo "Warning: Auto-approve failed or already approved."
+
+            echo "Merging PR via RELEASE_BOT_TOKEN to trigger release workflow..."
+            GH_TOKEN="$BOT_TOKEN" gh pr merge "$PR_URL" --squash || echo "Notice: Merge failed or already merged via auto-merge."
           else
             echo "Notice: RELEASE_BOT_TOKEN not configured. PR will wait for manual reviewer approval."
           fi
