@@ -26,8 +26,7 @@ const ALLOWED_FILES = new Set([
   'package.json',
   'package-lock.json',
   'packages/smart-bookmark-mcp/package.json',
-  'packages/smart-bookmark-mcp/package-lock.json',
-  'RELEASE_NOTES.md'
+  'packages/smart-bookmark-mcp/package-lock.json'
 ]);
 
 function runGit(cmd) {
