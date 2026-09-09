@@ -52,8 +52,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
-          gh pr comment "$PR_URL" --body "✅ **零信任安全审计与质量门禁全部通过！**
-- 文件范围白名单：100% 合规（无任何业务代码变动）
-- 版本语义检查：仅 version 字段合法变更
-- 多包版本一致性：根包与 MCP 子包严格对齐
-- 核心寻径测试 & Chrome 扩展构建：全部通过" || true
+          cat << 'EOF' > audit_comment.md
+          ✅ **Zero-trust security audit and quality gates passed!**
+          - File whitelist: 100% compliant (no source code touched)
+          - Semantic check: only version field changed
+          - Lockstep versioning: root package and MCP sub-package in sync
+          - Core topology tests & Chrome extension build: passed
+          EOF
+
+          gh pr comment "$PR_URL" --body-file audit_comment.md || true
+          rm -f audit_comment.md
