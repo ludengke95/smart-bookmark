@@ -154,34 +154,37 @@
     if (host !== DEFAULT_MCP_WS_HOST) extraArgs.push('--host', host);
     if (port !== DEFAULT_MCP_WS_PORT) extraArgs.push('--port', String(port));
 
-    let snippet = '';
-
-    if (type === 'claude') {
-      snippet = JSON.stringify({
-        mcpServers: {
-          "smart-bookmark": {
-            command: "node",
-            args: ["scripts/mcp-bridge.js", ...extraArgs]
-          }
+    const snippet = JSON.stringify({
+      mcpServers: {
+        "smart-bookmark": {
+          command: "npx",
+          args: ["-y", "@ludengke95/smart-bookmark-mcp", "server", ...extraArgs]
         }
-      }, null, 2);
-    } else if (type === 'cursor') {
-      const cursorArgs = ["run", "mcp"];
-      if (extraArgs.length > 0) {
-        cursorArgs.push("--", ...extraArgs);
       }
-      snippet = JSON.stringify({
-        mcpServers: {
-          "smart-bookmark": {
-            command: "npm",
-            args: cursorArgs
-          }
-        }
-      }, null, 2);
-    }
+    }, null, 2);
 
     navigator.clipboard.writeText(snippet).then(() => {
       toast.show(t('mcp.copiedToast'));
+    }).catch(() => {
+      toast.show(t('mcp.copyFailedToast'));
+    });
+  }
+
+  const bridgeCommand = $derived.by(() => {
+    const host = appState.settings.mcp?.wsHost;
+    const port = appState.settings.mcp?.wsPort;
+    const hasCustomHost = host && host !== DEFAULT_MCP_WS_HOST;
+    const hasCustomPort = port && port !== DEFAULT_MCP_WS_PORT;
+    const base = 'npx -y @ludengke95/smart-bookmark-mcp server';
+    if (!hasCustomHost && !hasCustomPort) return base;
+    const hostArg = hasCustomHost ? ` --host ${host}` : '';
+    const portArg = hasCustomPort ? ` --port ${port}` : '';
+    return `${base}${hostArg}${portArg}`;
+  });
+
+  function copyBridgeCommand() {
+    navigator.clipboard.writeText(bridgeCommand).then(() => {
+      toast.show(t('common.copied'));
     }).catch(() => {
       toast.show(t('mcp.copyFailedToast'));
     });
@@ -486,13 +489,24 @@
 
   <!-- 启动指令与一键配置复制 -->
   <div class="space-y-2 pt-1">
-    <div class="flex items-center justify-between text-[11px]">
-      <span class="text-text-secondary font-medium">{t('mcp.step1Bridge')}</span>
-      <code class="px-2 py-0.5 rounded bg-subtle text-accent font-mono text-[10px] border border-border-subtle">
-        {(appState.settings.mcp?.wsHost && appState.settings.mcp?.wsHost !== DEFAULT_MCP_WS_HOST) || (appState.settings.mcp?.wsPort && appState.settings.mcp?.wsPort !== DEFAULT_MCP_WS_PORT)
-          ? `node scripts/mcp-bridge.js${appState.settings.mcp?.wsHost !== DEFAULT_MCP_WS_HOST ? ` --host ${appState.settings.mcp?.wsHost}` : ''}${appState.settings.mcp?.wsPort !== DEFAULT_MCP_WS_PORT ? ` --port ${appState.settings.mcp?.wsPort}` : ''}`
-          : 'npm run mcp'}
-      </code>
+    <div class="flex items-center justify-between text-[11px] gap-2">
+      <span class="text-text-secondary font-medium flex-shrink-0">{t('mcp.step1Bridge')}</span>
+      <div class="flex items-center gap-1.5 min-w-0 max-w-[75%]">
+        <code
+          class="px-2 py-0.5 rounded bg-subtle text-accent font-mono text-[10px] border border-border-subtle truncate select-all cursor-pointer hover:border-accent/40 transition-colors"
+          onclick={copyBridgeCommand}
+          title={bridgeCommand}
+        >
+          {bridgeCommand}
+        </code>
+        <button
+          type="button"
+          onclick={copyBridgeCommand}
+          class="px-2 py-0.5 rounded bg-subtle hover:bg-surface border border-border-subtle text-text-secondary hover:text-text-primary text-[10px] transition-colors flex-shrink-0"
+        >
+          {t('common.copy')}
+        </button>
+      </div>
     </div>
 
     <div class="flex items-center justify-between text-[11px]">

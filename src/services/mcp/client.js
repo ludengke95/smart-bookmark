@@ -126,7 +126,7 @@ class McpClient {
       };
 
       this.socket.onerror = (err) => {
-        this.lastError = `未能连接到 MCP 桥接服务 (${wsUrl})。请确保已执行 "npm run mcp"。`;
+        this.lastError = `未能连接到 MCP 桥接服务 (${wsUrl})。请确保已执行 "npx -y @ludengke95/smart-bookmark-mcp server"。`;
         this.isConnected = false;
         this.isConnecting = false;
         this.closeMcpServer();
