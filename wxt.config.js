@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { defineConfig } from 'wxt';
@@ -9,6 +9,34 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const { version } = JSON.parse(
   readFileSync(join(__dirname, 'package.json'), 'utf-8')
 );
+
+// 针对不同浏览器的扩展描述文本动态替换（如 Edge 商店严禁出现 Chrome 关键词）
+const BROWSER_LOCALE_REPLACEMENTS = {
+  edge: {
+    zh_CN: [
+      [/Chrome 插件/g, 'Edge 扩展'],
+      [/Chrome 扩展/g, 'Edge 扩展'],
+      [/Chrome/g, 'Edge'],
+    ],
+    en: [
+      [/Chrome extension/g, 'Edge extension'],
+      [/Chrome Extension/g, 'Edge Extension'],
+      [/Chrome/g, 'Edge'],
+    ]
+  },
+  firefox: {
+    zh_CN: [
+      [/Chrome 插件/g, 'Firefox 扩展'],
+      [/Chrome 扩展/g, 'Firefox 扩展'],
+      [/Chrome/g, 'Firefox'],
+    ],
+    en: [
+      [/Chrome extension/g, 'Firefox extension'],
+      [/Chrome Extension/g, 'Firefox Extension'],
+      [/Chrome/g, 'Firefox'],
+    ]
+  }
+};
 
 export default defineConfig({
   srcDir: 'src',
@@ -32,6 +60,9 @@ export default defineConfig({
       'tabs',
       'alarms'
     ],
+    chrome_url_overrides: {
+      newtab: 'home.html'
+    },
     host_permissions: [
       '<all_urls>'
     ],
@@ -40,6 +71,27 @@ export default defineConfig({
       32: '/icons/icon32.png',
       48: '/icons/icon48.png',
       128: '/icons/icon128.png'
+    }
+  },
+  hooks: {
+    'build:done': (wxt) => {
+      const browser = wxt.config.browser;
+      const replacements = BROWSER_LOCALE_REPLACEMENTS[browser];
+      if (!replacements) return;
+
+      const localesDir = join(wxt.config.outDir, '_locales');
+      if (!existsSync(localesDir)) return;
+
+      for (const [locale, rules] of Object.entries(replacements)) {
+        const messagesPath = join(localesDir, locale, 'messages.json');
+        if (!existsSync(messagesPath)) continue;
+
+        let content = readFileSync(messagesPath, 'utf-8');
+        for (const [pattern, replacement] of rules) {
+          content = content.replace(pattern, replacement);
+        }
+        writeFileSync(messagesPath, content, 'utf-8');
+      }
     }
   }
 });

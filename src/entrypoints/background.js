@@ -68,49 +68,6 @@ export default defineBackground(() => {
     }
   });
 
-  const HOME_PAGE_PATH = '/home.html';
-
-  function isNewTabPage(url) {
-    if (!url) return false;
-    return (
-      url === 'chrome://newtab/' ||
-      url === 'chrome://newtab' ||
-      url.startsWith('chrome-search://local-ntp') ||
-      url === 'edge://newtab/' ||
-      url === 'edge://newtab' ||
-      url === 'about:home'
-    );
-  }
-
-  function redirectToHome(tabId) {
-    try {
-      const targetUrl = chrome.runtime.getURL(HOME_PAGE_PATH);
-      chrome.tabs.update(tabId, { url: targetUrl }).catch(() => {});
-    } catch (e) {
-      console.warn('[Background] 重定向到主页失败:', e);
-    }
-  }
-
-  // 1. 监听新标签页创建事件（用户点击 + 或按快捷键 Ctrl+T）
-  chrome.tabs.onCreated?.addListener((tab) => {
-    if (tab && tab.id) {
-      if (isNewTabPage(tab.pendingUrl) || isNewTabPage(tab.url)) {
-        redirectToHome(tab.id);
-      }
-    }
-  });
-
-  // 2. 监听标签页更新（应对某些情况下 pendingUrl 延迟或手动导航到 chrome://newtab 的场景）
-  chrome.tabs.onUpdated?.addListener((tabId, changeInfo, tab) => {
-    const homeUrl = chrome.runtime.getURL(HOME_PAGE_PATH);
-    if (tab?.url?.startsWith(homeUrl) || changeInfo?.url?.startsWith(homeUrl)) {
-      return;
-    }
-    if (isNewTabPage(changeInfo.url) || isNewTabPage(changeInfo.pendingUrl)) {
-      redirectToHome(tabId);
-    }
-  });
-
   // 安装或更新时的初始化
   chrome.runtime.onInstalled?.addListener((details) => {
     if (details.reason === 'install') {
