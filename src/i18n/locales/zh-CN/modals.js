@@ -251,6 +251,7 @@ export default {
     confirmImport: '确认导入',
     requestPermission: '授权读取浏览器书签',
     permissionDenied: '未授予书签读取权限，无法直接读取',
+    permissionDeniedSwitchedToFile: '未授予书签读取权限，已为您切换至文件导入',
     browserNotSupported: '当前运行环境不支持读取浏览器书签',
     permissionHint: '点击下方按钮授权扩展读取浏览器书签，授权后即可直接导入。书签仅在本地读取与解析，绝不会上传。',
     chromePermissionError: '当前环境未启用浏览器书签权限',

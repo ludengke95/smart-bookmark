@@ -251,6 +251,7 @@ export default {
     confirmImport: 'Confirm Import',
     requestPermission: 'Grant Bookmarks Permission',
     permissionDenied: 'Bookmarks permission not granted',
+    permissionDeniedSwitchedToFile: 'Bookmarks permission not granted. Switched to HTML file import',
     browserNotSupported: 'Reading browser bookmarks is not supported in this environment',
     permissionHint: 'Click below to authorize the extension to read your browser bookmarks. Bookmarks are processed locally and never uploaded.',
     chromePermissionError: 'Browser bookmarks permission is not enabled in this environment',

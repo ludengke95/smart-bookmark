@@ -81,23 +81,38 @@
     }
   }
 
-  async function requestBookmarksPermission() {
+  /**
+   * 申请书签读取权限并按需降级
+   * @param {boolean} isInitialOpen 是否为弹窗打开时的初次静默触发
+   */
+  async function requestBookmarksPermission(isInitialOpen = false) {
     if (typeof chrome === 'undefined' || !chrome.permissions?.request) {
+      hasBookmarksPermission = false;
+      activeTab = 'file';
       toast.show(t('import.browserNotSupported'));
-      return;
+      return false;
     }
+
     isRequestingPermission = true;
     try {
       const granted = await chrome.permissions.request({ permissions: ['bookmarks'] });
       if (granted) {
         hasBookmarksPermission = true;
+        activeTab = 'chrome';
         await scanChromeBookmarks();
+        return true;
       } else {
-        toast.show(t('import.permissionDenied'));
+        hasBookmarksPermission = false;
+        activeTab = 'file';
+        toast.show(t('import.permissionDeniedSwitchedToFile'));
+        return false;
       }
     } catch (e) {
       console.error('申请书签权限失败:', e);
-      toast.show(t('import.permissionDenied'));
+      hasBookmarksPermission = false;
+      activeTab = 'file';
+      toast.show(t('import.permissionDeniedSwitchedToFile'));
+      return false;
     } finally {
       isRequestingPermission = false;
     }
@@ -107,10 +122,13 @@
     if (open) {
       resetState();
       activeTab = 'chrome';
-      checkBookmarksPermission().then((granted) => {
+      checkBookmarksPermission().then(async (granted) => {
         hasBookmarksPermission = granted;
         if (granted) {
           scanChromeBookmarks();
+        } else {
+          // 打开弹窗时自动静默唤起权限申请
+          await requestBookmarksPermission(true);
         }
       });
     }
@@ -456,10 +474,12 @@
         <div class="grid grid-cols-2 gap-1 bg-subtle p-1 rounded-lg text-xs flex-shrink-0">
           <button
             type="button"
-            onclick={() => {
+            onclick={async () => {
               activeTab = 'chrome';
               if (hasBookmarksPermission) {
                 scanChromeBookmarks();
+              } else {
+                await requestBookmarksPermission();
               }
             }}
             class="py-1.5 px-3 rounded-md transition-all font-medium text-center {activeTab === 'chrome'
