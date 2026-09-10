@@ -238,14 +238,17 @@ class AppState {
 
     this.isLoaded = true;
 
-    // 订阅 MCP 状态并按需尝试连接 (默认关闭，仅在用户开启时连接)
+    // 订阅 MCP 状态并同步 Background SW 状态
     mcpClient.subscribe((status) => {
       this.mcpStatus = status;
     });
-    if (this.settings.mcp?.enabled === true) {
-      mcpClient.connect(this.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST, this.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT);
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({ action: 'getMcpStatus' }, (res) => {
+        if (res && chrome.runtime.lastError == null) {
+          this.mcpStatus = res;
+        }
+      });
     }
-
     // 智能连通性探测 (若命中 15 分钟内的有效缓存且有数据则跳过，避免重复 Ping 消耗网络资源)
     const isCacheFresh = cache.timestamp && (Date.now() - cache.timestamp < PROBE_CACHE_TTL_MS);
     const hasCachedResults = cache.results && Object.keys(cache.results).length > 0;
@@ -279,6 +282,11 @@ class AppState {
           case 'STATS_CHANGED':
             this.clickStats = await getClickStats('30d');
             this.detailedStats = await getDetailedStats();
+            break;
+          case 'MCP_STATUS_CHANGED':
+            if (event.data) {
+              this.mcpStatus = event.data;
+            }
             break;
           case 'SNAPSHOTS_CHANGED':
             this.snapshots = await getSnapshots();
@@ -712,10 +720,16 @@ class AppState {
   reconnectMcp(host, port) {
     const targetHost = host || this.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST;
     const targetPort = port || this.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT;
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({ action: 'reconnectMcp', port: targetPort });
+    }
     mcpClient.connect(targetHost, targetPort);
   }
 
   disconnectMcp() {
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({ action: 'disconnectMcp' });
+    }
     mcpClient.disconnect();
   }
 }

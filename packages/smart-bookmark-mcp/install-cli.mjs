@@ -547,6 +547,7 @@ export async function runInstaller() {
   installClients(lang, idxs, scope, lan, console);
   p.outro(t.done);
 }
+export { runInstaller as runInteractiveInstaller };
 
 // Allow running this file directly (`node ./install-cli.mjs` / `npm run install-cli`)
 // as the wizard entry point. When imported by mcp-bridge.js for the `install`

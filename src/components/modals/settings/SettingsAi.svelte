@@ -146,7 +146,19 @@
     }
   }
 
-  // 复制 MCP 配置片段
+  // 复制 HTTP 端点
+  function copyHttpEndpoint() {
+    const host = appState.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST;
+    const port = appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT;
+    const endpoint = `http://${host}:${port}/mcp`;
+    navigator.clipboard.writeText(endpoint).then(() => {
+      toast.show(t('mcp.copiedHttpToast'));
+    }).catch(() => {
+      toast.show(t('mcp.copyFailedToast'));
+    });
+  }
+
+  // 复制 Stdio 配置片段
   function copyConfig(type) {
     const host = appState.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST;
     const port = appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT;
@@ -158,7 +170,7 @@
       mcpServers: {
         "smart-bookmark": {
           command: "npx",
-          args: ["-y", "@ludengke95/smart-bookmark-mcp", "server", ...extraArgs]
+          args: ["-y", "@ludengke95/smart-bookmark-mcp", "stdio", ...extraArgs]
         }
       }
     }, null, 2);
@@ -170,20 +182,10 @@
     });
   }
 
-  const bridgeCommand = $derived.by(() => {
-    const host = appState.settings.mcp?.wsHost;
-    const port = appState.settings.mcp?.wsPort;
-    const hasCustomHost = host && host !== DEFAULT_MCP_WS_HOST;
-    const hasCustomPort = port && port !== DEFAULT_MCP_WS_PORT;
-    const base = 'npx -y @ludengke95/smart-bookmark-mcp server';
-    if (!hasCustomHost && !hasCustomPort) return base;
-    const hostArg = hasCustomHost ? ` --host ${host}` : '';
-    const portArg = hasCustomPort ? ` --port ${port}` : '';
-    return `${base}${hostArg}${portArg}`;
-  });
+  const registerCommand = 'npx -y @ludengke95/smart-bookmark-mcp register';
 
-  function copyBridgeCommand() {
-    navigator.clipboard.writeText(bridgeCommand).then(() => {
+  function copyRegisterCommand() {
+    navigator.clipboard.writeText(registerCommand).then(() => {
       toast.show(t('common.copied'));
     }).catch(() => {
       toast.show(t('mcp.copyFailedToast'));
@@ -453,28 +455,20 @@
     {t('mcp.desc')}
   </p>
 
-  <!-- 状态与主机/端口设置 -->
+  <!-- 状态与端口设置 -->
   <div class="p-2.5 rounded-lg bg-subtle/70 border border-border-subtle/60 flex items-center justify-between gap-2">
     <div class="flex items-center gap-2 min-w-0">
-      <span class="w-2 h-2 rounded-full flex-shrink-0 {appState.mcpStatus.isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-status-danger'}"></span>
+      <span class="w-2 h-2 rounded-full flex-shrink-0 {appState.mcpStatus.isConnected ? 'bg-emerald-500 animate-pulse' : (appState.settings.mcp?.enabled ? 'bg-amber-500' : 'bg-status-danger')}"></span>
       <span class="font-medium text-text-primary text-[11px] truncate">
         {appState.mcpStatus.isConnected
-          ? t('mcp.connected', { url: `ws://${appState.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST}:${appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT}` })
-          : t('mcp.offline')}
+          ? t('mcp.nativeActive', { url: `http://${appState.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST}:${appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT}/mcp` })
+          : (appState.mcpStatus.lastError
+              ? t('mcp.nativeUnregistered')
+              : t('mcp.offline'))}
       </span>
     </div>
 
     <div class="flex items-center gap-2 text-[11px] flex-shrink-0">
-      <div class="flex items-center gap-1">
-        <span class="text-[10px] text-text-tertiary">{t('mcp.hostLabel')}</span>
-        <input
-          type="text"
-          value={appState.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST}
-          onchange={(e) => updateMcpSettings({ wsHost: e.target.value.trim() || DEFAULT_MCP_WS_HOST })}
-          placeholder={DEFAULT_MCP_WS_HOST}
-          class="w-24 px-1.5 py-0.5 rounded bg-surface border border-border-subtle text-[11px] text-text-primary font-mono outline-none"
-        />
-      </div>
       <div class="flex items-center gap-1">
         <span class="text-[10px] text-text-tertiary">{t('mcp.portLabel')}</span>
         <input
@@ -494,13 +488,13 @@
       <div class="flex items-center gap-1.5 min-w-0 max-w-[75%]">
         <code
           class="px-2 py-0.5 rounded bg-subtle text-accent font-mono text-[10px] border border-border-subtle truncate select-all"
-          title={bridgeCommand}
+          title={registerCommand}
         >
-          {bridgeCommand}
+          {registerCommand}
         </code>
         <button
           type="button"
-          onclick={copyBridgeCommand}
+          onclick={copyRegisterCommand}
           class="px-2 py-0.5 rounded bg-subtle hover:bg-surface border border-border-subtle text-text-secondary hover:text-text-primary text-[10px] transition-colors flex-shrink-0"
         >
           {t('common.copy')}
@@ -508,22 +502,22 @@
       </div>
     </div>
 
-    <div class="flex items-center justify-between text-[11px]">
+    <div class="flex items-center justify-between text-[11px] pt-1">
       <span class="text-text-secondary font-medium">{t('mcp.step2Config')}</span>
       <div class="flex items-center gap-2">
         <button
           type="button"
-          onclick={() => copyConfig('cursor')}
-          class="px-2 py-1 rounded bg-subtle hover:bg-surface border border-border-subtle text-text-secondary hover:text-text-primary text-[10px] transition-colors"
+          onclick={copyHttpEndpoint}
+          class="px-2 py-1 rounded bg-accent/10 hover:bg-accent/20 border border-accent/30 text-accent font-medium text-[10px] transition-colors"
         >
-          {t('mcp.copyCursor')}
+          {t('mcp.copyHttp')}
         </button>
         <button
           type="button"
-          onclick={() => copyConfig('claude')}
+          onclick={() => copyConfig('stdio')}
           class="px-2 py-1 rounded bg-subtle hover:bg-surface border border-border-subtle text-text-secondary hover:text-text-primary text-[10px] transition-colors"
         >
-          {t('mcp.copyClaude')}
+          {t('mcp.copyCursor')}
         </button>
       </div>
     </div>

@@ -20,6 +20,7 @@
     "zip:all": "wxt zip -b chrome && wxt zip -b edge",
     "compile": "wxt compile",
     "mcp": "node scripts/mcp-bridge.js",
+    "mcp:register": "node packages/smart-bookmark-mcp/bin/smart-bookmark-mcp.js register",
     "release:notes": "node scripts/generate-release-notes.mjs",
     "version:sync": "node scripts/sync-versions.mjs",
     "release:prepare": "node scripts/bump-version.mjs",

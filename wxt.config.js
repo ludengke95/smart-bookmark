@@ -45,34 +45,48 @@ export default defineConfig({
     // Release 附件的插件包命名：smart-bookmark-v<根包版本>-<浏览器>.zip
     artifactTemplate: '{{name}}-v{{packageVersion}}-{{browser}}.zip',
   },
-  manifest: {
-    default_locale: 'zh_CN',
-    name: '__MSG_extName__',
-    description: '__MSG_extDescription__',
-    action: {
-      default_title: '__MSG_actionTitle__'
-    },
-    version,
-    permissions: [
+  manifest: ({ browser }) => {
+    const isChromium = browser !== 'firefox';
+    const permissions = [
       'unlimitedStorage',
       'activeTab',
-      'alarms'
-    ],
-    optional_permissions: [
-      'bookmarks'
-    ],
-    chrome_url_overrides: {
-      newtab: 'home.html'
-    },
-    host_permissions: [
-      '<all_urls>'
-    ],
-    icons: {
-      16: '/icons/icon16.png',
-      32: '/icons/icon32.png',
-      48: '/icons/icon48.png',
-      128: '/icons/icon128.png'
+      'alarms',
+      'nativeMessaging',
+      ...(isChromium ? ['offscreen'] : [])
+    ];
+
+    const baseManifest = {
+      default_locale: 'zh_CN',
+      name: '__MSG_extName__',
+      description: '__MSG_extDescription__',
+      action: {
+        default_title: '__MSG_actionTitle__'
+      },
+      version,
+      permissions,
+      optional_permissions: [
+        'bookmarks'
+      ],
+      chrome_url_overrides: {
+        newtab: 'home.html'
+      },
+      host_permissions: [
+        '<all_urls>'
+      ],
+      icons: {
+        16: '/icons/icon16.png',
+        32: '/icons/icon32.png',
+        48: '/icons/icon48.png',
+        128: '/icons/icon128.png'
+      }
+    };
+
+    if (isChromium) {
+      // 固定 Chrome/Edge 未打包扩展的 Extension ID (gobioihpdadhghfbefcnobinbfadmpli)，便于本地 Native Messaging 注册
+      baseManifest.key = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzBbOV16TQ7wXCOxHyDPZUFzNp7hdTQ7zZ0reIp3JsoBypufMvkl3qm7YM/TMAAjkF2CMyrKBH2xLxts6BAC7TOEidVWnMfwcAWJ9s7psJ5QVtYfYuQMv11lmQyPLaFDGSegQK6hLjjFj2I22/qoAPUw/RVnfCHHSeLtNcCYxXq9M3nKqTyvYGyIL43muvDecaFrnW+OhZxFo75ik59zmTcUeOcDxshQW2gkXbheueiXwRYOVxgXVsUr2e/dWPPz3kDLRjni9QHoKW3FhRrA1CKPQjjrLni72wcByFzZ7nB6ZEtwz7IHJHnOCdAnP6W+IJzSZXpJtzwJq4jIpSoIsVwIDAQAB';
     }
+
+    return baseManifest;
   },
   hooks: {
     'build:done': (wxt) => {
