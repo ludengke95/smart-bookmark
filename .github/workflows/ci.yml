@@ -1,21 +1,38 @@
 name: CI
 
-# 监控 smart-bookmark-mcp 子包的改动，在 push / PR 到 master 时跑单元测试。
-# 子包自带 package-lock.json，使用 npm ci 保证可复现。
+# 持续集成与质量门禁：
+# 1) Chrome 扩展与核心算法：在 PR / push(master) 时运行核心网络寻径算法测试与生产构建
+# 2) smart-bookmark-mcp 子包：在 PR / push(master) 时运行 MCP 协议与桥接服务单元测试
+# 全量覆盖所有 PR，杜绝路径过滤器导致的 Required Checks 悬空卡死问题
 on:
   push:
     branches: [master]
-    paths:
-      - "packages/smart-bookmark-mcp/**"
-      - ".github/workflows/ci.yml"
   pull_request:
     branches: [master]
-    paths:
-      - "packages/smart-bookmark-mcp/**"
-      - ".github/workflows/ci.yml"
 
 jobs:
-  test:
+  extension:
+    name: Verify core & build extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run core topology algorithm tests
+        run: node test/verify-core.js
+
+      - name: Build Chrome extension
+        run: npm run build
+
+  mcp:
     name: Test smart-bookmark-mcp
     runs-on: ubuntu-latest
     defaults:

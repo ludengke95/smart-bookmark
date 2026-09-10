@@ -1,23 +1,33 @@
 name: Create Release
 
-# 推送以 v 开头的标签（如 v1.0.0）时，构建扩展与 mcp 包并创建 GitHub Release。
+# 发布与打包流水线：
+# 1) 响应 master 分支上合并的发版提交 (chore(release):)，自动打 Tag 并建 Release
+# 2) 亦兼容手动推送以 v 开头的标签（如 v1.0.1）
 # Release 附带三类产物：
-#   1) 源码包 —— GitHub 自动生成的 Source code (zip / tar.gz)，无需额外步骤
+#   1) 源码包 —— GitHub 自动生成的 Source code (zip / tar.gz)
 #   2) 插件包 —— `wxt zip` 构建并打包的 Chrome 扩展 zip（.output/smart-bookmark-v<version>-chrome.zip）
 #   3) mcp 包  —— 子包 `npm pack` 产出的 npm tarball（packages/smart-bookmark-mcp/*.tgz）
-# 创建的 Release 会触发 publish.yml 的 release: types:[published] → 自动 npm publish，
-# 形成「打 v 标签 → 建 Release(三类产物) → 发 npm」的完整自动化链。
+# 完成后将级联触发 publish.yml 自动发布到 npm。
 on:
   push:
     tags:
       - "v*"
-
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      force_tag:
+        description: "强制指定发布 Tag（例如 v1.0.1，留空则自动从 package.json 读取）"
+        required: false
+        default: ""
 permissions:
-  contents: write # softprops/action-gh-release 需要写权限来创建 Release
+  contents: write # 需要写权限来打 Tag 和创建 Release
 
 jobs:
   release:
     name: Build and create release
+    # 闸门过滤：手动触发、推送 v* 标签、或 master 上合并了 chore(release): 发版提交时执行
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') || startsWith(github.event.head_commit.message, 'chore(release):') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 代码
@@ -33,24 +43,36 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
-      # 0) 同步子包版本到根包，并校验 tag 版本一致性（策略 A 兜底）
-      #    - 子包 version 由脚本同步为根包 version（lockstep）
-      #    - 断言：打出的 tag 版本 == 根包 version == 子包 version
-      - name: Sync & verify versions
+      # 0) 同步并确定版本号；若在 master 分支且未打 Tag，则自动创建并推送 Tag
+      - name: Sync & resolve release tag
+        id: tag-step
         run: |
           node scripts/sync-versions.mjs
-          TAG_V="${GITHUB_REF_NAME#v}"
           ROOT_V=$(node -p "require('./package.json').version")
           SUB_V=$(node -p "require('./packages/smart-bookmark-mcp/package.json').version")
-          echo "tag=$TAG_V root=$ROOT_V sub=$SUB_V"
-          if [ "$TAG_V" != "$ROOT_V" ]; then
-            echo "::error::tag version ($TAG_V) does not match root package version ($ROOT_V)"
-            exit 1
-          fi
+
           if [ "$ROOT_V" != "$SUB_V" ]; then
             echo "::error::root package version ($ROOT_V) does not match sub-package version ($SUB_V)"
             exit 1
           fi
+
+          INPUT_TAG="${{ inputs.force_tag }}"
+          TARGET_TAG="${INPUT_TAG:-v${ROOT_V}}"
+          echo "Target tag: $TARGET_TAG"
+          # 若当前处于 master 分支，检查远程是否已存在该 tag
+          if [ "${{ startsWith(github.ref, 'refs/tags/v') }}" != "true" ]; then
+            if git rev-parse -q --verify "refs/tags/$TARGET_TAG" >/dev/null; then
+              echo "Tag $TARGET_TAG already exists."
+            else
+              echo "Creating and pushing tag $TARGET_TAG..."
+              git config user.name "github-actions[bot]"
+              git config user.email "github-actions[bot]@users.noreply.github.com"
+              git tag "$TARGET_TAG"
+              git push origin "$TARGET_TAG"
+            fi
+          fi
+
+          echo "RELEASE_TAG=$TARGET_TAG" >> "$GITHUB_ENV"
 
       # 1) 插件包：安装根依赖并构建 + 打包 Chrome 扩展
       - name: Install root dependencies
@@ -66,18 +88,19 @@ jobs:
           npm ci
           npm pack
 
-      # 3) 由 Conventional Commits 自动生成 Release 正文
-      - name: Generate release notes（conventional-changelog）
+      # 3) 由 Conventional Commits 与 GitHub PR 自动生成分类 Release 正文 (Closes #15)
+      - name: Generate release notes
         run: npm run release:notes
-
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # 4) 创建 Release，附插件包 + mcp 包 + 自动生成的变更日志正文
-      #    （源码包由 GitHub 自动附带）
       - name: 创建 Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.RELEASE_TAG }}
           files: |
             .output/*.zip
             packages/smart-bookmark-mcp/*.tgz
-          body_path: RELEASE_NOTES.md # 由 conventional-changelog 生成，替代默认自动说明
+          body_path: RELEASE_NOTES.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

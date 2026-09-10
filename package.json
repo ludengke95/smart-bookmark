@@ -1,6 +1,6 @@
 {
   "name": "smart-bookmark",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "private": true,
   "description": "> 基于客户端网络拓扑智能寻径的多入口 Chrome 扩展（Manifest V3）。解决同一个应用内网/外网入口不同，每次都需要手动判断该点哪个地址的问题。",
   "type": "module",
@@ -11,8 +11,10 @@
     "zip": "wxt zip",
     "compile": "wxt compile",
     "mcp": "node scripts/mcp-bridge.js",
-    "release:notes": "conventional-changelog -p angular -r 1 -o RELEASE_NOTES.md",
-    "version:sync": "node scripts/sync-versions.mjs"
+    "release:notes": "node scripts/generate-release-notes.mjs",
+    "version:sync": "node scripts/sync-versions.mjs",
+    "release:prepare": "node scripts/bump-version.mjs",
+    "release:verify": "node scripts/verify-release-pr.mjs"
   },
   "keywords": [],
   "author": "ludengke95 <ludengke95@gmail.com>",
