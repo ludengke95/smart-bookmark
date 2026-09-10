@@ -152,6 +152,35 @@ function categorizeWhatsChanged(markdown) {
 }
 
 /**
+ * 校验指定 git 引用（Tag、Commit 或分支）是否存在
+ */
+function isValidGitRef(ref) {
+  if (!ref) return false;
+  try {
+    execSync(`git rev-parse --verify "${ref}^{commit}"`, { stdio: 'ignore', cwd: root });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 解析 Git 比较范围：若终点 tag 尚未打上，自动使用 HEAD 比对
+ */
+function resolveGitRange(fromTag, toTag) {
+  const isFromValid = isValidGitRef(fromTag);
+  const isToValid = isValidGitRef(toTag);
+
+  const startRef = isFromValid ? fromTag : '';
+  const endRef = isToValid ? toTag : 'HEAD';
+
+  if (startRef) {
+    return { range: `${startRef}..${endRef}`, startRef, endRef };
+  }
+  return { range: endRef, startRef: '', endRef };
+}
+
+/**
  * 方案 A：尝试使用 GitHub API 生成准确的 Release Notes（含 PR 作者、链接与贡献者）
  */
 function tryGenerateViaGitHubApi() {
@@ -160,7 +189,9 @@ function tryGenerateViaGitHubApi() {
     const cmd = `gh api repos/${owner}/${repo}/releases/generate-notes -f tag_name=${currentTag} ${prevParam} --jq .body`;
     const raw = execSync(cmd, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'], cwd: root }).trim();
     if (raw && !raw.startsWith('## Unreleased')) {
-      return categorizeWhatsChanged(raw);
+      const categorized = categorizeWhatsChanged(raw);
+      // 若 GitHub API 生成的条目过少（例如存在直接 push 的提交如 closes #15 未走 PR），与本地提交对比补充
+      return mergeWithGitLog(categorized);
     }
   } catch {
     // gh cli 不可用或网络异常时自动降级
@@ -169,10 +200,105 @@ function tryGenerateViaGitHubApi() {
 }
 
 /**
+ * 将 GitHub API 产出与本地 Git 提交分析融合，确保不遗漏非 PR 提交 (如直接合入的修复与关闭的 issue)
+ */
+function mergeWithGitLog(apiNotes) {
+  const localNotes = generateViaGitLog();
+  if (!apiNotes) return localNotes;
+  if (!localNotes) return apiNotes;
+
+  // 提取本地提交中未在 API PR 标题中出现的条目
+  const { range } = resolveGitRange(previousTag, currentTag);
+  let localLines = [];
+  try {
+    const raw = execSync(`git log ${range} --format="%H|%s|%an"`, { encoding: 'utf-8', cwd: root }).trim();
+    if (raw) localLines = raw.split('\n').filter(Boolean);
+  } catch {
+    return apiNotes;
+  }
+
+  // 找出没有附带 (#PR_ID) 的纯 Git 提交（例如直接 commit 到 master 的 bugfix）
+  const directCommits = [];
+  for (const line of localLines) {
+    const parts = line.split('|');
+    if (parts.length < 3) continue;
+    const [hash, subject, author] = parts;
+    if (!/\(#\d+\)/.test(subject)) {
+      directCommits.push({ hash, subject, author });
+    }
+  }
+
+  if (directCommits.length === 0) {
+    return apiNotes;
+  }
+
+  // 将 directCommits 归类并追加到 apiNotes
+  const extraBugfixes = [];
+  const extraFeatures = [];
+  const extraMaintenance = [];
+
+  for (const { hash, subject, author } of directCommits) {
+    const shortHash = hash.slice(0, 7);
+    const linkedSubject = subject.replace(/#(\d+)/g, `[#$1](https://github.com/${owner}/${repo}/issues/$1)`);
+    const item = `* ${linkedSubject} ([${shortHash}](https://github.com/${owner}/${repo}/commit/${shortHash})) by @${author}`;
+
+    if (/^(?:feat|feature)(?:\(.*?\)|[\s:])?/i.test(subject)) {
+      extraFeatures.push(item);
+    } else if (/^(?:fix|bugfix)(?:\(.*?\)|[\s:])?/i.test(subject)) {
+      extraBugfixes.push(item);
+    } else {
+      extraMaintenance.push(item);
+    }
+  }
+
+  let merged = apiNotes;
+  if (extraBugfixes.length > 0) {
+    if (merged.includes('## 🐛 Bug Fixes / 错误修复')) {
+      merged = merged.replace('## 🐛 Bug Fixes / 错误修复', `## 🐛 Bug Fixes / 错误修复\n${extraBugfixes.join('\n')}`);
+    } else {
+      // 插入到 Features 之后或开头
+      if (merged.includes('## 🚀 Features / 新增功能')) {
+        const parts = merged.split('## 🚀 Features / 新增功能');
+        const afterFeat = parts[1];
+        // 找到下一个二级标题或结尾
+        const nextHeaderIdx = afterFeat.search(/\n## /);
+        if (nextHeaderIdx !== -1) {
+          const featSection = afterFeat.slice(0, nextHeaderIdx);
+          const rest = afterFeat.slice(nextHeaderIdx);
+          merged = parts[0] + '## 🚀 Features / 新增功能' + featSection + `\n\n## 🐛 Bug Fixes / 错误修复\n${extraBugfixes.join('\n')}` + rest;
+        } else {
+          merged += `\n\n## 🐛 Bug Fixes / 错误修复\n${extraBugfixes.join('\n')}`;
+        }
+      } else {
+        merged = `## 🐛 Bug Fixes / 错误修复\n${extraBugfixes.join('\n')}\n\n` + merged;
+      }
+    }
+  }
+
+  if (extraFeatures.length > 0) {
+    if (merged.includes('## 🚀 Features / 新增功能')) {
+      merged = merged.replace('## 🚀 Features / 新增功能', `## 🚀 Features / 新增功能\n${extraFeatures.join('\n')}`);
+    } else {
+      merged = `## 🚀 Features / 新增功能\n${extraFeatures.join('\n')}\n\n` + merged;
+    }
+  }
+
+  if (extraMaintenance.length > 0) {
+    if (merged.includes('## 🛠️ Maintenance & Improvements / 工程与维护')) {
+      merged = merged.replace('## 🛠️ Maintenance & Improvements / 工程与维护', `## 🛠️ Maintenance & Improvements / 工程与维护\n${extraMaintenance.join('\n')}`);
+    } else {
+      merged += `\n\n## 🛠️ Maintenance & Improvements / 工程与维护\n${extraMaintenance.join('\n')}`;
+    }
+  }
+
+  return merged;
+}
+
+/**
  * 方案 B：本地 Git 提交解析兜底
  */
 function generateViaGitLog() {
-  const range = previousTag ? `${previousTag}..${currentTag}` : currentTag;
+  const { range, startRef, endRef } = resolveGitRange(previousTag, currentTag);
   let commitLines = [];
 
   try {
@@ -182,6 +308,13 @@ function generateViaGitLog() {
     }
   } catch (err) {
     console.warn(`[generate-release-notes] 读取 git log ${range} 异常:`, err.message);
+    // 二次容灾：若指定区间失败，尝试最近 10 条提交兜底
+    try {
+      const fallbackRaw = execSync('git log -n 10 --format="%H|%s|%an"', { encoding: 'utf-8', cwd: root }).trim();
+      if (fallbackRaw) {
+        commitLines = fallbackRaw.split('\n').filter(Boolean);
+      }
+    } catch {}
   }
 
   const categories = {
@@ -196,7 +329,10 @@ function generateViaGitLog() {
     if (parts.length < 3) continue;
     const [hash, subject, author] = parts;
     const shortHash = hash.slice(0, 7);
-    const item = `* ${subject} ([${shortHash}](https://github.com/${owner}/${repo}/commit/${shortHash})) by @${author}`;
+    // 将 (closes #15) 或 (#24) 转为 GitHub 链接
+    const linkedSubject = subject
+      .replace(/#(\d+)/g, `[#$1](https://github.com/${owner}/${repo}/issues/$1)`);
+    const item = `* ${linkedSubject} ([${shortHash}](https://github.com/${owner}/${repo}/commit/${shortHash})) by @${author}`;
 
     if (/^(?:feat|feature)(?:\(.*?\)|\b)?:/i.test(subject)) {
       categories.features.items.push(item);
