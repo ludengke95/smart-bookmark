@@ -8,8 +8,8 @@ export default {
       general: '常规偏好',
       groups: '分组管理',
       tags: '标签管理',
-      ai: '✨ AI 模型',
-      mcp: '🔌 MCP 协议',
+      ai: 'AI 模型',
+      mcp: 'MCP 协议',
       danger: '数据重置'
     },
     language: '界面语言',

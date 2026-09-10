@@ -8,8 +8,8 @@ export default {
       general: 'General',
       groups: 'Groups',
       tags: 'Tags',
-      ai: '✨ AI Model',
-      mcp: '🔌 MCP Bridge',
+      ai: 'AI Model',
+      mcp: 'MCP Bridge',
       danger: 'Danger Zone'
     },
     language: 'Language',

@@ -54,7 +54,7 @@
   <div class="p-3.5 rounded-xl border border-border-subtle bg-surface space-y-3">
     <div class="flex items-center justify-between">
       <span class="font-semibold text-text-primary flex items-center gap-1.5 text-sm">
-        <span>🤖 {t('ai.apiConfigTitle')}</span>
+        <span>{t('ai.apiConfigTitle')}</span>
       </span>
       <span class="text-[10px] text-text-tertiary">{t('ai.apiConfigDesc')}</span>
     </div>

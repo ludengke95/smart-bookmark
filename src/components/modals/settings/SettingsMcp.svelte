@@ -64,7 +64,7 @@
   <!-- 头部介绍 -->
   <div class="p-3.5 rounded-xl border border-border-subtle bg-surface space-y-2">
     <div class="flex items-center gap-2">
-      <span class="font-semibold text-text-primary text-sm">🔌 {t('mcp.title')}</span>
+      <span class="font-semibold text-text-primary text-sm">{t('mcp.title')}</span>
       <span class="text-[10px] px-1.5 py-0.5 rounded bg-subtle text-text-tertiary font-mono">{t('mcp.badge')}</span>
     </div>
     <p class="text-[11px] text-text-secondary leading-relaxed">
