@@ -29,5 +29,9 @@ skills-lock.json
 # Generated release notes (produced by conventional-changelog in CI)
 RELEASE_NOTES.md
 
+# Private Keys & Secrets
+*.pem
+*.key
+
 
 

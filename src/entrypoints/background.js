@@ -1,5 +1,6 @@
 import { defineBackground } from 'wxt/utils/define-background';
 import { getBookmarks, getSettings } from '../services/storage.js';
+import { onStorageChange } from '../services/storage/sync.js';
 import { mcpClient } from '../services/mcp/client.js';
 import { DEFAULT_MCP_WS_PORT } from '../constants/index.js';
 
@@ -43,10 +44,10 @@ export default defineBackground(() => {
     syncMcpKeepalive(isMcpEnabled, settings?.mcp?.wsPort);
   }).catch(() => {});
 
-  // 监听设置动态变更 (用户在设置中开启或关闭 MCP 时即时响应)
-  chrome.storage?.onChanged?.addListener((changes, areaName) => {
-    if (areaName === 'local' && changes?.smart_bm_settings?.newValue) {
-      const newSettings = changes.smart_bm_settings.newValue;
+  // 监听设置动态变更 (通过 BroadcastChannel 跨上下文总线即时响应)
+  onStorageChange((event) => {
+    if (event.type === 'SETTINGS_CHANGED') {
+      const newSettings = event.data;
       const isMcpEnabled = newSettings?.mcp?.enabled === true;
       syncMcpKeepalive(isMcpEnabled, newSettings?.mcp?.wsPort);
     }
