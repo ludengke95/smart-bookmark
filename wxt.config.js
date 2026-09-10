@@ -54,11 +54,12 @@ export default defineConfig({
     },
     version,
     permissions: [
-      'storage',
       'unlimitedStorage',
-      'bookmarks',
-      'tabs',
+      'activeTab',
       'alarms'
+    ],
+    optional_permissions: [
+      'bookmarks'
     ],
     chrome_url_overrides: {
       newtab: 'home.html'

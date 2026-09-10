@@ -13,6 +13,8 @@
   let { open = $bindable(false) } = $props();
 
   let activeTab = $state('chrome'); // 'chrome' | 'file'
+  let hasBookmarksPermission = $state(false);
+  let isRequestingPermission = $state(false);
   let isScanning = $state(false);
   let isImporting = $state(false);
   let importProgress = $state(0);
@@ -68,22 +70,59 @@
     groupMode = 'ungrouped';
   }
 
+  async function checkBookmarksPermission() {
+    if (typeof chrome === 'undefined' || !chrome.permissions) {
+      return false;
+    }
+    try {
+      return await chrome.permissions.contains({ permissions: ['bookmarks'] });
+    } catch {
+      return false;
+    }
+  }
+
+  async function requestBookmarksPermission() {
+    if (typeof chrome === 'undefined' || !chrome.permissions?.request) {
+      toast.show(t('import.browserNotSupported'));
+      return;
+    }
+    isRequestingPermission = true;
+    try {
+      const granted = await chrome.permissions.request({ permissions: ['bookmarks'] });
+      if (granted) {
+        hasBookmarksPermission = true;
+        await scanChromeBookmarks();
+      } else {
+        toast.show(t('import.permissionDenied'));
+      }
+    } catch (e) {
+      console.error('申请书签权限失败:', e);
+      toast.show(t('import.permissionDenied'));
+    } finally {
+      isRequestingPermission = false;
+    }
+  }
+
   $effect(() => {
     if (open) {
       resetState();
-      if (typeof chrome !== 'undefined' && chrome.bookmarks) {
-        activeTab = 'chrome';
-        scanChromeBookmarks();
-      } else {
-        activeTab = 'file';
-      }
+      activeTab = 'chrome';
+      checkBookmarksPermission().then((granted) => {
+        hasBookmarksPermission = granted;
+        if (granted) {
+          scanChromeBookmarks();
+        }
+      });
     }
   });
 
   async function scanChromeBookmarks() {
     if (typeof chrome === 'undefined' || !chrome.bookmarks) {
-      toast.show(t('import.chromePermissionError'));
-      return;
+      const granted = await checkBookmarksPermission();
+      if (!granted) {
+        hasBookmarksPermission = false;
+        return;
+      }
     }
     isScanning = true;
     try {
@@ -414,18 +453,21 @@
         </div>
       {:else}
         <!-- 选项卡切换 (等宽分段胶囊) -->
-        <div class="grid {typeof chrome !== 'undefined' && chrome.bookmarks ? 'grid-cols-2' : 'grid-cols-1'} gap-1 bg-subtle p-1 rounded-lg text-xs flex-shrink-0">
-          {#if typeof chrome !== 'undefined' && chrome.bookmarks}
-            <button
-              type="button"
-              onclick={() => { activeTab = 'chrome'; scanChromeBookmarks(); }}
-              class="py-1.5 px-3 rounded-md transition-all font-medium text-center {activeTab === 'chrome'
-                ? 'bg-surface text-text-primary shadow-sm font-semibold border border-border-subtle/60'
-                : 'text-text-secondary hover:text-text-primary hover:bg-surface/50'}"
-            >
-              {t('import.tabChrome')}
-            </button>
-          {/if}
+        <div class="grid grid-cols-2 gap-1 bg-subtle p-1 rounded-lg text-xs flex-shrink-0">
+          <button
+            type="button"
+            onclick={() => {
+              activeTab = 'chrome';
+              if (hasBookmarksPermission) {
+                scanChromeBookmarks();
+              }
+            }}
+            class="py-1.5 px-3 rounded-md transition-all font-medium text-center {activeTab === 'chrome'
+              ? 'bg-surface text-text-primary shadow-sm font-semibold border border-border-subtle/60'
+              : 'text-text-secondary hover:text-text-primary hover:bg-surface/50'}"
+          >
+            {t('import.tabChrome')}
+          </button>
           <button
             type="button"
             onclick={() => { activeTab = 'file'; }}
@@ -491,7 +533,25 @@
 
         <!-- 内容区与文件上传 / 预览列表 -->
         <div class="flex-1 min-h-0 flex flex-col space-y-2 text-xs">
-          {#if activeTab === 'file' && rawScannedList.length === 0 && !isScanning}
+          {#if activeTab === 'chrome' && !hasBookmarksPermission && !isScanning}
+            <div class="border border-border-subtle rounded-xl p-6 text-center bg-subtle/30 flex-1 flex flex-col items-center justify-center space-y-3">
+              <div class="w-10 h-10 rounded-full bg-accent/10 text-accent flex items-center justify-center text-lg">
+                🔖
+              </div>
+              <div class="space-y-1 max-w-sm">
+                <p class="font-medium text-text-primary text-sm">{t('import.requestPermission')}</p>
+                <p class="text-[11px] text-text-tertiary leading-relaxed">{t('import.permissionHint')}</p>
+              </div>
+              <button
+                type="button"
+                disabled={isRequestingPermission}
+                onclick={requestBookmarksPermission}
+                class="px-4 py-2 rounded-lg bg-accent text-accent-fg text-xs font-medium shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {isRequestingPermission ? '...' : t('import.requestPermission')}
+              </button>
+            </div>
+          {:else if activeTab === 'file' && rawScannedList.length === 0 && !isScanning}
             <div class="border-2 border-dashed border-border-subtle hover:border-border-focus rounded-xl p-6 text-center transition-colors flex-1 flex flex-col items-center justify-center">
               <input
                 type="file"

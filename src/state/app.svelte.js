@@ -295,22 +295,6 @@ class AppState {
         }
       });
 
-      // 2. 兼容扩展原生 chrome.storage.onChanged 事件 (若存在)
-      if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
-        chrome.storage.onChanged.addListener(async (changes, areaName) => {
-          if (areaName !== 'local') return;
-
-          if (changes[STORAGE_KEYS.SETTINGS]) {
-            this.settings = changes[STORAGE_KEYS.SETTINGS].newValue || DEFAULT_SETTINGS;
-            if (this.settings.language) {
-              i18n.init(this.settings.language);
-            }
-            if (this.settings.theme) {
-              this.applyThemeToDOM(this.settings.theme);
-            }
-          }
-        });
-      }
       this._storageListening = true;
     } catch (err) {
       console.warn('Storage listener setup failed:', err);
