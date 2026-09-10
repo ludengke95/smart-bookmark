@@ -74,11 +74,11 @@ jobs:
 
           echo "RELEASE_TAG=$TARGET_TAG" >> "$GITHUB_ENV"
 
-      # 1) 插件包：安装根依赖并构建 + 打包 Chrome 扩展
+      # 1) 插件包：安装根依赖并构建 + 打包多浏览器扩展 (Chrome / Edge / Firefox)
       - name: Install root dependencies
         run: npm ci
 
-      - name: Build & zip Chrome extension（插件包）
+      - name: Build & zip browser extensions（插件包）
         run: npm run zip
 
       # 2) CRX 包：使用 GitHub Secret 中的私钥安全打包离线 CRX

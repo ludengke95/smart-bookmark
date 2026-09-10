@@ -45,7 +45,7 @@ export default defineConfig({
     // Release 附件的插件包命名：smart-bookmark-v<根包版本>-<浏览器>.zip
     artifactTemplate: '{{name}}-v{{packageVersion}}-{{browser}}.zip',
   },
-  manifest: {
+  manifest: ({ browser }) => ({
     default_locale: 'zh_CN',
     name: '__MSG_extName__',
     description: '__MSG_extDescription__',
@@ -64,6 +64,14 @@ export default defineConfig({
     chrome_url_overrides: {
       newtab: 'home.html'
     },
+    ...(browser === 'firefox' ? {
+      browser_specific_settings: {
+        gecko: {
+          id: 'smart-bookmark@ludengke95.github.io',
+          strict_min_version: '109.0'
+        }
+      }
+    } : {}),
     host_permissions: [
       '<all_urls>'
     ],
@@ -73,7 +81,7 @@ export default defineConfig({
       48: '/icons/icon48.png',
       128: '/icons/icon128.png'
     }
-  },
+  }),
   hooks: {
     'build:done': (wxt) => {
       const browser = wxt.config.browser;
