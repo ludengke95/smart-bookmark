@@ -21,6 +21,7 @@
 |--------|-------|-----------|----------------------------|
 | 🚧 Planned | MCP bridge: routing & authentication refactor | [doc/en/mcp-bridge-routing-auth.md](doc/en/mcp-bridge-routing-auth.md) | TBD: actual deployment is "single extension" vs "multiple browsers / multiple profiles", which decides the routing strategy (by profile / active tab / sticky ownership) |
 | 🚧 Planned | Firefox extension UX optimization & privacy routing fallback | [doc/en/firefox-ux-optimization-privacy-routing.md](doc/en/firefox-ux-optimization-privacy-routing.md) | Multi-tier fallback for Firefox mDNS IP obfuscation; decouple bookmark permission gesture & scan error states |
+| 🚧 Planned | Tab Stash & temporary queue | [doc/en/tab-stash-temporary-queue.md](doc/en/tab-stash-temporary-queue.md) | Lightweight debugging session stashing with auto-decay TTL; strictly isolated from primary bookmarks |
 
 ## Done
 
