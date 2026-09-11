@@ -19,14 +19,13 @@ class NativeHostClient {
       isConnected: false,
       isConnecting: false,
       port: DEFAULT_MCP_WS_PORT,
+      allowLan: false,
       lastError: null,
       transport: 'native'
     };
+    this.targetOptions = {};
     this.shouldBeConnected = false;
     this.reconnectAttempt = 0;
-    this.reconnectTimer = null;
-    this.releaseKeepalive = null;
-    this.listeners = new Set();
   }
 
   /**
@@ -67,10 +66,13 @@ class NativeHostClient {
   }
 
   /**
+  /**
    * 发起 Native Messaging 连接
    * @param {number} [httpPort=8333]
+   * @param {{ allowLan?: boolean, host?: string }} [options={}]
    */
-  connect(httpPort = DEFAULT_MCP_WS_PORT) {
+  connect(httpPort = DEFAULT_MCP_WS_PORT, options = {}) {
+    this.targetOptions = options;
     if (typeof chrome === 'undefined' || !chrome.runtime?.connectNative) {
       this.updateStatus({
         isConnected: false,
@@ -104,6 +106,8 @@ class NativeHostClient {
         type: 'START',
         payload: {
           port: httpPort,
+          allowLan: !!options.allowLan,
+          host: options.allowLan ? '0.0.0.0' : (options.host || '127.0.0.1'),
           tools: MCP_TOOL_DEFINITIONS
         }
       });
@@ -211,7 +215,6 @@ class NativeHostClient {
       isConnecting: false,
       lastError: errorMsg
     });
-
     if (this.shouldBeConnected) {
       clearTimeout(this.reconnectTimer);
       // 指数退避调度重连（最小 1s，最大 30s，带随机微抖动）
@@ -219,7 +222,7 @@ class NativeHostClient {
       this.reconnectAttempt++;
       this.reconnectTimer = setTimeout(() => {
         if (this.shouldBeConnected) {
-          this.connect(port);
+          this.connect(port, this.targetOptions);
         }
       }, delay);
     }

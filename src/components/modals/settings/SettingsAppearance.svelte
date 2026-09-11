@@ -4,6 +4,7 @@
   import { t } from '../../../i18n/index.svelte.js';
   import { THEMES } from '../../../constants/index.js';
   import Select from '../../common/Select.svelte';
+  import ToggleRow from '../../common/ToggleRow.svelte';
 
   const languageOptions = $derived([
     { value: 'auto', label: t('settings.languageAuto'), iconText: '🌐' },
@@ -80,18 +81,13 @@
     />
   </div>
 
-  <div class="flex items-center gap-2">
-    <input
-      type="checkbox"
-      id="show-seconds"
-      checked={appState.settings.showSeconds}
-      onchange={(e) => appState.updateSettings({ showSeconds: e.target.checked })}
-      class="rounded border-border-subtle text-accent"
-    />
-    <label for="show-seconds" class="text-text-secondary cursor-pointer">
-      {t('settings.showSeconds')}
-    </label>
-  </div>
+  <ToggleRow
+    id="show-seconds"
+    label={t('settings.showSeconds')}
+    checked={appState.settings.showSeconds}
+    size="sm"
+    onchange={(val) => appState.updateSettings({ showSeconds: val })}
+  />
 
   <div class="space-y-1">
     <label for="set-motto" class="block font-medium text-text-secondary">{t('settings.motto')}</label>

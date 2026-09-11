@@ -14,11 +14,11 @@ export default defineBackground(() => {
   const MCP_KEEPALIVE_ALARM = 'mcp_keepalive_alarm';
 
   // 同步 MCP 状态与保活机制：优先使用 Native Messaging 宿主，未开启或关闭时彻底释放资源
-  function syncMcpKeepalive(enabled, port) {
+  function syncMcpKeepalive(enabled, port, allowLan) {
     const targetPort = port || DEFAULT_MCP_WS_PORT;
     if (enabled) {
       if (!nativeHostClient.status.isConnected && !nativeHostClient.status.isConnecting) {
-        nativeHostClient.connect(targetPort);
+        nativeHostClient.connect(targetPort, { allowLan });
       }
       try {
         chrome.alarms?.get(MCP_KEEPALIVE_ALARM, (alarm) => {
@@ -45,7 +45,7 @@ export default defineBackground(() => {
   // 初始化检查
   getSettings().then(settings => {
     const isMcpEnabled = settings?.mcp?.enabled === true;
-    syncMcpKeepalive(isMcpEnabled, settings?.mcp?.wsPort);
+    syncMcpKeepalive(isMcpEnabled, settings?.mcp?.wsPort, settings?.mcp?.allowLan);
   }).catch(() => {});
 
   // 监听设置动态变更 (通过 BroadcastChannel 跨上下文总线即时响应)
@@ -53,7 +53,7 @@ export default defineBackground(() => {
     if (event.type === 'SETTINGS_CHANGED') {
       const newSettings = event.data;
       const isMcpEnabled = newSettings?.mcp?.enabled === true;
-      syncMcpKeepalive(isMcpEnabled, newSettings?.mcp?.wsPort);
+      syncMcpKeepalive(isMcpEnabled, newSettings?.mcp?.wsPort, newSettings?.mcp?.allowLan);
     }
   });
 
@@ -64,7 +64,7 @@ export default defineBackground(() => {
         if (settings?.mcp?.enabled === true) {
           const targetPort = settings?.mcp?.wsPort || DEFAULT_MCP_WS_PORT;
           if (!nativeHostClient.status.isConnected && !nativeHostClient.status.isConnecting) {
-            nativeHostClient.connect(targetPort);
+            nativeHostClient.connect(targetPort, { allowLan: settings?.mcp?.allowLan });
           }
         } else {
           syncMcpKeepalive(false);
@@ -91,7 +91,7 @@ export default defineBackground(() => {
       return true;
     }
     if (message?.action === 'reconnectMcp') {
-      nativeHostClient.connect(message.port);
+      nativeHostClient.connect(message.port, { allowLan: message.allowLan });
       sendResponse({ success: true });
       return true;
     }

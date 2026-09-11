@@ -3,6 +3,8 @@
   import { appState } from '../../../state/app.svelte.js';
   import { toast } from '../../../state/toast.svelte.js';
   import { DEFAULT_MCP_SETTINGS, DEFAULT_MCP_WS_HOST, DEFAULT_MCP_WS_PORT } from '../../../constants/index.js';
+  import Switch from '../../common/Switch.svelte';
+  import ToggleRow from '../../common/ToggleRow.svelte';
 
   // 步进索引：1 | 2 | 3
   // 如果当前服务已成功连通，初始直接定位到第 3 步；如果开启但尚未连接定位第 2 步；否则第 1 步引导
@@ -14,7 +16,11 @@
     const updated = { ...current, ...partial };
     appState.updateSettings({ mcp: updated });
     if (updated.enabled === true) {
-      appState.reconnectMcp(updated.wsHost || DEFAULT_MCP_WS_HOST, updated.wsPort || DEFAULT_MCP_WS_PORT);
+      appState.reconnectMcp(
+        updated.wsHost || DEFAULT_MCP_WS_HOST,
+        updated.wsPort || DEFAULT_MCP_WS_PORT,
+        updated.allowLan
+      );
     } else {
       appState.disconnectMcp();
     }
@@ -161,12 +167,11 @@
               {appState.settings.mcp?.enabled ? t('mcp.step2RunningHint') : t('mcp.step2Desc')}
             </p>
           </div>
-          <input
-            type="checkbox"
+          <Switch
             id="mcp-toggle-step"
             checked={appState.settings.mcp?.enabled === true}
-            onchange={(e) => updateMcpSettings({ enabled: e.target.checked })}
-            class="w-4 h-4 rounded border-border-subtle text-accent cursor-pointer"
+            size="md"
+            onchange={(val) => updateMcpSettings({ enabled: val })}
           />
         </div>
 
@@ -193,14 +198,32 @@
             <span>{t('mcp.advancedSettings')}</span>
           </button>
           {#if showAdvanced}
-            <div class="mt-1.5 p-2 rounded-lg bg-subtle/40 border border-border-subtle/40 flex items-center justify-between gap-2">
-              <span class="text-[10px] text-text-secondary">{t('mcp.portLabel')}</span>
-              <input
-                type="number"
-                value={appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT}
-                onchange={(e) => updateMcpSettings({ wsPort: parseInt(e.target.value, 10) || DEFAULT_MCP_WS_PORT })}
-                class="w-16 px-1.5 py-0.5 rounded bg-surface border border-border-subtle text-center text-[11px] text-text-primary font-mono outline-none"
-              />
+            <div class="mt-2 p-2.5 rounded-lg bg-subtle/40 border border-border-subtle/40 space-y-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[10px] text-text-secondary">{t('mcp.portLabel')}</span>
+                <input
+                  type="number"
+                  value={appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT}
+                  onchange={(e) => updateMcpSettings({ wsPort: parseInt(e.target.value, 10) || DEFAULT_MCP_WS_PORT })}
+                  class="w-16 px-1.5 py-0.5 rounded bg-surface border border-border-subtle text-center text-[11px] text-text-primary font-mono outline-none"
+                />
+              </div>
+
+              <div class="pt-2 border-t border-border-subtle/30">
+                <ToggleRow
+                  id="mcp-allow-lan"
+                  label={t('mcp.allowLanTitle')}
+                  description={t('mcp.allowLanDesc')}
+                  checked={appState.settings.mcp?.allowLan === true}
+                  size="sm"
+                  onchange={(val) => updateMcpSettings({ allowLan: val })}
+                />
+                {#if appState.settings.mcp?.allowLan}
+                  <p class="mt-1.5 text-[10px] text-amber-600 dark:text-amber-400/90 leading-relaxed">
+                    {t('mcp.allowLanWarning')}
+                  </p>
+                {/if}
+              </div>
             </div>
           {/if}
         </div>

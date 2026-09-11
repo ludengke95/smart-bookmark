@@ -58,3 +58,10 @@ All styling strictly relies on semantic CSS Tokens mapped to CSS variables (`--c
 - Displays favicon, bookmark title, and first 2 tags.
 - Precision footer dot indicates computed reachability and route latency in real-time.
 - Hover overlay reveals quick edit, delete, and multiple-endpoint inspection actions.
+
+### 3.4 Themed Switch / Toggle Primitive (`Switch.svelte` & `ToggleRow.svelte`)
+- Raw `<input type="checkbox">` elements for binary toggles are strictly forbidden.
+- Custom toggle track (`w-9 h-5` md, `w-7 h-4` sm) with sliding thumb knob (`150ms cubic-bezier(0.4, 0, 0.2, 1)`).
+- Track transitions smoothly between `var(--bg-subtle)` (off) and `var(--accent)` (on).
+- Thumb knob features clean floating elevation with `shadow-sm`.
+- Supports `role="switch"` and `aria-checked` with full keyboard accessibility (Space / Enter).

@@ -80,6 +80,8 @@ async function handleExtensionMessage(message) {
   switch (type) {
     case 'START': {
       currentPort = parseInt(payload?.port, 10) || 8333;
+      const allowLan = !!payload?.allowLan;
+      const currentHost = allowLan ? '0.0.0.0' : (payload?.host || '127.0.0.1');
       if (Array.isArray(payload?.tools)) {
         cachedTools = payload.tools;
       }
@@ -88,8 +90,8 @@ async function handleExtensionMessage(message) {
         try {
           httpServerInstance = createMcpHttpServer({
             port: currentPort,
+            host: currentHost,
             getTools: async () => {
-              if (cachedTools.length > 0) return cachedTools;
               try {
                 const tools = await sendRequestToExtension('GET_TOOLS', {}, 10000);
                 if (Array.isArray(tools)) cachedTools = tools;

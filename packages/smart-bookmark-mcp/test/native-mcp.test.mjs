@@ -24,6 +24,26 @@ test('createMcpHttpServer: /ping responds with ok status', async () => {
     await server.stop();
   }
 });
+test('createMcpHttpServer: supports binding to 0.0.0.0 for LAN access', async () => {
+  const server = createMcpHttpServer({
+    port: 0,
+    host: '0.0.0.0',
+    getTools: async () => [],
+    callTool: async () => ({})
+  });
+  const { host, port } = await server.start();
+  assert.equal(host, '0.0.0.0');
+
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/ping`);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(data.status, 'ok');
+  } finally {
+    await server.stop();
+  }
+});
+
 
 test('createMcpHttpServer: Streamable HTTP client lists and calls tools', async () => {
   const mockTools = [

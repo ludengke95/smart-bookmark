@@ -717,11 +717,12 @@ class AppState {
   // MCP 外部协同
   // ==========================================
 
-  reconnectMcp(host, port) {
+  reconnectMcp(host, port, allowLan) {
     const targetHost = host || this.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST;
     const targetPort = port || this.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT;
+    const targetAllowLan = allowLan !== undefined ? allowLan : !!this.settings.mcp?.allowLan;
     if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
-      chrome.runtime.sendMessage({ action: 'reconnectMcp', port: targetPort });
+      chrome.runtime.sendMessage({ action: 'reconnectMcp', port: targetPort, allowLan: targetAllowLan });
     }
     mcpClient.connect(targetHost, targetPort);
   }
