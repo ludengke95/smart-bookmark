@@ -35,13 +35,32 @@
       toast.show(t('mcp.copyFailedToast'));
     });
   }
-
   function copyHttpEndpoint() {
     const host = appState.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST;
     const port = appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT;
     const endpoint = `http://${host}:${port}/mcp`;
     navigator.clipboard.writeText(endpoint).then(() => {
       toast.show(t('mcp.copiedHttpToast'));
+    }).catch(() => {
+      toast.show(t('mcp.copyFailedToast'));
+    });
+  }
+
+  function copyHttpJsonConfig() {
+    const host = appState.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST;
+    const port = appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT;
+    const endpoint = `http://${host}:${port}/mcp`;
+
+    const snippet = JSON.stringify({
+      mcpServers: {
+        "smart-bookmark": {
+          url: endpoint
+        }
+      }
+    }, null, 2);
+
+    navigator.clipboard.writeText(snippet).then(() => {
+      toast.show(t('mcp.copiedHttpJsonToast'));
     }).catch(() => {
       toast.show(t('mcp.copyFailedToast'));
     });
@@ -285,16 +304,24 @@
               {t('mcp.clientWebDesc')}
             </p>
           </div>
-          <button
-            type="button"
-            onclick={copyHttpEndpoint}
-            class="w-full py-1.5 rounded-lg bg-accent text-white hover:opacity-90 transition-opacity text-xs font-medium shadow-sm text-center"
-          >
-            {t('mcp.copyHttp')}
-          </button>
+          <div class="flex items-center gap-1.5">
+            <button
+              type="button"
+              onclick={copyHttpJsonConfig}
+              class="flex-1 py-1.5 rounded-lg bg-accent text-white hover:opacity-90 transition-opacity text-xs font-medium shadow-sm text-center"
+            >
+              {t('mcp.copyHttpJson')}
+            </button>
+            <button
+              type="button"
+              onclick={copyHttpEndpoint}
+              class="px-2.5 py-1.5 rounded-lg bg-surface hover:bg-subtle border border-border-subtle text-text-secondary hover:text-text-primary text-xs font-medium transition-colors text-center flex-shrink-0"
+            >
+              {t('mcp.copyHttpUrl')}
+            </button>
+          </div>
         </div>
       </div>
-
       <!-- 第 3 步底部导航 -->
       <div class="flex items-center justify-between pt-1">
         <button
