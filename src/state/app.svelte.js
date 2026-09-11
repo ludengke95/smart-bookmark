@@ -41,7 +41,6 @@ import { detectAllLocalIps } from '../services/ip-detector.js';
 import { probeAllUrls } from '../services/ping-probe.js';
 import { sortEndpointsByTopology } from '../services/xor-matcher.js';
 import { createBookmarkComparator } from '../services/bookmark-sort.js';
-import { mcpClient } from '../services/mcp/client.js';
 import { testCustomApiConnection } from '../services/ai/custom-engine.js';
 import { analyzeSmartGrouping, analyzeSmartTagging, parseManualAiResult } from '../services/ai/organizer.js';
 import { generateGroupingPromptAndData, generateTaggingPromptAndData } from '../services/ai/prompt-builder.js';
@@ -237,11 +236,7 @@ class AppState {
     this.setupStorageListener();
 
     this.isLoaded = true;
-
-    // 订阅 MCP 状态并同步 Background SW 状态
-    mcpClient.subscribe((status) => {
-      this.mcpStatus = status;
-    });
+    // 查询 Background Service Worker 获取当前 Native Host 运行状态
     if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
       chrome.runtime.sendMessage({ action: 'getMcpStatus' }, (res) => {
         if (res && chrome.runtime.lastError == null) {
@@ -715,23 +710,20 @@ class AppState {
 
   // ==========================================
   // MCP 外部协同
-  // ==========================================
-
   reconnectMcp(host, port, allowLan) {
-    const targetHost = host || this.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST;
     const targetPort = port || this.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT;
     const targetAllowLan = allowLan !== undefined ? allowLan : !!this.settings.mcp?.allowLan;
+    this.mcpStatus = { ...this.mcpStatus, isConnecting: true, lastError: null };
     if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
       chrome.runtime.sendMessage({ action: 'reconnectMcp', port: targetPort, allowLan: targetAllowLan });
     }
-    mcpClient.connect(targetHost, targetPort);
   }
 
   disconnectMcp() {
     if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
       chrome.runtime.sendMessage({ action: 'disconnectMcp' });
     }
-    mcpClient.disconnect();
+    this.mcpStatus = { isConnected: false, isConnecting: false, lastError: null };
   }
 }
 

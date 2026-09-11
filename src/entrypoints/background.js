@@ -1,7 +1,6 @@
 import { defineBackground } from 'wxt/utils/define-background';
 import { getBookmarks, getSettings } from '../services/storage.js';
 import { onStorageChange } from '../services/storage/sync.js';
-import { mcpClient } from '../services/mcp/client.js';
 import { nativeHostClient } from '../services/mcp/native-host.js';
 import { initKeepaliveListener } from '../services/mcp/keepalive.js';
 import { DEFAULT_MCP_WS_PORT } from '../constants/index.js';
@@ -36,9 +35,6 @@ export default defineBackground(() => {
         // ignore
       }
       nativeHostClient.disconnect();
-      if (mcpClient.isConnected || mcpClient.isConnecting) {
-        mcpClient.disconnect();
-      }
     }
   }
 
