@@ -27,7 +27,7 @@
 ### 3. ✨ 多模态 AI 智能书签整理与分类
 - **网页大模型免 Key 模式（零成本）**：一键打包书签数据与结构化 Prompt，复制到任意大模型网页版（ChatGPT、Claude、Kimi、DeepSeek），支持**直接粘贴 JSON 结果**或**上传 JSON 文件**一键解析并应用全量重构分类。
 - **API 直连模式**：支持配置 OpenAI / DeepSeek / 本地 Ollama 兼容端点，一键全自动整理。
-- **MCP (Model Context Protocol) 支持**：支持与本地 AI 客户端/智能体环境联动。
+- **MCP (Model Context Protocol) 支持**：基于 Chrome/Edge Native Messaging、Stdio 透明代理与 Streamable HTTP 多模态协议，与 Cursor、Claude Desktop、CherryStudio、Dify 等外部 AI 客户端及智能体深度联动。
 
 ### 4. 📊 5 种主页多维排序规则
 - **↕ 自定义排序 (默认)**：支持在主页直接拖拽书签卡片调整顺序或跨分组迁移。
@@ -88,7 +88,10 @@ npm run compile
 
 ### 4. 本地 MCP 联动与子包验证
 ```bash
-# 启动本地 MCP 桥接服务端（与 Claude Desktop / Cursor 联动）
+# 一键注册 Native Messaging 宿主（Chrome / Edge）
+npm run mcp:register
+
+# 启动本地 MCP Stdio 代理（供 Claude Desktop / Cursor 等 stdio 客户端联动）
 npm run mcp
 
 # 核心算法冒烟测试
@@ -139,7 +142,7 @@ newtab/
 │   │   │   ├── organizer.js     #   分组/标签分析流水线编排
 │   │   │   ├── prompt-builder.js#   手动模式提示词与精简数据生成
 │   │   │   └── custom-engine.js #   兼容 OpenAI/DeepSeek/Ollama 的 API 驱动
-│   │   └── mcp/                 # MCP 协议客户端通信
+│   │   └── mcp/                 # Native Messaging 客户端、工具执行器与 SW 保活
 │   ├── state/                   # Svelte 5 全局响应式状态系统 (Runes)
 │   │   ├── app.svelte.js        # 核心单例全局 Store ($state / $derived)
 │   │   └── toast.svelte.js      # 轻量 Toast 反馈系统

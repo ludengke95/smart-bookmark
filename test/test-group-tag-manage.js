@@ -11,7 +11,7 @@ import {
   deleteTag,
   clearAllData
 } from '../src/services/storage.js';
-import { mcpClient } from '../src/services/mcp/client.js';
+import { executeMcpTool } from '../src/services/mcp/tools.js';
 import { PINNED_GROUP_ID, UNGROUPED_GROUP_ID } from '../src/constants/index.js';
 
 async function run() {
@@ -98,19 +98,19 @@ async function run() {
   }
   console.log('✓ 标签全局彻底删除验证通过');
 
-  console.log('--- 4. 验证 MCP executeTool 工具调用 ---');
+  console.log('--- 4. 验证 MCP executeMcpTool 工具调用 ---');
   // MCP create_group
-  const mcpCreateGrp = await mcpClient.executeTool('create_group', { name: 'MCP新建组' });
+  const mcpCreateGrp = await executeMcpTool('create_group', { name: 'MCP新建组' });
   assert.equal(mcpCreateGrp.success, true);
   const newGid = mcpCreateGrp.group.id;
 
   // MCP update_group
-  const mcpUpdateGrp = await mcpClient.executeTool('update_group', { id: newGid, name: 'MCP更新组名' });
+  const mcpUpdateGrp = await executeMcpTool('update_group', { id: newGid, name: 'MCP更新组名' });
   assert.equal(mcpUpdateGrp.success, true);
   assert.equal(mcpUpdateGrp.group.name, 'MCP更新组名');
 
   // MCP delete_group
-  const mcpDelGrp = await mcpClient.executeTool('delete_group', { id: newGid });
+  const mcpDelGrp = await executeMcpTool('delete_group', { id: newGid });
   assert.equal(mcpDelGrp.success, true);
 
   // MCP rename_tag & delete_tag
@@ -122,15 +122,15 @@ async function run() {
     endpoints: [{ url: 'https://example.com' }]
   });
 
-  const mcpRenameTag = await mcpClient.executeTool('rename_tag', { oldTag: 'OldTag', newTag: 'NewTag' });
+  const mcpRenameTag = await executeMcpTool('rename_tag', { oldTag: 'OldTag', newTag: 'NewTag' });
   assert.equal(mcpRenameTag.success, true);
   assert.equal(mcpRenameTag.modifiedCount, 1);
 
-  const mcpDeleteTag = await mcpClient.executeTool('delete_tag', { tag: 'NewTag' });
+  const mcpDeleteTag = await executeMcpTool('delete_tag', { tag: 'NewTag' });
   assert.equal(mcpDeleteTag.success, true);
   assert.equal(mcpDeleteTag.modifiedCount, 1);
 
-  console.log('✓ MCP 工具 executeTool 全部测试通过！');
+  console.log('✓ MCP 工具 executeMcpTool 全部测试通过！');
   process.exit(0);
 }
 

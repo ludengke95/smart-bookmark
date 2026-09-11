@@ -1,7 +1,7 @@
 {
   "name": "@ludengke95/smart-bookmark-mcp",
   "version": "1.0.3",
-  "description": "MCP (Model Context Protocol) bridge server for the Smart Bookmark Chrome extension. Exposes your bookmarks/groups/tags to AI clients (Cursor, Claude Desktop, WorkBuddy, Windsurf) over Stdio + a WebSocket proxy. Built on `ws` and the official `@modelcontextprotocol/sdk`.",
+  "description": "MCP (Model Context Protocol) bridge server for the Smart Bookmark Chrome extension. Exposes your bookmarks/groups/tags to AI clients (Cursor, Claude Desktop, WorkBuddy, Windsurf, CherryStudio, Dify) over Native Messaging, Stdio proxy, and Streamable HTTP.",
   "type": "module",
   "bin": {
     "smart-bookmark-mcp": "./bin/smart-bookmark-mcp.js",
@@ -10,8 +10,6 @@
   "files": [
     "bin",
     "src",
-    "mcp-bridge.js",
-    "extension-transport.js",
     "install-cli.mjs",
     "README.md",
     "README_EN.md",
@@ -42,7 +40,6 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.7.0",
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "ws": "^8.21.3"
+    "@modelcontextprotocol/sdk": "^1.30.0"
   }
 }

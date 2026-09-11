@@ -11,7 +11,7 @@ import {
   getSnapshots,
   withStorageLock
 } from '../src/services/storage.js';
-import { mcpClient } from '../src/services/mcp/client.js';
+import { executeMcpTool } from '../src/services/mcp/tools.js';
 
 async function run() {
   console.log('=== 开始执行存储并发保护与原子批量治理测试 ===\n');
@@ -102,9 +102,9 @@ async function run() {
   assert.ok(bm1.tags.includes('音乐') && bm1.tags.includes('生活') && bm1.tags.includes('休闲'), '中文逗号分割的 tags 应被完全解析并落盘');
   console.log('✔ 测试 3 通过：大模型容错清洗与原子整理落盘完全正确！\n');
 
-  // 5. 验证 MCP executeTool('batch_organize_bookmarks') 链路
+  // 5. 验证 MCP executeMcpTool('batch_organize_bookmarks') 链路
   console.log('--- 测试 4: 验证 MCP Client 协议端 batch_organize_bookmarks 调用 ---');
-  const mcpRes = await mcpClient.executeTool('batch_organize_bookmarks', {
+  const mcpRes = await executeMcpTool('batch_organize_bookmarks', {
     groupPlan: [{ bookmarkId: 'bm_concurrent_2', targetGroupName: '工作/开发/前端' }],
     tagPlan: [{ bookmarkId: 'bm_concurrent_2', suggestedTags: ['自动化测试'] }],
     tagMode: 'append'

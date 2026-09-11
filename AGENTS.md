@@ -21,7 +21,7 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 - 解决同一应用内网/外网入口不同需手动判断的痛点（WebRTC 内网 IP 嗅探 + 32 位二进制 XOR 最长公共前缀匹配 + 并发短超时连通性探针与毫秒级降级）。
 - 本地 Local-First 存储架构（Dexie.js / IndexedDB），免 Key 网页大模型与 API 双模 AI 智能整理，多维排序，3 套极简主题，快照容灾。
 - 引擎框架：**WXT 0.21** + **Svelte 5 (Runes)** + **Tailwind CSS 3.4** + **Dexie 4.x** + **Manifest V3**。
-- MCP 生态：根目录独立子包 `packages/smart-bookmark-mcp` 为 Cursor / Codex Desktop / Windsurf 等提供 Stdio 与 WebSocket 桥接。
+- MCP 生态：根目录独立子包 `packages/smart-bookmark-mcp` 为 Cursor / Codex Desktop / Windsurf 等提供 Native Messaging、Stdio 与 Streamable HTTP 桥接。
 
 ## 常用命令
 
@@ -71,7 +71,7 @@ cd packages/smart-bookmark-mcp && npm test
   - `bookmark.js` / `group.js` / `stats.js` / `backup.js` / `ai.js`：领域存储模块。
   - `index.js`：模块统一导出。**新增业务代码请直接按域或从 `services/storage/index.js` 导入**。
 - `ai/` —— AI 整理流水线（免 Key 网页提示词构建、OpenAI/DeepSeek/Ollama API 客户端驱动）
-- `mcp/` —— 扩展端 MCP WebSocket 客户端
+- `mcp/` —— 扩展端 MCP Native Messaging 与保活服务（`native-host.js` / `tools.js` / `keepalive.js`）
 
 ### 2. `src/state/` —— Svelte 5 全局响应式状态
 
