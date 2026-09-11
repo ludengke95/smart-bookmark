@@ -26,6 +26,9 @@ class NativeHostClient {
     this.targetOptions = {};
     this.shouldBeConnected = false;
     this.reconnectAttempt = 0;
+    this.reconnectTimer = null;
+    this.releaseKeepalive = null;
+    this.listeners = new Set();
   }
 
   /**
@@ -52,11 +55,13 @@ class NativeHostClient {
    */
   updateStatus(partial) {
     this.status = { ...this.status, ...partial };
-    for (const listener of this.listeners) {
-      try {
-        listener(this.getStatus());
-      } catch (err) {
-        console.error('[MCP Native] Listener error:', err);
+    if (this.listeners) {
+      for (const listener of this.listeners) {
+        try {
+          listener(this.getStatus());
+        } catch (err) {
+          console.error('[MCP Native] Listener error:', err);
+        }
       }
     }
     broadcastStorageChange({
@@ -65,7 +70,6 @@ class NativeHostClient {
     });
   }
 
-  /**
   /**
    * 发起 Native Messaging 连接
    * @param {number} [httpPort=8333]
