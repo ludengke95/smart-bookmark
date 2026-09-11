@@ -5,7 +5,7 @@ name: Create Release
 # 2) 亦兼容手动推送以 v 开头的标签（如 v1.0.1）
 # Release 附带三类产物：
 #   1) 源码包 —— GitHub 自动生成的 Source code (zip / tar.gz)
-#   2) 插件包 —— `wxt zip` 构建并打包的 Chrome 扩展 zip（.output/smart-bookmark-v<version>-chrome.zip）
+#   2) 插件包 —— `wxt zip` 构建并打包的 Chrome / Edge 扩展 zip（.output/smart-bookmark-v<version>-<browser>.zip）
 #   3) mcp 包  —— 子包 `npm pack` 产出的 npm tarball（packages/smart-bookmark-mcp/*.tgz）
 # 完成后将级联触发 publish.yml 自动发布到 npm。
 on:
@@ -81,46 +81,25 @@ jobs:
       - name: Build & zip Chrome extension（插件包）
         run: npm run zip
 
-      # 2) CRX 包：使用 GitHub Secret 中的私钥安全打包离线 CRX
-      - name: Pack CRX with Secure Private Key
-        env:
-          PRIVATE_KEY: ${{ secrets.EXTENSION_PRIVATE_KEY }}
-        run: |
-          if [ -n "$PRIVATE_KEY" ]; then
-            echo "Private key detected. Packing CRX extensions..."
-            echo "$PRIVATE_KEY" > /tmp/extension-key.pem
-            chmod 600 /tmp/extension-key.pem
-
-            ROOT_V=$(node -p "require('./package.json').version")
-            npx --yes crx pack .output/chrome-mv3 -p /tmp/extension-key.pem -o ".output/smart-bookmark-v${ROOT_V}-chrome.crx"
-            npx --yes crx pack .output/edge-mv3 -p /tmp/extension-key.pem -o ".output/smart-bookmark-v${ROOT_V}-edge.crx"
-
-            rm -f /tmp/extension-key.pem
-            echo "CRX packaging completed successfully."
-          else
-            echo "::warning::EXTENSION_PRIVATE_KEY secret is not set. Skipping CRX packaging."
-          fi
-
-      # 3) mcp 包：子包 npm pack
+      # 2) mcp 包：子包 npm pack
       - name: Pack mcp sub-package（mcp 包）
         working-directory: packages/smart-bookmark-mcp
         run: |
           npm ci
           npm pack
 
-      # 4) 由 Conventional Commits 与 GitHub PR 自动生成分类 Release 正文 (Closes #15)
+      # 3) 由 Conventional Commits 与 GitHub PR 自动生成分类 Release 正文 (Closes #15)
       - name: Generate release notes
         run: npm run release:notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # 5) 创建 Release，附插件包 (ZIP & CRX) + mcp 包 + 自动生成的变更日志正文
+      # 4) 创建 Release，附插件包 (ZIP) + mcp 包 + 自动生成的变更日志正文
       - name: 创建 Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           files: |
             .output/*.zip
-            .output/*.crx
             packages/smart-bookmark-mcp/*.tgz
           body_path: RELEASE_NOTES.md
         env:
