@@ -14,13 +14,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export const DEFAULT_HOST_NAME = 'com.smartbookmark.mcp';
-export const DEFAULT_EXTENSION_ID = 'gobioihpdadhghfbefcnobinbfadmpli';
+export const DEFAULT_EXTENSION_ID = 'gobioihpdadhghfbefcnobinbfadmpli'; // 本地开发与 GitHub 离线安装包 ID
+export const EDGE_STORE_EXTENSION_ID = 'dpjfdgipdhdoilkgklolanpdpnkbabia'; // Edge 商店已上架正式版 ID
 
+export const DEFAULT_EXTENSION_IDS = [
+  DEFAULT_EXTENSION_ID,
+  EDGE_STORE_EXTENSION_ID
+];
 /**
  * 获取或生成 Native Host 清单配置与启动脚本
  */
 export function prepareHostFiles(options = {}) {
-  const extensionIds = options.extensionIds || [DEFAULT_EXTENSION_ID];
+  const extensionIds = options.extensionIds || DEFAULT_EXTENSION_IDS;
   const targetDir = path.resolve(__dirname, '../../');
   const binPath = path.resolve(targetDir, 'bin/smart-bookmark-mcp.js');
 

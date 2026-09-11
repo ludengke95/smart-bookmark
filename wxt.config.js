@@ -81,8 +81,9 @@ export default defineConfig({
       }
     };
 
-    if (isChromium) {
-      // 固定 Chrome/Edge 未打包扩展的 Extension ID (gobioihpdadhghfbefcnobinbfadmpli)，便于本地 Native Messaging 注册
+    const isStoreBuild = process.env.TARGET_STORE === 'true';
+    if (isChromium && !isStoreBuild) {
+      // 固定本地开发与 GitHub 离线安装包的 Extension ID (gobioihpdadhghfbefcnobinbfadmpli)，便于 Native Messaging 零配置白名单
       baseManifest.key = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzBbOV16TQ7wXCOxHyDPZUFzNp7hdTQ7zZ0reIp3JsoBypufMvkl3qm7YM/TMAAjkF2CMyrKBH2xLxts6BAC7TOEidVWnMfwcAWJ9s7psJ5QVtYfYuQMv11lmQyPLaFDGSegQK6hLjjFj2I22/qoAPUw/RVnfCHHSeLtNcCYxXq9M3nKqTyvYGyIL43muvDecaFrnW+OhZxFo75ik59zmTcUeOcDxshQW2gkXbheueiXwRYOVxgXVsUr2e/dWPPz3kDLRjni9QHoKW3FhRrA1CKPQjjrLni72wcByFzZ7nB6ZEtwz7IHJHnOCdAnP6W+IJzSZXpJtzwJq4jIpSoIsVwIDAQAB';
     }
 

@@ -98,11 +98,12 @@ test('createMcpHttpServer: Streamable HTTP client lists and calls tools', async 
   }
 });
 
-test('prepareHostFiles generates valid manifest with deterministic extension ID', () => {
+test('prepareHostFiles generates valid manifest with deterministic extension ID and Edge store ID', () => {
   const { manifestPath, manifest } = prepareHostFiles();
   assert.equal(manifest.name, 'com.smartbookmark.mcp');
   assert.equal(manifest.type, 'stdio');
   assert.ok(manifest.allowed_origins.includes(`chrome-extension://${DEFAULT_EXTENSION_ID}/`));
+  assert.ok(manifest.allowed_origins.includes('chrome-extension://dpjfdgipdhdoilkgklolanpdpnkbabia/'));
   assert.ok(manifest.path.includes('smart-bookmark-host'));
 });
 

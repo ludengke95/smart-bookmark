@@ -18,6 +18,7 @@
     "zip:edge": "wxt zip -b edge",
     "zip:firefox": "wxt zip -b firefox",
     "zip:all": "wxt zip -b chrome && wxt zip -b edge",
+    "zip:store": "node -e \"const { execSync } = require('child_process'); execSync('npx wxt zip -b chrome && npx wxt zip -b edge', { stdio: 'inherit', env: { ...process.env, TARGET_STORE: 'true' } });\"",
     "compile": "wxt compile",
     "mcp": "node scripts/mcp-bridge.js",
     "mcp:register": "node packages/smart-bookmark-mcp/bin/smart-bookmark-mcp.js register",
