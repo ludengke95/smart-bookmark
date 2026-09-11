@@ -5,7 +5,7 @@
   import { DEFAULT_MCP_SETTINGS, DEFAULT_MCP_WS_HOST, DEFAULT_MCP_WS_PORT } from '../../../constants/index.js';
 
   // 步进索引：1 | 2 | 3
-  // 如果当前服务已成功连通，初始直接定位到第 2 步或第 3 步；否则从第 1 步开始引导
+  // 如果当前服务已成功连通，初始直接定位到第 3 步；如果开启但尚未连接定位第 2 步；否则第 1 步引导
   let currentStep = $state(appState.mcpStatus.isConnected ? 3 : (appState.settings.mcp?.enabled ? 2 : 1));
   let showAdvanced = $state(false);
 
@@ -65,17 +65,17 @@
   }
 </script>
 
-<div class="space-y-4">
-  <!-- 顶部步进指示条 (Stepper) -->
-  <div class="grid grid-cols-3 gap-2 bg-subtle p-1 rounded-xl text-xs flex-shrink-0">
+<div class="space-y-3">
+  <!-- 顶部步进指示条 (紧凑 Stepper) -->
+  <div class="grid grid-cols-3 gap-1.5 bg-subtle p-1 rounded-lg text-xs flex-shrink-0">
     <button
       type="button"
       onclick={() => (currentStep = 1)}
-      class="h-8 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5 font-medium {currentStep === 1
+      class="h-7 px-2 rounded-md transition-all flex items-center justify-center gap-1.5 text-[11px] font-medium {currentStep === 1
         ? 'bg-surface text-text-primary shadow-sm font-semibold border border-border-subtle/70'
         : 'text-text-secondary hover:text-text-primary hover:bg-surface/50 border border-transparent'}"
     >
-      <span class="w-4 h-4 rounded-full text-[10px] flex items-center justify-center {currentStep === 1 ? 'bg-accent text-white font-bold' : 'bg-subtle text-text-tertiary border border-border-subtle'}">
+      <span class="w-3.5 h-3.5 rounded-full text-[9px] flex items-center justify-center {currentStep === 1 ? 'bg-accent text-white font-bold' : 'bg-subtle text-text-tertiary border border-border-subtle'}">
         1
       </span>
       <span>{t('mcp.step1Tab')}</span>
@@ -84,11 +84,11 @@
     <button
       type="button"
       onclick={() => (currentStep = 2)}
-      class="h-8 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5 font-medium {currentStep === 2
+      class="h-7 px-2 rounded-md transition-all flex items-center justify-center gap-1.5 text-[11px] font-medium {currentStep === 2
         ? 'bg-surface text-text-primary shadow-sm font-semibold border border-border-subtle/70'
         : 'text-text-secondary hover:text-text-primary hover:bg-surface/50 border border-transparent'}"
     >
-      <span class="w-4 h-4 rounded-full text-[10px] flex items-center justify-center {currentStep === 2 ? 'bg-accent text-white font-bold' : 'bg-subtle text-text-tertiary border border-border-subtle'}">
+      <span class="w-3.5 h-3.5 rounded-full text-[9px] flex items-center justify-center {currentStep === 2 ? 'bg-accent text-white font-bold' : 'bg-subtle text-text-tertiary border border-border-subtle'}">
         2
       </span>
       <span>{t('mcp.step2Tab')}</span>
@@ -97,202 +97,191 @@
     <button
       type="button"
       onclick={() => (currentStep = 3)}
-      class="h-8 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5 font-medium {currentStep === 3
+      class="h-7 px-2 rounded-md transition-all flex items-center justify-center gap-1.5 text-[11px] font-medium {currentStep === 3
         ? 'bg-surface text-text-primary shadow-sm font-semibold border border-border-subtle/70'
         : 'text-text-secondary hover:text-text-primary hover:bg-surface/50 border border-transparent'}"
     >
-      <span class="w-4 h-4 rounded-full text-[10px] flex items-center justify-center {currentStep === 3 ? 'bg-accent text-white font-bold' : 'bg-subtle text-text-tertiary border border-border-subtle'}">
+      <span class="w-3.5 h-3.5 rounded-full text-[9px] flex items-center justify-center {currentStep === 3 ? 'bg-accent text-white font-bold' : 'bg-subtle text-text-tertiary border border-border-subtle'}">
         3
       </span>
       <span>{t('mcp.step3Tab')}</span>
     </button>
   </div>
 
-  <!-- 步骤主体内容 -->
-  <div class="min-h-[340px] flex flex-col justify-between">
-    {#if currentStep === 1}
-      <!-- 第 1 步：准备环境 -->
-      <div class="space-y-3.5">
-        <div class="space-y-1">
-          <h3 class="text-sm font-semibold text-text-primary">{t('mcp.step1Title')}</h3>
-          <p class="text-[11px] text-text-secondary leading-relaxed">
-            {t('mcp.step1Desc')}
-          </p>
+  <!-- 步骤主体内容 (紧凑无滚动条) -->
+  {#if currentStep === 1}
+    <!-- 第 1 步：准备环境 -->
+    <div class="space-y-2.5">
+      <div class="p-3 rounded-xl bg-surface border border-border-subtle space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-text-primary text-xs">{t('mcp.step1Title')}</span>
+          <span class="text-[10px] text-text-tertiary font-mono">Terminal / CMD</span>
         </div>
-
-        <div class="p-3 rounded-xl bg-surface border border-border-subtle space-y-2.5">
-          <div class="flex items-center gap-2 p-2 rounded-lg bg-subtle border border-border-subtle/80">
-            <code class="flex-1 font-mono text-[11px] text-accent select-all truncate" title={registerCommand}>
-              {registerCommand}
-            </code>
-            <button
-              type="button"
-              onclick={copyRegisterCommand}
-              class="px-3 py-1 rounded-md bg-accent text-white hover:opacity-90 transition-opacity text-[11px] font-medium flex-shrink-0 shadow-sm"
-            >
-              {t('mcp.copyRegister')}
-            </button>
-          </div>
-          <p class="text-[10px] text-text-tertiary leading-relaxed">
-            💡 {t('mcp.step1Hint')}
-          </p>
+        <p class="text-[11px] text-text-secondary leading-relaxed">
+          {t('mcp.step1Desc')}
+        </p>
+        <div class="flex items-center gap-2 p-1.5 rounded-lg bg-subtle border border-border-subtle/80">
+          <code class="flex-1 font-mono text-[11px] text-accent select-all truncate pl-1" title={registerCommand}>
+            {registerCommand}
+          </code>
+          <button
+            type="button"
+            onclick={copyRegisterCommand}
+            class="px-2.5 py-1 rounded-md bg-accent text-white hover:opacity-90 transition-opacity text-[11px] font-medium flex-shrink-0 shadow-sm"
+          >
+            {t('mcp.copyRegister')}
+          </button>
         </div>
+        <p class="text-[10px] text-text-tertiary leading-relaxed">
+          💡 {t('mcp.step1Hint')}
+        </p>
       </div>
 
       <!-- 第 1 步底部导航 -->
-      <div class="flex items-center justify-end pt-3 border-t border-border-subtle/60">
+      <div class="flex items-center justify-end pt-1">
         <button
           type="button"
           onclick={() => (currentStep = 2)}
-          class="px-4 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm"
+          class="px-3.5 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm"
         >
           <span>{t('mcp.nextStep')}</span>
           <span>→</span>
         </button>
       </div>
+    </div>
 
-    {:else if currentStep === 2}
-      <!-- 第 2 步：开启服务 -->
-      <div class="space-y-3.5">
-        <div class="space-y-1">
-          <h3 class="text-sm font-semibold text-text-primary">{t('mcp.step2Title')}</h3>
-          <p class="text-[11px] text-text-secondary leading-relaxed">
-            {t('mcp.step2Desc')}
-          </p>
+  {:else if currentStep === 2}
+    <!-- 第 2 步：开启服务 -->
+    <div class="space-y-2.5">
+      <div class="p-3 rounded-xl bg-surface border border-border-subtle space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div class="space-y-0.5">
+            <span class="font-semibold text-text-primary text-xs block">{t('mcp.step2Title')}</span>
+            <p class="text-[10px] text-text-tertiary">
+              {appState.settings.mcp?.enabled ? t('mcp.step2RunningHint') : t('mcp.step2Desc')}
+            </p>
+          </div>
+          <input
+            type="checkbox"
+            id="mcp-toggle-step"
+            checked={appState.settings.mcp?.enabled === true}
+            onchange={(e) => updateMcpSettings({ enabled: e.target.checked })}
+            class="w-4 h-4 rounded border-border-subtle text-accent cursor-pointer"
+          />
         </div>
 
-        <div class="p-3.5 rounded-xl bg-surface border border-border-subtle space-y-3">
-          <div class="flex items-center justify-between">
-            <div class="space-y-0.5">
-              <span class="font-medium text-text-primary text-xs">{t('mcp.enable')}</span>
-              <p class="text-[10px] text-text-tertiary">
-                {appState.settings.mcp?.enabled ? t('mcp.step2RunningHint') : t('mcp.step2Desc')}
-              </p>
-            </div>
-            <input
-              type="checkbox"
-              id="mcp-toggle-step"
-              checked={appState.settings.mcp?.enabled === true}
-              onchange={(e) => updateMcpSettings({ enabled: e.target.checked })}
-              class="w-4 h-4 rounded border-border-subtle text-accent cursor-pointer"
-            />
-          </div>
+        <!-- 状态条 -->
+        <div class="p-2 rounded-lg bg-subtle/70 border border-border-subtle/60 flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 {appState.mcpStatus.isConnected ? 'bg-emerald-500 animate-pulse' : (appState.settings.mcp?.enabled ? 'bg-amber-500' : 'bg-status-danger')}"></span>
+          <span class="text-[11px] font-medium text-text-primary truncate">
+            {appState.mcpStatus.isConnected
+              ? t('mcp.nativeActive', { port: appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT })
+              : (appState.mcpStatus.lastError
+                  ? t('mcp.nativeUnregistered')
+                  : t('mcp.offline'))}
+          </span>
+        </div>
 
-          <!-- 状态条 -->
-          <div class="p-2.5 rounded-lg bg-subtle/70 border border-border-subtle/60 flex items-center gap-2.5">
-            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 {appState.mcpStatus.isConnected ? 'bg-emerald-500 animate-pulse' : (appState.settings.mcp?.enabled ? 'bg-amber-500' : 'bg-status-danger')}"></span>
-            <div class="text-[11px] flex-1 truncate">
-              <span class="font-medium text-text-primary">
-                {appState.mcpStatus.isConnected
-                  ? t('mcp.nativeActive', { port: appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT })
-                  : (appState.mcpStatus.lastError
-                      ? t('mcp.nativeUnregistered')
-                      : t('mcp.offline'))}
-              </span>
+        <!-- 高级网络设置 (折叠展开) -->
+        <div>
+          <button
+            type="button"
+            onclick={() => (showAdvanced = !showAdvanced)}
+            class="text-[10px] text-text-tertiary hover:text-text-secondary transition-colors flex items-center gap-1"
+          >
+            <span>{showAdvanced ? '▾' : '▸'}</span>
+            <span>{t('mcp.advancedSettings')}</span>
+          </button>
+          {#if showAdvanced}
+            <div class="mt-1.5 p-2 rounded-lg bg-subtle/40 border border-border-subtle/40 flex items-center justify-between gap-2">
+              <span class="text-[10px] text-text-secondary">{t('mcp.portLabel')}</span>
+              <input
+                type="number"
+                value={appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT}
+                onchange={(e) => updateMcpSettings({ wsPort: parseInt(e.target.value, 10) || DEFAULT_MCP_WS_PORT })}
+                class="w-16 px-1.5 py-0.5 rounded bg-surface border border-border-subtle text-center text-[11px] text-text-primary font-mono outline-none"
+              />
             </div>
-          </div>
-
-          <!-- 高级网络设置 (折叠展开) -->
-          <div class="pt-1">
-            <button
-              type="button"
-              onclick={() => (showAdvanced = !showAdvanced)}
-              class="text-[10px] text-text-tertiary hover:text-text-secondary transition-colors flex items-center gap-1"
-            >
-              <span>{showAdvanced ? '▾' : '▸'}</span>
-              <span>{t('mcp.advancedSettings')}</span>
-            </button>
-            {#if showAdvanced}
-              <div class="mt-2 p-2.5 rounded-lg bg-subtle/40 border border-border-subtle/40 flex items-center justify-between gap-2">
-                <span class="text-[10px] text-text-secondary">{t('mcp.portLabel')}</span>
-                <input
-                  type="number"
-                  value={appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT}
-                  onchange={(e) => updateMcpSettings({ wsPort: parseInt(e.target.value, 10) || DEFAULT_MCP_WS_PORT })}
-                  class="w-20 px-2 py-0.5 rounded bg-surface border border-border-subtle text-center text-[11px] text-text-primary font-mono outline-none"
-                />
-              </div>
-            {/if}
-          </div>
+          {/if}
         </div>
       </div>
 
       <!-- 第 2 步底部导航 -->
-      <div class="flex items-center justify-between pt-3 border-t border-border-subtle/60">
+      <div class="flex items-center justify-between pt-1">
         <button
           type="button"
           onclick={() => (currentStep = 1)}
-          class="px-3.5 py-1.5 rounded-lg border border-border-subtle bg-surface hover:bg-subtle text-text-secondary hover:text-text-primary text-xs transition-colors"
+          class="px-3 py-1.5 rounded-lg border border-border-subtle bg-surface hover:bg-subtle text-text-secondary hover:text-text-primary text-xs transition-colors"
         >
           ← {t('mcp.prevStep')}
         </button>
         <button
           type="button"
           onclick={() => (currentStep = 3)}
-          class="px-4 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm"
+          class="px-3.5 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm"
         >
           <span>{t('mcp.nextStep')}</span>
           <span>→</span>
         </button>
       </div>
+    </div>
 
-    {:else if currentStep === 3}
-      <!-- 第 3 步：接入外部 AI 客户端 -->
-      <div class="space-y-3.5">
-        <div class="space-y-1">
-          <h3 class="text-sm font-semibold text-text-primary">{t('mcp.step3Title')}</h3>
-          <p class="text-[11px] text-text-secondary leading-relaxed">
-            {t('mcp.step3Desc')}
-          </p>
+  {:else if currentStep === 3}
+    <!-- 第 3 步：接入外部 AI 客户端 -->
+    <div class="space-y-2.5">
+      <div class="space-y-0.5">
+        <h3 class="text-xs font-semibold text-text-primary">{t('mcp.step3Title')}</h3>
+        <p class="text-[10px] text-text-secondary leading-relaxed">
+          {t('mcp.step3Desc')}
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5">
+        <!-- 方式 A：Cursor / Claude Desktop -->
+        <div class="p-2.5 rounded-xl border border-border-subtle bg-surface space-y-2 flex flex-col justify-between">
+          <div class="space-y-0.5">
+            <span class="font-semibold text-text-primary text-xs block">{t('mcp.clientCodeTitle')}</span>
+            <p class="text-[10px] text-text-secondary leading-relaxed">
+              {t('mcp.clientCodeDesc')}
+            </p>
+          </div>
+          <button
+            type="button"
+            onclick={copyStdioConfig}
+            class="w-full py-1.5 rounded-lg bg-subtle hover:bg-surface border border-border-subtle text-text-primary text-xs font-medium transition-colors shadow-sm text-center"
+          >
+            {t('mcp.copyCursor')}
+          </button>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <!-- 方式 A：Cursor / Claude Desktop -->
-          <div class="p-3 rounded-xl border border-border-subtle bg-surface space-y-2.5 flex flex-col justify-between">
-            <div class="space-y-1">
-              <span class="font-semibold text-text-primary text-xs block">{t('mcp.clientCodeTitle')}</span>
-              <p class="text-[10px] text-text-secondary leading-relaxed">
-                {t('mcp.clientCodeDesc')}
-              </p>
-            </div>
-            <button
-              type="button"
-              onclick={copyStdioConfig}
-              class="w-full py-1.5 rounded-lg bg-subtle hover:bg-surface border border-border-subtle text-text-primary text-xs font-medium transition-colors shadow-sm text-center"
-            >
-              {t('mcp.copyCursor')}
-            </button>
+        <!-- 方式 B：CherryStudio / 网页助手 -->
+        <div class="p-2.5 rounded-xl border border-accent/25 bg-accent/5 space-y-2 flex flex-col justify-between">
+          <div class="space-y-0.5">
+            <span class="font-semibold text-text-primary text-xs block">{t('mcp.clientWebTitle')}</span>
+            <p class="text-[10px] text-text-secondary leading-relaxed">
+              {t('mcp.clientWebDesc')}
+            </p>
           </div>
-
-          <!-- 方式 B：CherryStudio / 网页助手 -->
-          <div class="p-3 rounded-xl border border-accent/25 bg-accent/5 space-y-2.5 flex flex-col justify-between">
-            <div class="space-y-1">
-              <span class="font-semibold text-text-primary text-xs block">{t('mcp.clientWebTitle')}</span>
-              <p class="text-[10px] text-text-secondary leading-relaxed">
-                {t('mcp.clientWebDesc')}
-              </p>
-            </div>
-            <button
-              type="button"
-              onclick={copyHttpEndpoint}
-              class="w-full py-1.5 rounded-lg bg-accent text-white hover:opacity-90 transition-opacity text-xs font-medium shadow-sm text-center"
-            >
-              {t('mcp.copyHttp')}
-            </button>
-          </div>
+          <button
+            type="button"
+            onclick={copyHttpEndpoint}
+            class="w-full py-1.5 rounded-lg bg-accent text-white hover:opacity-90 transition-opacity text-xs font-medium shadow-sm text-center"
+          >
+            {t('mcp.copyHttp')}
+          </button>
         </div>
       </div>
 
       <!-- 第 3 步底部导航 -->
-      <div class="flex items-center justify-between pt-3 border-t border-border-subtle/60">
+      <div class="flex items-center justify-between pt-1">
         <button
           type="button"
           onclick={() => (currentStep = 2)}
-          class="px-3.5 py-1.5 rounded-lg border border-border-subtle bg-surface hover:bg-subtle text-text-secondary hover:text-text-primary text-xs transition-colors"
+          class="px-3 py-1.5 rounded-lg border border-border-subtle bg-surface hover:bg-subtle text-text-secondary hover:text-text-primary text-xs transition-colors"
         >
           ← {t('mcp.prevStep')}
         </button>
       </div>
-    {/if}
-  </div>
+    </div>
+  {/if}
 </div>
