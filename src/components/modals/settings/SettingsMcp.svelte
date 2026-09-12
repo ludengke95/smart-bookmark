@@ -10,6 +10,24 @@
   // 如果当前服务已成功连通，初始直接定位到第 3 步；如果开启但尚未连接定位第 2 步；否则第 1 步引导
   let currentStep = $state(appState.mcpStatus.isConnected ? 3 : (appState.settings.mcp?.enabled ? 2 : 1));
   let showAdvanced = $state(false);
+  let portInputRef = $state(null);
+
+  let errorCategory = $derived.by(() => {
+    const err = appState.mcpStatus.lastError;
+    if (!err) return null;
+    const str = String(err).toLowerCase();
+    if (str.includes('eaddrinuse') || str.includes('address already in use')) {
+      return 'PORT_IN_USE';
+    }
+    if (
+      str.includes('specified native messaging host not found') ||
+      str.includes('native messaging host not found') ||
+      str.includes('host not found')
+    ) {
+      return 'NOT_REGISTERED';
+    }
+    return 'GENERAL';
+  });
 
   function updateMcpSettings(partial) {
     const current = appState.settings.mcp || DEFAULT_MCP_SETTINGS;
@@ -195,15 +213,52 @@
         </div>
 
         <!-- 状态条 -->
-        <div class="p-2 rounded-lg bg-subtle/70 border border-border-subtle/60 flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 {appState.mcpStatus.isConnected ? 'bg-emerald-500 animate-pulse' : (appState.settings.mcp?.enabled ? 'bg-amber-500' : 'bg-status-danger')}"></span>
-          <span class="text-[11px] font-medium text-text-primary truncate">
-            {appState.mcpStatus.isConnected
-              ? t('mcp.nativeActive', { port: appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT })
-              : (appState.mcpStatus.lastError
-                  ? t('mcp.nativeUnregistered')
-                  : t('mcp.offline'))}
+        <div class="p-2 rounded-lg flex items-center gap-2 border {errorCategory ? 'bg-status-danger/10 border-status-danger/30' : 'bg-subtle/70 border-border-subtle/60'}">
+          <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 {
+            appState.mcpStatus.isConnected
+              ? 'bg-emerald-500 animate-pulse'
+              : (errorCategory
+                  ? 'bg-status-danger'
+                  : (appState.settings.mcp?.enabled && appState.mcpStatus.isConnecting
+                      ? 'bg-amber-500 animate-pulse'
+                      : (appState.settings.mcp?.enabled ? 'bg-amber-500' : 'bg-status-danger')))
+          }"></span>
+          <span class="text-[11px] font-medium {errorCategory ? 'text-status-danger' : 'text-text-primary'} truncate">
+            {#if appState.mcpStatus.isConnected}
+              {t('mcp.nativeActive', { port: appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT })}
+            {:else if errorCategory === 'PORT_IN_USE'}
+              {t('mcp.errPortInUse', { port: appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT })}
+            {:else if errorCategory === 'NOT_REGISTERED'}
+              {t('mcp.errNotRegistered')}
+            {:else if errorCategory === 'GENERAL'}
+              {t('mcp.errGeneral', { error: appState.mcpStatus.lastError })}
+            {:else if appState.settings.mcp?.enabled && appState.mcpStatus.isConnecting}
+              {t('mcp.connecting')}
+            {:else}
+              {t('mcp.offline')}
+            {/if}
           </span>
+
+          {#if errorCategory === 'PORT_IN_USE'}
+            <button
+              type="button"
+              onclick={() => {
+                showAdvanced = true;
+                setTimeout(() => portInputRef?.focus(), 50);
+              }}
+              class="ml-auto px-2 py-0.5 rounded text-[10px] font-medium bg-accent text-white hover:opacity-90 transition-opacity flex-shrink-0 shadow-sm"
+            >
+              {t('mcp.fixPort')}
+            </button>
+          {:else if errorCategory === 'NOT_REGISTERED'}
+            <button
+              type="button"
+              onclick={() => (currentStep = 1)}
+              class="ml-auto px-2 py-0.5 rounded text-[10px] font-medium bg-accent text-white hover:opacity-90 transition-opacity flex-shrink-0 shadow-sm"
+            >
+              {t('mcp.fixRegister')}
+            </button>
+          {/if}
         </div>
 
         <!-- 高级网络设置 (折叠展开) -->
@@ -221,10 +276,11 @@
               <div class="flex items-center justify-between gap-2">
                 <span class="text-[10px] text-text-secondary">{t('mcp.portLabel')}</span>
                 <input
+                  bind:this={portInputRef}
                   type="number"
                   value={appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT}
                   onchange={(e) => updateMcpSettings({ wsPort: parseInt(e.target.value, 10) || DEFAULT_MCP_WS_PORT })}
-                  class="w-16 px-1.5 py-0.5 rounded bg-surface border border-border-subtle text-center text-[11px] text-text-primary font-mono outline-none"
+                  class="w-16 px-1.5 py-0.5 rounded bg-surface border border-border-subtle text-center text-[11px] text-text-primary font-mono outline-none focus:border-accent"
                 />
               </div>
 

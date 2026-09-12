@@ -98,6 +98,32 @@ test('createMcpHttpServer: Streamable HTTP client lists and calls tools', async 
   }
 });
 
+test('createMcpHttpServer: start() rejects with EADDRINUSE when port is occupied', async () => {
+  const server1 = createMcpHttpServer({
+    port: 0,
+    getTools: async () => [],
+    callTool: async () => ({})
+  });
+  const { port } = await server1.start();
+
+  const server2 = createMcpHttpServer({
+    port,
+    getTools: async () => [],
+    callTool: async () => ({})
+  });
+
+  await assert.rejects(
+    async () => {
+      await server2.start();
+    },
+    (err) => {
+      return err.code === 'EADDRINUSE' || String(err.message).includes('EADDRINUSE');
+    }
+  );
+
+  await server1.stop();
+});
+
 test('prepareHostFiles generates valid manifest with deterministic extension ID and Edge store ID', () => {
   const { manifestPath, manifest } = prepareHostFiles();
   assert.equal(manifest.name, 'com.smartbookmark.mcp');

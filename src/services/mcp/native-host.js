@@ -142,6 +142,15 @@ class NativeHostClient {
         break;
       }
 
+      case 'SERVER_ERROR': {
+        this.updateStatus({
+          isConnected: false,
+          isConnecting: false,
+          lastError: payload?.error || 'Server error'
+        });
+        break;
+      }
+
       case 'SERVER_STOPPED': {
         this.updateStatus({ isConnected: false });
         break;

@@ -8,6 +8,8 @@ import { Buffer } from 'node:buffer';
 import { createMcpHttpServer } from './server.js';
 
 let httpServerInstance = null;
+let currentRunningPort = null;
+let currentRunningHost = null;
 let cachedTools = [];
 let pendingRequests = new Map();
 let currentPort = 8333;
@@ -86,6 +88,17 @@ async function handleExtensionMessage(message) {
         cachedTools = payload.tools;
       }
 
+      if (httpServerInstance && (currentRunningPort !== currentPort || currentRunningHost !== currentHost)) {
+        try {
+          await httpServerInstance.stop();
+        } catch {
+          // ignore
+        }
+        httpServerInstance = null;
+        currentRunningPort = null;
+        currentRunningHost = null;
+      }
+
       if (!httpServerInstance) {
         try {
           httpServerInstance = createMcpHttpServer({
@@ -106,11 +119,16 @@ async function handleExtensionMessage(message) {
           });
 
           await httpServerInstance.start();
+          currentRunningPort = currentPort;
+          currentRunningHost = currentHost;
           sendMessageToExtension({
             type: 'SERVER_STARTED',
             payload: { port: currentPort }
           });
         } catch (err) {
+          httpServerInstance = null;
+          currentRunningPort = null;
+          currentRunningHost = null;
           sendMessageToExtension({
             type: 'SERVER_ERROR',
             payload: { error: err?.message || String(err) }
@@ -129,6 +147,8 @@ async function handleExtensionMessage(message) {
       if (httpServerInstance) {
         await httpServerInstance.stop();
         httpServerInstance = null;
+        currentRunningPort = null;
+        currentRunningHost = null;
       }
       sendMessageToExtension({ type: 'SERVER_STOPPED' });
       break;
