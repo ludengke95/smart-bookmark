@@ -41,6 +41,10 @@ const BROWSER_LOCALE_REPLACEMENTS = {
 export default defineConfig({
   srcDir: 'src',
   modules: ['@wxt-dev/module-svelte'],
+  webExt: {
+    // 当启用调试模式（dev:debug）时禁用 WXT 默认的 web-ext 浏览器启动器，避免其强制注入 pipe 导致 9222 端口失效
+    disabled: process.env.REMOTE_DEBUG === 'true',
+  },
   zip: {
     // Release 附件的插件包命名：smart-bookmark-v<根包版本>-<浏览器>.zip
     artifactTemplate: '{{name}}-v{{packageVersion}}-{{browser}}.zip',

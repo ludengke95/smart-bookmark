@@ -37,5 +37,6 @@ RELEASE_NOTES.md
 native-manifest.json
 smart-bookmark-host.*
 .worktrees/
+.chrome-debug-profile/
 
 
