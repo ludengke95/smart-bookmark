@@ -5,16 +5,17 @@
   import SettingsGroups from './settings/SettingsGroups.svelte';
   import SettingsTags from './settings/SettingsTags.svelte';
   import SettingsAi from './settings/SettingsAi.svelte';
+  import SettingsMcp from './settings/SettingsMcp.svelte';
   import SettingsData from './settings/SettingsData.svelte';
 
   let { open = $bindable(false) } = $props();
 
-  let activeTab = $state('general'); // 'general' | 'groups' | 'tags' | 'ai' | 'danger'
+  let activeTab = $state('general'); // 'general' | 'groups' | 'tags' | 'ai' | 'mcp' | 'danger'
 </script>
 
-<ModalShell bind:open title={t('settings.title')} maxWidth="max-w-xl" height="h-[600px]">
-      <!-- 标签页导航 (5个均分等宽分段胶囊，显式锁定 h-8 保持绝对空间稳定性) -->
-      <div class="grid grid-cols-5 gap-1 bg-subtle p-1 rounded-lg text-xs flex-shrink-0">
+<ModalShell bind:open title={t('settings.title')} maxWidth="max-w-2xl" height="h-[600px]">
+      <!-- 标签页导航 (6个均分等宽分段胶囊，显式锁定 h-8 保持绝对空间稳定性) -->
+      <div class="grid grid-cols-6 gap-1 bg-subtle p-1 rounded-lg text-xs flex-shrink-0">
         <button
           type="button"
           onclick={() => (activeTab = 'general')}
@@ -53,6 +54,15 @@
         </button>
         <button
           type="button"
+          onclick={() => (activeTab = 'mcp')}
+          class="h-8 px-1.5 rounded-md transition-all font-medium text-center flex items-center justify-center gap-1 {activeTab === 'mcp'
+            ? 'bg-surface text-accent shadow-sm font-semibold border border-accent/30 ring-1 ring-accent/20'
+            : 'text-text-secondary hover:text-accent hover:bg-surface/50 border border-transparent'}"
+        >
+          <span>{t('settings.tabs.mcp')}</span>
+        </button>
+        <button
+          type="button"
           onclick={() => (activeTab = 'danger')}
           class="h-8 px-1.5 rounded-md transition-all font-medium text-center flex items-center justify-center {activeTab === 'danger'
             ? 'bg-surface text-status-danger shadow-sm font-semibold border border-status-danger/40 ring-1 ring-status-danger/20'
@@ -72,6 +82,8 @@
           <SettingsTags />
         {:else if activeTab === 'ai'}
           <SettingsAi />
+        {:else if activeTab === 'mcp'}
+          <SettingsMcp />
         {:else if activeTab === 'danger'}
           <SettingsData onClose={() => (open = false)} />
         {/if}

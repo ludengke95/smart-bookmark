@@ -41,7 +41,6 @@ import { detectAllLocalIps } from '../services/ip-detector.js';
 import { probeAllUrls } from '../services/ping-probe.js';
 import { sortEndpointsByTopology } from '../services/xor-matcher.js';
 import { createBookmarkComparator } from '../services/bookmark-sort.js';
-import { mcpClient } from '../services/mcp/client.js';
 import { testCustomApiConnection } from '../services/ai/custom-engine.js';
 import { analyzeSmartGrouping, analyzeSmartTagging, parseManualAiResult } from '../services/ai/organizer.js';
 import { generateGroupingPromptAndData, generateTaggingPromptAndData } from '../services/ai/prompt-builder.js';
@@ -237,15 +236,14 @@ class AppState {
     this.setupStorageListener();
 
     this.isLoaded = true;
-
-    // 订阅 MCP 状态并按需尝试连接 (默认关闭，仅在用户开启时连接)
-    mcpClient.subscribe((status) => {
-      this.mcpStatus = status;
-    });
-    if (this.settings.mcp?.enabled === true) {
-      mcpClient.connect(this.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST, this.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT);
+    // 查询 Background Service Worker 获取当前 Native Host 运行状态
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({ action: 'getMcpStatus' }, (res) => {
+        if (res && chrome.runtime.lastError == null) {
+          this.mcpStatus = res;
+        }
+      });
     }
-
     // 智能连通性探测 (若命中 15 分钟内的有效缓存且有数据则跳过，避免重复 Ping 消耗网络资源)
     const isCacheFresh = cache.timestamp && (Date.now() - cache.timestamp < PROBE_CACHE_TTL_MS);
     const hasCachedResults = cache.results && Object.keys(cache.results).length > 0;
@@ -279,6 +277,11 @@ class AppState {
           case 'STATS_CHANGED':
             this.clickStats = await getClickStats('30d');
             this.detailedStats = await getDetailedStats();
+            break;
+          case 'MCP_STATUS_CHANGED':
+            if (event.data) {
+              this.mcpStatus = event.data;
+            }
             break;
           case 'SNAPSHOTS_CHANGED':
             this.snapshots = await getSnapshots();
@@ -705,18 +708,28 @@ class AppState {
     return result;
   }
 
-  // ==========================================
   // MCP 外部协同
-  // ==========================================
+  reconnectMcp(host, port, allowLan) {
+    let targetHost = typeof host === 'string' ? host : (this.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST);
+    let targetPort = typeof host === 'number' ? host : (typeof port === 'number' ? port : (this.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT));
+    let targetAllowLan = allowLan !== undefined ? allowLan : !!this.settings.mcp?.allowLan;
 
-  reconnectMcp(host, port) {
-    const targetHost = host || this.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST;
-    const targetPort = port || this.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT;
-    mcpClient.connect(targetHost, targetPort);
+    this.mcpStatus = { ...this.mcpStatus, isConnecting: true, lastError: null };
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({
+        action: 'reconnectMcp',
+        port: targetPort,
+        host: targetHost,
+        allowLan: targetAllowLan
+      });
+    }
   }
 
   disconnectMcp() {
-    mcpClient.disconnect();
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({ action: 'disconnectMcp' });
+    }
+    this.mcpStatus = { isConnected: false, isConnecting: false, lastError: null };
   }
 }
 

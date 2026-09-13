@@ -29,7 +29,7 @@ import { pathToFileURL } from 'node:url';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-
+import { registerNativeHost } from './src/register/register.js';
 const PKG = '@ludengke95/smart-bookmark-mcp';
 
 // --- i18n -----------------------------------------------------------------
@@ -167,7 +167,7 @@ export const CLIENTS = [
 // `server` is the subcommand (see mcp-bridge.js dispatch); `--host 0.0.0.0`
 // is appended when LAN access is enabled.
 export function mcpArgs(lan = false) {
-  const args = ['-y', PKG, 'server'];
+  const args = ['-y', PKG, 'stdio'];
   if (lan) args.push('--host', '0.0.0.0');
   return args;
 }
@@ -490,8 +490,15 @@ export async function runInstallerWithOptions(opts = {}) {
     console.log('No targets selected; nothing to install.');
     return;
   }
+  try {
+    const { results } = await registerNativeHost();
+    for (const r of results) {
+      if (r.success) console.log(`✓ ${r.browser}: Native Messaging host registered`);
+    }
+  } catch (e) {
+    console.warn(`⚠️ Native host registration warning: ${e.message}`);
+  }
   installClients(lang, idxs, scope, lan, console);
-  console.log('');
   console.log(T[lang].done);
 }
 
@@ -543,10 +550,19 @@ export async function runInstaller() {
   });
   if (p.isCancel(lanRes)) { p.cancel(t.cancelled); return; }
   const lan = !!lanRes;
+  try {
+    const { results } = await registerNativeHost();
+    const succ = results.filter(r => r.success).map(r => r.browser).join(', ');
+    if (succ) {
+      p.log.success(lang === 'zh' ? `已注册本地宿主: ${succ}` : `Registered native host for: ${succ}`);
+    }
+  } catch (e) {
+    p.log.warn(`Native host registration warning: ${e.message}`);
+  }
 
   installClients(lang, idxs, scope, lan, console);
-  p.outro(t.done);
 }
+export { runInstaller as runInteractiveInstaller };
 
 // Allow running this file directly (`node ./install-cli.mjs` / `npm run install-cli`)
 // as the wizard entry point. When imported by mcp-bridge.js for the `install`

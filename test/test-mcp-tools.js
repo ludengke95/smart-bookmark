@@ -3,10 +3,10 @@
  */
 import './setup.js';
 import assert from 'node:assert/strict';
-import { mcpClient } from '../src/services/mcp/client.js';
+import { MCP_TOOL_DEFINITIONS } from '../src/services/mcp/tools.js';
 
 console.log('--- 1. 验证 MCP 工具定义 (Tool Definitions) ---');
-const tools = mcpClient.getToolDefinitions();
+const tools = MCP_TOOL_DEFINITIONS;
 assert.ok(Array.isArray(tools), 'tools should be an array');
 assert.equal(tools.length, 17, `expected 17 tools, got ${tools.length}`);
 

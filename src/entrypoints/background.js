@@ -1,47 +1,47 @@
 import { defineBackground } from 'wxt/utils/define-background';
 import { getBookmarks, getSettings } from '../services/storage.js';
 import { onStorageChange } from '../services/storage/sync.js';
-import { mcpClient } from '../services/mcp/client.js';
+import { nativeHostClient } from '../services/mcp/native-host.js';
+import { initKeepaliveListener } from '../services/mcp/keepalive.js';
 import { DEFAULT_MCP_WS_PORT } from '../constants/index.js';
-
 export default defineBackground(() => {
   console.log('[Background] Smart Bookmark service worker active');
 
+  // 初始化 Offscreen 心跳监听
+  initKeepaliveListener();
+
   const MCP_KEEPALIVE_ALARM = 'mcp_keepalive_alarm';
 
-  // 同步 MCP 状态与保活闹钟：开启时守护保活，未开启或关闭时彻底释放资源与停止闹钟
-  function syncMcpKeepalive(enabled, port) {
+  // 同步 MCP 状态与保活机制：优先使用 Native Messaging 宿主，未开启或关闭时彻底释放资源
+  function syncMcpKeepalive(enabled, port, allowLan) {
+    const targetPort = port || DEFAULT_MCP_WS_PORT;
     if (enabled) {
-      // 开启保活闹钟
+      if (!nativeHostClient.status.isConnected && !nativeHostClient.status.isConnecting) {
+        nativeHostClient.connect(targetPort, { allowLan });
+      }
       try {
         chrome.alarms?.get(MCP_KEEPALIVE_ALARM, (alarm) => {
           if (!alarm) {
-            chrome.alarms.create(MCP_KEEPALIVE_ALARM, { periodInMinutes: 0.4 }); // 约 24 秒
+            chrome.alarms.create(MCP_KEEPALIVE_ALARM, { periodInMinutes: 0.4 });
           }
         });
       } catch (e) {
         console.warn('[Background] Alarms init warning:', e);
       }
-      if (!mcpClient.isConnected && !mcpClient.isConnecting) {
-        mcpClient.connect(port || DEFAULT_MCP_WS_PORT);
-      }
     } else {
-      // 未开启 MCP：注销闹钟，断开连接，允许 Service Worker 正常休眠零额外开销
       try {
         chrome.alarms?.clear(MCP_KEEPALIVE_ALARM);
       } catch {
         // ignore
       }
-      if (mcpClient.isConnected || mcpClient.isConnecting) {
-        mcpClient.disconnect();
-      }
+      nativeHostClient.disconnect();
     }
   }
 
   // 初始化检查
   getSettings().then(settings => {
     const isMcpEnabled = settings?.mcp?.enabled === true;
-    syncMcpKeepalive(isMcpEnabled, settings?.mcp?.wsPort);
+    syncMcpKeepalive(isMcpEnabled, settings?.mcp?.wsPort, settings?.mcp?.allowLan);
   }).catch(() => {});
 
   // 监听设置动态变更 (通过 BroadcastChannel 跨上下文总线即时响应)
@@ -49,7 +49,7 @@ export default defineBackground(() => {
     if (event.type === 'SETTINGS_CHANGED') {
       const newSettings = event.data;
       const isMcpEnabled = newSettings?.mcp?.enabled === true;
-      syncMcpKeepalive(isMcpEnabled, newSettings?.mcp?.wsPort);
+      syncMcpKeepalive(isMcpEnabled, newSettings?.mcp?.wsPort, newSettings?.mcp?.allowLan);
     }
   });
 
@@ -58,11 +58,11 @@ export default defineBackground(() => {
     if (alarm.name === MCP_KEEPALIVE_ALARM) {
       getSettings().then(settings => {
         if (settings?.mcp?.enabled === true) {
-          if (!mcpClient.isConnected && !mcpClient.isConnecting) {
-            mcpClient.connect(settings?.mcp?.wsPort || DEFAULT_MCP_WS_PORT);
+          const targetPort = settings?.mcp?.wsPort || DEFAULT_MCP_WS_PORT;
+          if (!nativeHostClient.status.isConnected && !nativeHostClient.status.isConnecting) {
+            nativeHostClient.connect(targetPort, { allowLan: settings?.mcp?.allowLan });
           }
         } else {
-          // 若设置已关闭但闹钟偶发触发，确保清理
           syncMcpKeepalive(false);
         }
       }).catch(() => {});
@@ -80,6 +80,20 @@ export default defineBackground(() => {
   chrome.runtime.onMessage?.addListener((message, sender, sendResponse) => {
     if (message?.action === 'ping') {
       sendResponse({ status: 'pong', time: Date.now() });
+      return true;
+    }
+    if (message?.action === 'getMcpStatus') {
+      sendResponse(nativeHostClient.getStatus());
+      return true;
+    }
+    if (message?.action === 'reconnectMcp') {
+      nativeHostClient.reconnect(message.port, { allowLan: message.allowLan, host: message.host });
+      sendResponse({ success: true });
+      return true;
+    }
+    if (message?.action === 'disconnectMcp') {
+      nativeHostClient.disconnect();
+      sendResponse({ success: true });
       return true;
     }
     if (message?.action === 'getBookmarks') {

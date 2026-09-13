@@ -27,7 +27,7 @@
 ### 3. ✨ Multimodal AI Bookmark Organization & Categorization
 - **Web LLM Zero-Key Mode (100% Free)**: Package all bookmark structures into a standardized JSON prompt with a single click. Copy to ChatGPT, Claude, Kimi, or DeepSeek, then paste the structured JSON response or import the file to apply a complete reorganization.
 - **API Direct Connect Mode**: Configure OpenAI, DeepSeek, or local Ollama endpoints for one-click automated classification.
-- **MCP (Model Context Protocol) Support**: Interoperable with local AI agents (Cursor, Claude Desktop) as a standard tool server.
+- **MCP (Model Context Protocol) Support**: Interoperable with local and remote AI agents (Cursor, Claude Desktop, CherryStudio, Dify) via Native Messaging, Stdio transparent proxy, and Streamable HTTP.
 
 ### 4. 📊 5 Dynamic Bookmark Sorting Criteria
 - **↕ Custom Sort (Default)**: Intuitive drag-and-drop reordering and cross-group migration directly on the canvas.
@@ -125,7 +125,7 @@ src/
 │   ├── storage.js           # Compatibility entry (legacy imports preserved)
 │   ├── ai/                  # organizer.js (pipelines) / prompt-builder.js /
 │   │                        #   custom-engine.js (OpenAI-compatible driver)
-│   └── mcp/client.js        # MCP protocol client
+│   └── mcp/                 # Native host client, tool executor & SW keepalive
 ├── state/                   # Svelte 5 global stores (app.svelte.js, toast.svelte.js)
 ├── i18n/                    # Runes-driven i18n engine (t + utils)
 │   └── locales/             # zh-CN | en-US × {common, modals, newtab, ai-prompt}

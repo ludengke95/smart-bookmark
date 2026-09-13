@@ -33,5 +33,10 @@ RELEASE_NOTES.md
 *.pem
 *.key
 
+# Local Native Messaging host generated manifests & scripts
+native-manifest.json
+smart-bookmark-host.*
+.worktrees/
+.chrome-debug-profile/
 
 

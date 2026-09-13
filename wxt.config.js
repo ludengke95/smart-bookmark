@@ -41,38 +41,57 @@ const BROWSER_LOCALE_REPLACEMENTS = {
 export default defineConfig({
   srcDir: 'src',
   modules: ['@wxt-dev/module-svelte'],
+  webExt: {
+    // 当启用调试模式（dev:debug）时禁用 WXT 默认的 web-ext 浏览器启动器，避免其强制注入 pipe 导致 9222 端口失效
+    disabled: process.env.REMOTE_DEBUG === 'true',
+  },
   zip: {
     // Release 附件的插件包命名：smart-bookmark-v<根包版本>-<浏览器>.zip
     artifactTemplate: '{{name}}-v{{packageVersion}}-{{browser}}.zip',
   },
-  manifest: {
-    default_locale: 'zh_CN',
-    name: '__MSG_extName__',
-    description: '__MSG_extDescription__',
-    action: {
-      default_title: '__MSG_actionTitle__'
-    },
-    version,
-    permissions: [
+  manifest: ({ browser }) => {
+    const isChromium = browser !== 'firefox';
+    const permissions = [
       'unlimitedStorage',
       'activeTab',
-      'alarms'
-    ],
-    optional_permissions: [
-      'bookmarks'
-    ],
-    chrome_url_overrides: {
-      newtab: 'home.html'
-    },
-    host_permissions: [
-      '<all_urls>'
-    ],
-    icons: {
-      16: '/icons/icon16.png',
-      32: '/icons/icon32.png',
-      48: '/icons/icon48.png',
-      128: '/icons/icon128.png'
+      'alarms',
+      'nativeMessaging',
+      ...(isChromium ? ['offscreen'] : [])
+    ];
+
+    const baseManifest = {
+      default_locale: 'zh_CN',
+      name: '__MSG_extName__',
+      description: '__MSG_extDescription__',
+      action: {
+        default_title: '__MSG_actionTitle__'
+      },
+      version,
+      permissions,
+      optional_permissions: [
+        'bookmarks'
+      ],
+      chrome_url_overrides: {
+        newtab: 'home.html'
+      },
+      host_permissions: [
+        '<all_urls>'
+      ],
+      icons: {
+        16: '/icons/icon16.png',
+        32: '/icons/icon32.png',
+        48: '/icons/icon48.png',
+        128: '/icons/icon128.png'
+      }
+    };
+
+    const isStoreBuild = process.env.TARGET_STORE === 'true';
+    if (isChromium && !isStoreBuild) {
+      // 固定本地开发与 GitHub 离线安装包的 Extension ID (gobioihpdadhghfbefcnobinbfadmpli)，便于 Native Messaging 零配置白名单
+      baseManifest.key = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzBbOV16TQ7wXCOxHyDPZUFzNp7hdTQ7zZ0reIp3JsoBypufMvkl3qm7YM/TMAAjkF2CMyrKBH2xLxts6BAC7TOEidVWnMfwcAWJ9s7psJ5QVtYfYuQMv11lmQyPLaFDGSegQK6hLjjFj2I22/qoAPUw/RVnfCHHSeLtNcCYxXq9M3nKqTyvYGyIL43muvDecaFrnW+OhZxFo75ik59zmTcUeOcDxshQW2gkXbheueiXwRYOVxgXVsUr2e/dWPPz3kDLRjni9QHoKW3FhRrA1CKPQjjrLni72wcByFzZ7nB6ZEtwz7IHJHnOCdAnP6W+IJzSZXpJtzwJq4jIpSoIsVwIDAQAB';
     }
+
+    return baseManifest;
   },
   hooks: {
     'build:done': (wxt) => {

@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## 对话语言
 
@@ -21,7 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 解决同一应用内网/外网入口不同需手动判断的痛点（WebRTC 内网 IP 嗅探 + 32 位二进制 XOR 最长公共前缀匹配 + 并发短超时连通性探针与毫秒级降级）。
 - 本地 Local-First 存储架构（Dexie.js / IndexedDB），免 Key 网页大模型与 API 双模 AI 智能整理，多维排序，3 套极简主题，快照容灾。
 - 引擎框架：**WXT 0.21** + **Svelte 5 (Runes)** + **Tailwind CSS 3.4** + **Dexie 4.x** + **Manifest V3**。
-- MCP 生态：根目录独立子包 `packages/smart-bookmark-mcp` 为 Cursor / Claude Desktop / Windsurf 等提供 Native Messaging、Stdio 与 Streamable HTTP 桥接。
+- MCP 生态：根目录独立子包 `packages/smart-bookmark-mcp` 为 Cursor / Codex Desktop / Windsurf 等提供 Native Messaging、Stdio 与 Streamable HTTP 桥接。
 
 ## 常用命令
 
@@ -47,6 +47,7 @@ npm run release:notes      # 基于 conventional-changelog 生成版本说明
 
 # 核心测试与验证
 node test/verify-core.js   # 核心寻径算法（XOR 前缀、IP 转换、CIDR 分类）纯逻辑冒烟
+npm run test:mcp-flow      # MCP 启停、8333 端口占用与 8334 重连全流程 CDP E2E 自动化测试
 
 # MCP 子包测试（CI 运行项）
 cd packages/smart-bookmark-mcp && npm test
