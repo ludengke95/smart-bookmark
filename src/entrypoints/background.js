@@ -87,7 +87,7 @@ export default defineBackground(() => {
       return true;
     }
     if (message?.action === 'reconnectMcp') {
-      nativeHostClient.connect(message.port, { allowLan: message.allowLan });
+      nativeHostClient.reconnect(message.port, { allowLan: message.allowLan, host: message.host });
       sendResponse({ success: true });
       return true;
     }

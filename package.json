@@ -21,6 +21,7 @@
     "zip:all": "wxt zip -b chrome && wxt zip -b edge",
     "zip:store": "node -e \"const { execSync } = require('child_process'); execSync('npx wxt zip -b chrome && npx wxt zip -b edge', { stdio: 'inherit', env: { ...process.env, TARGET_STORE: 'true' } });\"",
     "compile": "wxt compile",
+    "test:mcp-flow": "node test/verify-mcp-cdp-flow.js",
     "mcp": "node packages/smart-bookmark-mcp/bin/smart-bookmark-mcp.js",
     "mcp:register": "node packages/smart-bookmark-mcp/bin/smart-bookmark-mcp.js register",
     "release:notes": "node scripts/generate-release-notes.mjs",

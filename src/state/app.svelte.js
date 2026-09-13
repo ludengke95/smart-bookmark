@@ -708,14 +708,20 @@ class AppState {
     return result;
   }
 
-  // ==========================================
   // MCP 外部协同
   reconnectMcp(host, port, allowLan) {
-    const targetPort = port || this.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT;
-    const targetAllowLan = allowLan !== undefined ? allowLan : !!this.settings.mcp?.allowLan;
+    let targetHost = typeof host === 'string' ? host : (this.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST);
+    let targetPort = typeof host === 'number' ? host : (typeof port === 'number' ? port : (this.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT));
+    let targetAllowLan = allowLan !== undefined ? allowLan : !!this.settings.mcp?.allowLan;
+
     this.mcpStatus = { ...this.mcpStatus, isConnecting: true, lastError: null };
     if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
-      chrome.runtime.sendMessage({ action: 'reconnectMcp', port: targetPort, allowLan: targetAllowLan });
+      chrome.runtime.sendMessage({
+        action: 'reconnectMcp',
+        port: targetPort,
+        host: targetHost,
+        allowLan: targetAllowLan
+      });
     }
   }
 

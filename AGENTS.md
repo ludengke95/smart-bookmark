@@ -47,6 +47,7 @@ npm run release:notes      # 基于 conventional-changelog 生成版本说明
 
 # 核心测试与验证
 node test/verify-core.js   # 核心寻径算法（XOR 前缀、IP 转换、CIDR 分类）纯逻辑冒烟
+npm run test:mcp-flow      # MCP 启停、8333 端口占用与 8334 重连全流程 CDP E2E 自动化测试
 
 # MCP 子包测试（CI 运行项）
 cd packages/smart-bookmark-mcp && npm test

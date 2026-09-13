@@ -201,7 +201,7 @@
           <div class="space-y-0.5">
             <span class="font-semibold text-text-primary text-xs block">{t('mcp.step2Title')}</span>
             <p class="text-[10px] text-text-tertiary">
-              {appState.settings.mcp?.enabled ? t('mcp.step2RunningHint') : t('mcp.step2Desc')}
+              {appState.mcpStatus.isConnected ? t('mcp.step2RunningHint') : t('mcp.step2Desc')}
             </p>
           </div>
           <Switch
@@ -276,10 +276,16 @@
               <div class="flex items-center justify-between gap-2">
                 <span class="text-[10px] text-text-secondary">{t('mcp.portLabel')}</span>
                 <input
+                  id="mcp-port-input"
                   bind:this={portInputRef}
                   type="number"
                   value={appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT}
                   onchange={(e) => updateMcpSettings({ wsPort: parseInt(e.target.value, 10) || DEFAULT_MCP_WS_PORT })}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.currentTarget.blur();
+                    }
+                  }}
                   class="w-16 px-1.5 py-0.5 rounded bg-surface border border-border-subtle text-center text-[11px] text-text-primary font-mono outline-none focus:border-accent"
                 />
               </div>

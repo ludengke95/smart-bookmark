@@ -87,7 +87,28 @@ class NativeHostClient {
     }
 
     if (this.port) {
-      return;
+      // 若已建立通信管道但尚未连接成功，或目标端口/网络配置发生变更，向 Native Host 发送 START 重新启动服务
+      if (!this.status.isConnected || this.status.port !== httpPort) {
+        try {
+          this.shouldBeConnected = true;
+          this.updateStatus({ isConnecting: true, port: httpPort, lastError: null });
+          this.port.postMessage({
+            type: 'START',
+            payload: {
+              port: httpPort,
+              allowLan: !!options.allowLan,
+              host: options.allowLan ? '0.0.0.0' : (options.host || '127.0.0.1'),
+              tools: MCP_TOOL_DEFINITIONS
+            }
+          });
+          return;
+        } catch (e) {
+          console.warn('[MCP Native] Existing port unresponsive, recreating connection:', e);
+          this.disconnect();
+        }
+      } else {
+        return;
+      }
     }
 
     this.shouldBeConnected = true;
@@ -239,6 +260,36 @@ class NativeHostClient {
         }
       }, delay);
     }
+  }
+
+  /**
+   * 重新连接或切换端口
+   * @param {number} [httpPort=8333]
+   * @param {{ allowLan?: boolean, host?: string }} [options={}]
+   */
+  reconnect(httpPort = DEFAULT_MCP_WS_PORT, options = {}) {
+    this.targetOptions = options;
+    this.shouldBeConnected = true;
+    this.updateStatus({ isConnecting: true, port: httpPort, lastError: null });
+
+    if (this.port) {
+      try {
+        this.port.postMessage({
+          type: 'START',
+          payload: {
+            port: httpPort,
+            allowLan: !!options.allowLan,
+            host: options.allowLan ? '0.0.0.0' : (options.host || '127.0.0.1'),
+            tools: MCP_TOOL_DEFINITIONS
+          }
+        });
+        return;
+      } catch (e) {
+        console.warn('[MCP Native] Port dead on reconnect, recreating:', e);
+        this.disconnect();
+      }
+    }
+    this.connect(httpPort, options);
   }
 
   /**
