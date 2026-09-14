@@ -27,30 +27,30 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ```bash
 # 安装根依赖
-npm install
+pnpm install
 
 # 开发模式（自动加载扩展到独立 Chrome，支持 HMR）
-npm run dev
-npm run dev:firefox        # Firefox 适配开发
+pnpm run dev
+pnpm run dev:firefox        # Firefox 适配开发
 
 # 构建与打包
-npm run build              # 构建至 .output/chrome-mv3
-npm run zip                # 打包为可分发 zip 至 .output/
-npm run compile            # 仅类型/语法编译检查
+pnpm run build              # 构建至 .output/chrome-mv3
+pnpm run zip                # 打包为可分发 zip 至 .output/
+pnpm run compile            # 仅类型/语法编译检查
 
 # 本地 MCP 桥接（运行根目录桥接脚本）
-npm run mcp
+pnpm run mcp
 
 # 多包版本同步与变更日志
-npm run version:sync       # 同步根目录与 packages/smart-bookmark-mcp 版本号
-npm run release:notes      # 基于 conventional-changelog 生成版本说明
+pnpm run version:sync       # 同步根目录与 packages/smart-bookmark-mcp 版本号
+pnpm run release:notes      # 基于 conventional-changelog 生成版本说明
 
 # 核心测试与验证
 node test/verify-core.js   # 核心寻径算法（XOR 前缀、IP 转换、CIDR 分类）纯逻辑冒烟
-npm run test:mcp-flow      # MCP 启停、8333 端口占用与 8334 重连全流程 CDP E2E 自动化测试
+pnpm run test:mcp-flow     # MCP 启停、8333 端口占用与 8334 重连全流程 CDP E2E 自动化测试
 
 # MCP 子包测试（CI 运行项）
-cd packages/smart-bookmark-mcp && npm test
+pnpm --filter @ludengke95/smart-bookmark-mcp test
 ```
 
 ## 架构分层与核心机制

@@ -124,7 +124,7 @@ async function run() {
   if (!homeTab) {
     console.log('\n⚠️  [CDP E2E] 未检测到 Chrome 远程调试服务 (127.0.0.1:9222) 或扩展主页 (home.html)。');
     console.log('   此测试属于端到端交互测试，需要浏览器调试环境支持，已安全跳过。');
-    console.log('   💡 本地运行提示: 先启动 `npm run dev:debug`，再执行 `npm run test:mcp-flow` 即可全自动验证。\n');
+    console.log('   💡 本地运行提示: 先启动 `pnpm run dev:debug`，再执行 `pnpm run test:mcp-flow` 即可全自动验证。\n');
     return;
   }
 

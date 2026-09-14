@@ -17,39 +17,45 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Run core topology algorithm tests
         run: node test/verify-core.js
 
       - name: Build Chrome extension
-        run: npm run build
+        run: pnpm run build
 
   mcp:
     name: Test smart-bookmark-mcp
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: packages/smart-bookmark-mcp
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: packages/smart-bookmark-mcp/package-lock.json
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Run tests
-        run: npm test
+        run: pnpm --filter @ludengke95/smart-bookmark-mcp test

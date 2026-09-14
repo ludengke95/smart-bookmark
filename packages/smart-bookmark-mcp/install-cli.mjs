@@ -564,7 +564,7 @@ export async function runInstaller() {
 }
 export { runInstaller as runInteractiveInstaller };
 
-// Allow running this file directly (`node ./install-cli.mjs` / `npm run install-cli`)
+// Allow running this file directly (`node ./install-cli.mjs` / `pnpm run install-cli`)
 // as the wizard entry point. When imported by mcp-bridge.js for the `install`
 // subcommand, this guard does NOT fire — the dispatcher calls runInstaller() itself.
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

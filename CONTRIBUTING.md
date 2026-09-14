@@ -103,12 +103,12 @@ fix(zip): 插件包命名加 v 前缀
 
 1. 在 `release/vX.Y.Z` 分支，仅修改根包 `package.json` 的 `version`（子包由发布脚本同步）。
 2. 合入 `master`，打 `vX.Y.Z` 并推送触发自动化链（见 §4）。
-3. 人工上架：本地 `npm run zip` 后，去 Chrome Web Store 后台上传 `smart-bookmark-vX.Y.Z-chrome.zip` 并发布（商店不接受自动发布）。
+3. 人工上架：本地 `pnpm run zip` 后，去 Chrome Web Store 后台上传 `smart-bookmark-vX.Y.Z-chrome.zip` 并发布（商店不接受自动发布）。
 
 ## 6. 本地开发
 
 - 运行环境：Node 22。
-- 安装依赖：根包 `npm ci`；子包 `cd packages/smart-bookmark-mcp && npm ci`。
-- 本地起 MCP 桥：`npm run mcp`（默认 `127.0.0.1:8333`）。
-- 构建扩展：`npm run build`；打包 zip：`npm run zip`。
-- 生成变更日志（本地预览）：`npm run release:notes`（产出 `RELEASE_NOTES.md`）。
+- 安装依赖：`pnpm install`。
+- 本地起 MCP 桥：`pnpm run mcp`（默认 `127.0.0.1:8333`）。
+- 构建扩展：`pnpm run build`；打包 zip：`pnpm run zip`。
+- 生成变更日志（本地预览）：`pnpm run release:notes`（产出 `RELEASE_NOTES.md`）。

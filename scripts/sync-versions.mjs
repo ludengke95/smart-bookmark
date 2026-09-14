@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 版本联动（lockstep）：把根包 package.json 的 version 同步写入
 // npm 子包 packages/smart-bookmark-mcp/package.json，确保两者同号发布。
-// 本地可 `npm run version:sync`；release.yml 在打 tag 后自动执行并校验。
+// 本地可 `pnpm run version:sync`；release.yml 在打 tag 后自动执行并校验。
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

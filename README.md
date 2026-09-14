@@ -61,44 +61,44 @@
 
 ### 环境要求
 - Node.js >= 18.0.0
-- npm >= 9.0.0
+- pnpm >= 9.0.0
 
 ### 1. 安装依赖
 ```bash
-npm install
+pnpm install
 ```
 
 ### 2. 启动开发环境（自动加载扩展并启动 Chrome）
 ```bash
-npm run dev
+pnpm run dev
 ```
 > 执行后 WXT 会自动拉起一个加载了该扩展的独立 Chrome 窗口，支持代码热重载（HMR）。
 
 ### 3. 构建打包生产版本
 ```bash
 # 构建 Chrome MV3 生产包至 .output/chrome-mv3
-npm run build
+pnpm run build
 
 # 打包为可分发的 zip 压缩包至 .output/
-npm run zip
+pnpm run zip
 
 # 仅语法与类型编译检查
-npm run compile
+pnpm run compile
 ```
 
 ### 4. 本地 MCP 联动与子包验证
 ```bash
 # 一键注册 Native Messaging 宿主（Chrome / Edge）
-npm run mcp:register
+pnpm run mcp:register
 
 # 启动本地 MCP Stdio 代理（供 Claude Desktop / Cursor 等 stdio 客户端联动）
-npm run mcp
+pnpm run mcp
 
 # 核心算法冒烟测试
 node test/verify-core.js
 
 # MCP 子包单元测试
-cd packages/smart-bookmark-mcp && npm test
+pnpm --filter @ludengke95/smart-bookmark-mcp test
 ```
 
 ---
