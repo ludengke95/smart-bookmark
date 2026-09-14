@@ -1,6 +1,6 @@
 {
   "name": "@ludengke95/smart-bookmark-mcp",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "MCP (Model Context Protocol) bridge server for the Smart Bookmark Chrome extension. Exposes your bookmarks/groups/tags to AI clients (Cursor, Claude Desktop, WorkBuddy, Windsurf, CherryStudio, Dify) over Native Messaging, Stdio proxy, and Streamable HTTP.",
   "type": "module",
   "bin": {
