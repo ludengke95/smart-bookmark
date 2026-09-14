@@ -39,4 +39,5 @@ smart-bookmark-host.*
 .worktrees/
 .chrome-debug-profile/
 
+.orca/
 
