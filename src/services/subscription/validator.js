@@ -2,6 +2,7 @@
  * 订阅源数据安全校验与清洗投影 (Defense-in-Depth)
  */
 import { serviceError } from '../errors.js';
+import { UNGROUPED_GROUP_ID } from '../../constants/index.js';
 
 const MAX_PAYLOAD_SIZE = 5 * 1024 * 1024; // 5 MB
 const MAX_GROUPS_COUNT = 50;
@@ -155,7 +156,7 @@ export function validateAndCleanSubscription(rawInput) {
     cleanBookmarks.push({
       id: bmId,
       name: bmName,
-      groupId: bm.groupId ? String(bm.groupId).trim() : (cleanGroups[0]?.id || '__ungrouped__'),
+      groupId: bm.groupId ? String(bm.groupId).trim() : (cleanGroups[0]?.id || UNGROUPED_GROUP_ID),
       iconKey: String(bm.iconKey || '').trim(),
       tags,
       order: typeof bm.order === 'number' ? bm.order : i + 1,

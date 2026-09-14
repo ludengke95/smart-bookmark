@@ -1,3 +1,5 @@
+import { UNGROUPED_GROUP_ID } from '../../constants/index.js';
+
 /**
  * 订阅源 3-Way Diff 增量状态保全算法
  *
@@ -88,7 +90,7 @@ export function computeSubscriptionDiff(subId, localGroups, localBookmarks, remo
       || (rBm.endpoints?.[0]?.url && localBmUrlNameMap.get(`${rBm.name.trim().toLowerCase()}|${rBm.endpoints[0].url.trim().toLowerCase()}`));
 
     // 映射其 targetGroupId
-    const targetGroupId = remoteToLocalGroupIdMap.get(rBm.groupId) || toPutGroups[0]?.id || '__ungrouped__';
+    const targetGroupId = remoteToLocalGroupIdMap.get(rBm.groupId) || toPutGroups[0]?.id || UNGROUPED_GROUP_ID;
 
     if (matched) {
       // Update: 沿用本地已有的 bookmarkId！保全所有点击统计和探针数据

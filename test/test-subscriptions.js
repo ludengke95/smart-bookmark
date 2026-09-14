@@ -149,6 +149,12 @@ async function testDiffAlgorithm() {
   assert.ok(updatedGroup, '后端服务分组名称应被更新');
   assert.equal(updatedGroup.id, 'loc-grp-1', '更新分组必须复用本地既有 ID');
 
+  // 验证孤立书签回退至系统 UNGROUPED_GROUP_ID
+  const orphanDiff = computeSubscriptionDiff('sub-orphan', [], [], [], [
+    { id: 'orphan-1', name: '无组书签', groupId: 'non-exist-grp', endpoints: [{ url: 'https://example.com' }] }
+  ]);
+  assert.equal(orphanDiff.toPutBookmarks[0].groupId, UNGROUPED_GROUP_ID, '无对应分组的书签必须安全回退至系统未分组');
+
   console.log('✓ 3-Way Diff 算法状态保全验证通过');
 }
 

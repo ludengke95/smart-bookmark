@@ -24,9 +24,6 @@
   $effect(() => {
     if (open && exportableGroups.length > 0 && selectedGroupIds.size === 0) {
       selectedGroupIds = new Set(exportableGroups.map(g => g.id));
-      if (!name) {
-        name = t('subscriptions.collectionNamePlaceholder');
-      }
     }
   });
 
@@ -209,7 +206,7 @@
                   <span class="font-medium text-text-primary truncate">{getGroupName(grp)}</span>
                 </div>
                 <span class="text-[10px] text-text-tertiary font-mono">
-                  {bmCount} {t('tags.bookmarkCount', { count: bmCount }).replace(`${bmCount} `, '')}
+                  {t('tags.bookmarkCount', { count: bmCount })}
                 </span>
               </button>
             {/each}

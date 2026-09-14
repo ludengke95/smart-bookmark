@@ -94,7 +94,9 @@
 
   async function handleSync(subId) {
     if (syncingSubIds.has(subId)) return;
-    syncingSubIds.add(subId);
+    const nextSyncing = new Set(syncingSubIds);
+    nextSyncing.add(subId);
+    syncingSubIds = nextSyncing;
 
     try {
       const res = await appState.syncSubscription(subId);
@@ -108,7 +110,9 @@
     } catch (err) {
       toast.show(t('subscriptions.syncFailed', { error: err.message }));
     } finally {
-      syncingSubIds.delete(subId);
+      const finishSyncing = new Set(syncingSubIds);
+      finishSyncing.delete(subId);
+      syncingSubIds = finishSyncing;
     }
   }
 
