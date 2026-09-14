@@ -96,19 +96,19 @@ const bookmarksMock = [
 // 测试 1：精确匹配（忽略末尾斜杠）
 const matchExact = matchCurrentTabWithBookmarks('https://gitlab.internal.corp/', bookmarksMock);
 assert.strictEqual(matchExact.exactMatch?.id, 'bm_1');
-assert.strictEqual(matchExact.suggestedMatch, null);
+assert.strictEqual(matchExact.matchedEndpoint?.url, 'https://gitlab.internal.corp');
 
-// 测试 2：同源推荐（路径不同，同 Host/Port）
-const matchSuggest = matchCurrentTabWithBookmarks('https://gitlab.internal.corp/frontend/app/-/issues', bookmarksMock);
-assert.strictEqual(matchSuggest.exactMatch, null);
-assert.strictEqual(matchSuggest.suggestedMatch?.id, 'bm_1');
+// 测试 2：同源但不同路径/非入口页面，不应误判为已收录
+const matchDifferentPath = matchCurrentTabWithBookmarks('https://gitlab.internal.corp/frontend/app/-/issues', bookmarksMock);
+assert.strictEqual(matchDifferentPath.exactMatch, null);
+assert.strictEqual(matchDifferentPath.matchedEndpoint, null);
 
-// 测试 3：完全未收录且不同源
+// 测试 3：完全未收录
 const matchNone = matchCurrentTabWithBookmarks('https://unknown-service.com', bookmarksMock);
 assert.strictEqual(matchNone.exactMatch, null);
-assert.strictEqual(matchNone.suggestedMatch, null);
+assert.strictEqual(matchNone.matchedEndpoint, null);
 
-console.log('✓ URL 规范化与书签精准/同源推荐匹配测试通过');
+console.log('✓ URL 规范化与书签精准匹配测试通过');
 
 console.log('\n==============================');
 console.log('🎉 所有底层算法单元测试 100% 通过！');

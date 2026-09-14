@@ -80,8 +80,6 @@ export default {
     appendedWithTopology: 'Appended as [{topology}] endpoint for "{name}"',
     topologyIntranet: 'Intranet',
     topologyExtranet: 'Extranet',
-    smartSuggestNotice: 'May belong to bookmark "{name}"',
-    smartSuggestAction: 'Quick Append',
     currentEndpointBadge: 'Active',
     viewEndpoints: 'Endpoints ({count})',
     hideEndpoints: 'Collapse',

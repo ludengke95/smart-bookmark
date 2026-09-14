@@ -80,8 +80,6 @@ export default {
     appendedWithTopology: '已将当前网址追加为「{name}」的【{topology}】入口',
     topologyIntranet: '内网',
     topologyExtranet: '外网',
-    smartSuggestNotice: '疑似属于已有书签「{name}」',
-    smartSuggestAction: '一键归并',
     currentEndpointBadge: '当前入口',
     viewEndpoints: '入口明细 ({count})',
     hideEndpoints: '收起明细',

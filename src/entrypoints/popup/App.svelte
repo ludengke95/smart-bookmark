@@ -40,13 +40,12 @@
     }
   });
 
-  // 响应式分析当前网页在书签库中的精确匹配与同源推荐
+  // 响应式分析当前网页在书签库中的精确匹配
   let matchResult = $derived(
     matchCurrentTabWithBookmarks(currentTab.url, appState.bookmarks)
   );
   let existingBookmarkMatch = $derived(matchResult.exactMatch);
   let matchedEndpoint = $derived(matchResult.matchedEndpoint);
-  let suggestedMatch = $derived(matchResult.suggestedMatch);
 
   let filteredList = $derived.by(() => {
     const q = searchQuery.toLowerCase().trim();
@@ -402,23 +401,6 @@
                 </button>
               </div>
             </div>
-
-            <!-- 同源智能推荐胶囊 -->
-            {#if suggestedMatch}
-              <div class="flex items-center justify-between gap-1.5 px-2 py-1 rounded-md bg-accent/5 border border-accent/20 text-[10px]">
-                <div class="flex items-center gap-1 min-w-0 flex-1 text-text-secondary truncate">
-                  <span class="text-accent flex-shrink-0">💡</span>
-                  <span class="truncate">{t('popup.smartSuggestNotice', { name: suggestedMatch.name })}</span>
-                </div>
-                <button
-                  type="button"
-                  onclick={() => handleAppendEndpoint(suggestedMatch)}
-                  class="px-1.5 py-0.5 rounded bg-accent text-accent-fg font-medium hover:opacity-90 transition-opacity flex-shrink-0"
-                >
-                  {t('popup.smartSuggestAction')}
-                </button>
-              </div>
-            {/if}
           </div>
         {:else}
           <!-- 展开保存新书签表单 -->

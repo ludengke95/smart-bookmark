@@ -89,29 +89,24 @@ export function sanitizeUrlForStorage(rawUrl) {
 }
 
 /**
- * 在已有书签库中匹配当前标签页
+ * 在已有书签库中精准匹配当前标签页（规范化忽略 tracking 参数与末尾斜杠差异）
  *
  * @param {string} currentUrl 当前标签页地址
  * @param {Array<object>} bookmarks 书签列表
  * @returns {{
  *   exactMatch: object | null,
- *   matchedEndpoint: object | null,
- *   suggestedMatch: object | null
+ *   matchedEndpoint: object | null
  * }}
  */
 export function matchCurrentTabWithBookmarks(currentUrl, bookmarks) {
   if (!currentUrl || !Array.isArray(bookmarks) || bookmarks.length === 0) {
-    return { exactMatch: null, matchedEndpoint: null, suggestedMatch: null };
+    return { exactMatch: null, matchedEndpoint: null };
   }
 
   const normCurrent = normalizeEndpointUrl(currentUrl, true);
   if (!normCurrent || !normCurrent.cleanUrl) {
-    return { exactMatch: null, matchedEndpoint: null, suggestedMatch: null };
+    return { exactMatch: null, matchedEndpoint: null };
   }
-
-  let exactMatch = null;
-  let matchedEndpoint = null;
-  let suggestedMatch = null;
 
   for (const bm of bookmarks) {
     const endpoints = bm.endpoints || [];
@@ -120,25 +115,18 @@ export function matchCurrentTabWithBookmarks(currentUrl, bookmarks) {
       const normEp = normalizeEndpointUrl(ep.url, true);
       if (!normEp) continue;
 
-      // 1. 精准全等匹配（忽略参数中 tracking 差异与末尾斜杠差异）
+      // 精准全等匹配（忽略参数中 tracking 差异与末尾斜杠差异）
       if (normEp.cleanUrl === normCurrent.cleanUrl) {
         return {
           exactMatch: bm,
-          matchedEndpoint: ep,
-          suggestedMatch: null
+          matchedEndpoint: ep
         };
-      }
-
-      // 2. 同源/同主机候选推荐（当尚未找到建议且主机非空且非公共泛域名）
-      if (!suggestedMatch && normEp.origin && normEp.origin === normCurrent.origin) {
-        suggestedMatch = bm;
       }
     }
   }
 
   return {
     exactMatch: null,
-    matchedEndpoint: null,
-    suggestedMatch
+    matchedEndpoint: null
   };
 }
