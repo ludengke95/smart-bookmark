@@ -32,7 +32,10 @@ export default {
     finish: '完成设置',
     themeSwitched: '已切换至主题: {name}',
     themeDesc: '视觉风格 (3款极简主题)',
-    resetDone: '已重置为默认初始数据'
+    resetDone: '已重置为默认初始数据',
+    privacyTitle: '数据隐私与本地优先声明',
+    privacyDesc: 'Smart Bookmark 采用 100% 本地优先（Local-First）架构，所有书签、图标与统计数据均仅保存在本地 IndexedDB 中，零云端上报、零追踪。',
+    privacyLink: '查看完整隐私政策'
   },
   ai: {
     preparingData: '正在准备书签数据...',
