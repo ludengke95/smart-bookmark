@@ -4,6 +4,7 @@
  * 基于 Dexie.js 实现快照持久化、自动淘汰与全量 JSON 备份回滚。
  */
 import { withStorageLock, getSettings, deepCloneToRaw } from './base.js';
+import { getAiApiKey, saveAiApiKey } from './secure-vault.js';
 import {
   DEFAULT_BOOKMARKS,
   DEFAULT_GROUPS,
@@ -20,6 +21,18 @@ import { resetAllStats } from './stats.js';
 import { serviceError } from '../errors.js';
 
 export { DEFAULT_BACKUP_SETTINGS };
+
+/**
+ * 设置脱敏辅助函数：剔除敏感凭证（如 API Key），杜绝泄漏到快照或导出备份中
+ */
+export function sanitizeSettings(settings) {
+  if (!settings || typeof settings !== 'object') return settings;
+  const clean = deepCloneToRaw(settings);
+  if (clean?.ai && typeof clean.ai === 'object') {
+    delete clean.ai.apiKey;
+  }
+  return clean;
+}
 
 export async function getBackupSettings() {
   const record = await db.appSettings.get('backup_settings');
@@ -79,7 +92,7 @@ export async function createSnapshot(reason = null, type = 'manual', isLocked = 
         bookmarks,
         groups,
         tags,
-        settings
+        settings: sanitizeSettings(settings)
       }
     };
 
@@ -199,8 +212,11 @@ export async function checkDailyAutoBackup() {
 
 /**
  * 导出全部数据为 JSON 字符串
+ * @param {object} [options]
+ * @param {boolean} [options.includeCredentials=false] - 是否显式包含敏感凭据 (默认 false 脱敏)
  */
-export async function exportFullBackupJson() {
+export async function exportFullBackupJson(options = {}) {
+  const includeCredentials = Boolean(options?.includeCredentials);
   const [bookmarks, groups, tags, settings, bookmarkStats] = await Promise.all([
     getBookmarks(),
     getGroups(),
@@ -216,13 +232,24 @@ export async function exportFullBackupJson() {
     lastClicked[s.bookmarkId] = s.lastClicked || 0;
   }
 
+  const credentials = {};
+  if (includeCredentials) {
+    const aiKey = await getAiApiKey();
+    if (aiKey) {
+      credentials.aiApiKey = aiKey;
+    }
+  }
+
   const exportPayload = {
-    version: '2.0.0',
+    version: '2.1.0',
     exportTime: new Date().toISOString(),
+    sanitized: !includeCredentials,
+    includesCredentials: includeCredentials && Object.keys(credentials).length > 0,
     bookmarks,
     groups,
     tags,
-    settings,
+    settings: sanitizeSettings(settings),
+    ...(includeCredentials && Object.keys(credentials).length > 0 ? { credentials } : {}),
     clickStats,
     lastClicked
   };
@@ -249,6 +276,12 @@ export async function importFullBackupJson(jsonString) {
     // 导入前自动创建安全快照
     await createSnapshot(null, 'auto_preimport');
 
+    // 检查并安全迁移凭据（支持显式导出的 credentials 与历史备份中的 settings.ai.apiKey）
+    const legacyOrExportedKey = payload.credentials?.aiApiKey || payload.settings?.ai?.apiKey;
+    if (legacyOrExportedKey && typeof legacyOrExportedKey === 'string' && legacyOrExportedKey.trim()) {
+      await saveAiApiKey(legacyOrExportedKey.trim());
+    }
+
     await withStorageLock(async () => {
       await db.transaction('rw', [db.bookmarks, db.groups, db.tags, db.appSettings, db.bookmarkStats], async () => {
         if (hasGroups) {
@@ -267,7 +300,7 @@ export async function importFullBackupJson(jsonString) {
           await db.bookmarks.bulkPut(safeBms);
         }
         if (payload.settings) {
-          await db.appSettings.put({ key: 'settings', value: payload.settings });
+          await db.appSettings.put({ key: 'settings', value: sanitizeSettings(payload.settings) });
         }
         if (payload.clickStats) {
           await db.bookmarkStats.clear();

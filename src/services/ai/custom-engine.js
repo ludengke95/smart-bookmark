@@ -3,15 +3,16 @@
  */
 import { serviceError } from '../errors.js';
 import { t } from '../../i18n/index.svelte.js';
+import { getAiApiKey } from '../storage/secure-vault.js';
 
 /**
  * 测试自定义 API 连通性
  * @param {object} config - { baseUrl, apiKey, model }
  */
 export async function testCustomApiConnection(config) {
-  const baseUrl = (config.baseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
-  const apiKey = config.apiKey || '';
-  const model = config.model || 'gpt-4o-mini';
+  const baseUrl = (config?.baseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
+  const apiKey = config?.apiKey || await getAiApiKey();
+  const model = config?.model || 'gpt-4o-mini';
 
   const url = `${baseUrl}/chat/completions`;
 
@@ -63,9 +64,9 @@ export async function testCustomApiConnection(config) {
  * @returns {Promise<string>}
  */
 export async function runCustomApiPrompt({ config, systemPrompt, prompt, schema }) {
-  const baseUrl = (config.baseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
-  const apiKey = config.apiKey || '';
-  const model = config.model || 'gpt-4o-mini';
+  const baseUrl = (config?.baseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
+  const apiKey = config?.apiKey || await getAiApiKey();
+  const model = config?.model || 'gpt-4o-mini';
 
   const url = `${baseUrl}/chat/completions`;
 
