@@ -1,6 +1,6 @@
 # 🔒 Smart Bookmark 隐私政策 (Privacy Policy)
 
-**生效日期**：2024 年 1 月 1 日  
+**生效日期**：2026 年 9 月 14 日  
 **最近更新**：2026 年 9 月 14 日  
 **语言版本**：简体中文 | [English](./PRIVACY_EN.md)
 
