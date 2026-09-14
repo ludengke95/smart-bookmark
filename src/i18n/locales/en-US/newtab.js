@@ -72,6 +72,24 @@ export default {
     refreshNetwork: 'Refresh network status',
     detectingNetwork: 'Detecting network...',
     noBookmarksFound: 'No matching bookmarks',
-    currentPage: 'Current page'
+    currentPage: 'Current page',
+    appendEndpoint: 'Append Endpoint',
+    appendModePrompt: 'Select a target bookmark below to append current URL',
+    appendSearchPlaceholder: 'Filter target bookmark (e.g. GitLab)...',
+    appendAction: '+ Append',
+    appendedWithTopology: 'Appended as [{topology}] endpoint for "{name}"',
+    topologyIntranet: 'Intranet',
+    topologyExtranet: 'Extranet',
+    smartSuggestNotice: 'May belong to bookmark "{name}"',
+    smartSuggestAction: 'Quick Append',
+    currentEndpointBadge: 'Active',
+    viewEndpoints: 'Endpoints ({count})',
+    hideEndpoints: 'Collapse',
+    switchToEndpoint: 'Switch to this endpoint',
+    copiedEndpoint: 'Endpoint URL copied',
+    copyEndpoint: 'Copy endpoint',
+    editInNewTab: 'Edit in dashboard',
+    noEndpoints: 'No endpoints configured',
+    allEndpoints: 'Configured Endpoints'
   }
 };

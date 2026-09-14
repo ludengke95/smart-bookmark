@@ -72,6 +72,24 @@ export default {
     refreshNetwork: '刷新网络状态',
     detectingNetwork: '检测网络中...',
     noBookmarksFound: '未找到匹配书签',
-    currentPage: '当前网页'
+    currentPage: '当前网页',
+    appendEndpoint: '追加入口',
+    appendModePrompt: '请在下方列表选择要追加到的目标书签',
+    appendSearchPlaceholder: '过滤目标书签（如 GitLab）...',
+    appendAction: '+ 追加',
+    appendedWithTopology: '已将当前网址追加为「{name}」的【{topology}】入口',
+    topologyIntranet: '内网',
+    topologyExtranet: '外网',
+    smartSuggestNotice: '疑似属于已有书签「{name}」',
+    smartSuggestAction: '一键归并',
+    currentEndpointBadge: '当前入口',
+    viewEndpoints: '入口明细 ({count})',
+    hideEndpoints: '收起明细',
+    switchToEndpoint: '切换到该入口',
+    copiedEndpoint: '已复制入口地址',
+    copyEndpoint: '复制入口',
+    editInNewTab: '在控制台完整编辑',
+    noEndpoints: '暂无可用入口',
+    allEndpoints: '所有已配置入口'
   }
 };

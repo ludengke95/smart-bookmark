@@ -30,6 +30,23 @@
 
   onMount(async () => {
     await appState.init();
+
+    if (typeof window !== 'undefined' && window.location) {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('action') === 'edit') {
+          const targetId = urlParams.get('id');
+          if (targetId) {
+            const targetBm = appState.bookmarks.find(b => b.id === targetId);
+            if (targetBm) {
+              handleOpenEditBookmark(targetBm);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('解析 URL action 参数失败:', e);
+      }
+    }
   });
 
   function handleOpenAddBookmark(groupId = '') {
