@@ -1,6 +1,6 @@
 # 🔒 Smart Bookmark Privacy Policy
 
-**Effective Date**: January 1, 2024  
+**Effective Date**: September 14, 2026  
 **Last Updated**: September 14, 2026  
 **Languages**: [简体中文](./PRIVACY.md) | English
 
