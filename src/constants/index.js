@@ -135,7 +135,6 @@ export const AI_API_PRESETS = [
 // 默认 AI 智能治理配置
 export const DEFAULT_AI_SETTINGS = {
   baseUrl: DEFAULT_AI_BASE_URL,
-  apiKey: '',
   model: DEFAULT_AI_MODEL,
   preset: 'deepseek',
   grouping: {

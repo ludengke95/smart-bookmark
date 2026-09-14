@@ -39,6 +39,11 @@ Thank you for choosing **Smart Bookmark** (Intelligent Route Selector & New Tab 
 - **Purpose**: Enables real-time failover to secondary endpoints if the primary service is unreachable, and powers the "By Latency" sorting option.
 - **Storage**: Retained solely in temporary in-memory caches with a strict Time-To-Live (TTL) and discarded automatically.
 
+### 1.5 AI Model API Keys (Credential Protection)
+- **What We Process**: Third-party LLM API keys entered in "Settings → AI Models".
+- **Encryption Safeguard**: **Physically isolated from general settings and encrypted at rest using browser-native Web Crypto APIs (AES-GCM-256 + PBKDF2 derived keys)** in a dedicated credentials vault.
+- **Operational Scope**: Keys are decrypted strictly on demand at the exact moment an HTTP request is assembled, never reside as plaintext in reactive state trees, and are always masked in the UI (e.g., `sk-••••••••5678`). They are never transmitted to any intermediate server or proxy.
+
 ---
 
 ## 2. Browser Permissions Disclosure
@@ -65,7 +70,7 @@ Smart Bookmark does not incorporate any third-party advertising or tracking SDKs
 - **Web LLM Zero-Key Mode (Default & Recommended)**:  
   The extension formats selected bookmarks into a structured prompt in local memory. **You manually copy the prompt and paste it into web-based LLMs of your choice (e.g., ChatGPT, Claude, DeepSeek, Kimi)**. Data transmission is completely transparent and under your manual control.
 - **Direct API Mode**:  
-  Only when you **explicitly configure** a third-party API Key in "Settings → AI Models" and initiate classification, the extension sends bookmark titles, URLs, and category structures to that API endpoint. Data handling is governed by that provider's privacy policy. Your API Key is stored securely in local storage and is never transmitted to any intermediate server.
+  Only when you **explicitly configure** a third-party API Key in "Settings → AI Models" and initiate classification, the extension sends bookmark titles, URLs, and category structures to that API endpoint. Data handling is governed by that provider's privacy policy. **Your API Key is encrypted at rest using Web Crypto AES-GCM and stored in an isolated vault, never transmitted to any intermediate server**.
 - **Local Ollama Mode**:  
   Requests are routed exclusively to your local machine (e.g., `http://localhost:11434`), operating **100% offline with zero external network transmission**.
 
@@ -81,7 +86,7 @@ The extension prioritizes its offline vector icon library (Simple Icons, 3,000+ 
 
 You retain full, unconditional ownership of all your data:
 
-1. **Export & Portability**: You may export all bookmarks, groups, tags, and configurations as an unencrypted, standardized JSON file at any time via "Snapshots & Backup".
+1. **Export & Portability**: You may export all bookmarks, groups, tags, and configurations as a standardized JSON file at any time via "Snapshots & Backup". **To eliminate credential leakage, exported backups and automated disaster-recovery snapshots strictly omit API keys by default (enforced sanitization)**. Credentials are only included if you explicitly opt-in and confirm the security warning.
 2. **Rollback**: The extension automatically creates local safety snapshots before major batch operations, allowing instant one-click rollback.
 3. **Complete Deletion**:
    - You can permanently purge all data tables in local IndexedDB via "Settings → Danger Zone → Reset Data".

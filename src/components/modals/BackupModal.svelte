@@ -11,6 +11,7 @@
 
   let snapshotReason = $state('');
   let rollbackConfirm = $state({ open: false, targetId: null });
+  let includeCredentials = $state(false);
 
   function formatTime(isoString) {
     try {
@@ -56,7 +57,7 @@
   }
 
   async function handleExportJson() {
-    const jsonStr = await exportFullBackupJson();
+    const jsonStr = await exportFullBackupJson({ includeCredentials });
     const blob = new Blob([jsonStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -129,6 +130,22 @@
             <span>{t('backup.importJson')}</span>
             <input type="file" accept=".json" onchange={handleImportJson} class="hidden" />
           </label>
+        </div>
+
+        <div class="pt-0.5 space-y-1">
+          <label class="inline-flex items-center gap-1.5 cursor-pointer select-none text-[11px] text-text-secondary hover:text-text-primary">
+            <input
+              type="checkbox"
+              bind:checked={includeCredentials}
+              class="w-3.5 h-3.5 rounded border-border-subtle text-accent focus:ring-0 cursor-pointer"
+            />
+            <span>{t('backup.includeCredentials')}</span>
+          </label>
+          {#if includeCredentials}
+            <div class="text-[10px] text-amber-500/90 leading-tight">
+              {t('backup.includeCredentialsWarning')}
+            </div>
+          {/if}
         </div>
       </div>
 

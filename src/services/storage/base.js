@@ -11,6 +11,7 @@ import {
 } from '../../constants/index.js';
 import { db } from './db.js';
 import { broadcastStorageChange } from './sync.js';
+import { migrateLegacyApiKey } from './secure-vault.js';
 
 // 保留 STORAGE_KEYS 作为常量兼容导出
 export const STORAGE_KEYS = {
@@ -199,6 +200,9 @@ export async function initStorage() {
         await db.appSettings.put({ key: 'settings', value: DEFAULT_SETTINGS });
       }
     });
+
+    // 4. 执行旧版本敏感机密（如 settings.ai.apiKey）平滑迁移
+    await migrateLegacyApiKey();
   });
 }
 
@@ -214,7 +218,14 @@ export async function saveSettings(partial) {
   return await withStorageLock(async () => {
     const current = await getSettings();
     const cleanPartial = deepCloneToRaw(partial) || {};
+    // 防御式剥离：杜绝 apiKey 意外存入通用设置表
+    if (cleanPartial.ai && 'apiKey' in cleanPartial.ai) {
+      delete cleanPartial.ai.apiKey;
+    }
     const updated = { ...current, ...cleanPartial };
+    if (updated.ai && 'apiKey' in updated.ai) {
+      delete updated.ai.apiKey;
+    }
     await db.appSettings.put({ key: 'settings', value: updated });
     broadcastStorageChange({ type: 'SETTINGS_CHANGED', data: updated });
     return updated;
