@@ -143,5 +143,13 @@ export default {
     builtinGroupNoDelete: 'System built-in groups cannot be deleted',
     mcpBookmarkNotFound: 'Bookmark with ID "{id}" not found',
     mcpUnknownTool: 'Unknown tool name: {name}'
+  },
+  subscriptions: {
+    forkBookmark: 'Fork to My Bookmarks',
+    forkSuccess: 'Cloned to personal bookmarks',
+    readOnlyBadge: 'Team',
+    readOnlyTooltip: 'Team subscribed bookmark (read-only)',
+    readOnlyGroupTooltip: 'Team subscribed group, managed by subscription feed',
+    dragDisabled: 'Subscribed collections do not support manual reordering'
   }
 };

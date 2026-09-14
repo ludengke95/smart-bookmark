@@ -34,9 +34,14 @@ import {
   resetToDefaultData as storageResetDefaultData,
   clearAllData as storageClearAll,
   getAllTags,
+  getSubscriptions,
+  saveSubscription as storageSaveSubscription,
+  deleteSubscription as storageDeleteSubscription,
   onStorageChange,
   STORAGE_KEYS
 } from '../services/storage.js';
+import { syncSubscription } from '../services/subscription/index.js';
+import { toast } from './toast.svelte.js';
 import { detectAllLocalIps } from '../services/ip-detector.js';
 import { probeAllUrls } from '../services/ping-probe.js';
 import { sortEndpointsByTopology } from '../services/xor-matcher.js';
@@ -60,6 +65,7 @@ class AppState {
   bookmarks = $state([]);
   groups = $state([]);
   tags = $state([]);
+  subscriptions = $state([]);
   settings = $state(DEFAULT_SETTINGS);
   snapshots = $state([]);
   activeTag = $state('all');
@@ -181,12 +187,38 @@ class AppState {
       list.sort(compare);
     }
 
-    const customGroups = this.groups.filter(g => g.id !== PINNED_GROUP_ID && g.id !== UNGROUPED_GROUP_ID);
+    // 常用组置顶
+    const pinnedGroup = this.groups.find(g => g.id === PINNED_GROUP_ID) || { id: PINNED_GROUP_ID, name: '常用', isPinned: true, order: 0 };
+
+    // 个人自定义分组 (无 subscriptionId，且非系统内置组)
+    const customGroups = this.groups.filter(g => !g.subscriptionId && g.id !== PINNED_GROUP_ID && g.id !== UNGROUPED_GROUP_ID);
     customGroups.sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    const pinnedGroup = this.groups.find(g => g.id === PINNED_GROUP_ID) || { id: PINNED_GROUP_ID, name: '常用', isPinned: true, order: 0 };
+    // 团队订阅分组 (带有 subscriptionId)
+    const subscribedGroups = this.groups.filter(g => Boolean(g.subscriptionId));
+    const subMap = new Map(this.subscriptions.map(s => [s.id, s]));
+    subscribedGroups.sort((a, b) => {
+      const subA = subMap.get(a.subscriptionId);
+      const subB = subMap.get(b.subscriptionId);
+      const subOrderA = subA?.order || 0;
+      const subOrderB = subB?.order || 0;
+      if (subOrderA !== subOrderB) return subOrderA - subOrderB;
+      return (a.order || 0) - (b.order || 0);
+    });
+
+    const enrichedSubscribedGroups = subscribedGroups.map(g => {
+      const sub = subMap.get(g.subscriptionId);
+      return {
+        ...g,
+        isSubscribed: true,
+        subscriptionName: sub?.name || '',
+        isReadOnly: true
+      };
+    });
+
+    // 未分组始终置于最后
     const ungroupedGroup = this.groups.find(g => g.id === UNGROUPED_GROUP_ID) || { id: UNGROUPED_GROUP_ID, name: '未分组', isUngrouped: true, isDefaultCollapsed: false, order: 9999 };
-    const sortedGroups = [pinnedGroup, ...customGroups, ungroupedGroup];
+    const sortedGroups = [pinnedGroup, ...customGroups, ...enrichedSubscribedGroups, ungroupedGroup];
 
     return sortedGroups.map(g => ({
       group: g,
@@ -209,6 +241,7 @@ class AppState {
     this.groups = await getGroups();
     this.bookmarks = await getBookmarks();
     this.tags = await getAllTags();
+    this.subscriptions = await getSubscriptions();
     this.clickStats = await getClickStats('30d');
     this.detailedStats = await getDetailedStats();
     this.snapshots = await getSnapshots();
@@ -285,6 +318,11 @@ class AppState {
             break;
           case 'SNAPSHOTS_CHANGED':
             this.snapshots = await getSnapshots();
+            break;
+          case 'SUBSCRIPTIONS_CHANGED':
+            this.subscriptions = await getSubscriptions();
+            this.groups = await getGroups();
+            this.bookmarks = await getBookmarks();
             break;
           case 'ALL_CHANGED':
             this.groups = await getGroups();
@@ -730,6 +768,51 @@ class AppState {
       chrome.runtime.sendMessage({ action: 'disconnectMcp' });
     }
     this.mcpStatus = { isConnected: false, isConnecting: false, lastError: null };
+  }
+
+  // ==========================================
+  // 团队公共书签 / 订阅集合操作
+  // ==========================================
+
+  // 添加或更新订阅源
+  async saveSubscription(subData) {
+    const sub = await storageSaveSubscription(subData);
+    this.subscriptions = await getSubscriptions();
+    return sub;
+  }
+
+  // 删除订阅源 (安全级联清理所属书签与分组)
+  async deleteSubscription(subId) {
+    await storageDeleteSubscription(subId);
+    this.subscriptions = await getSubscriptions();
+    this.groups = await getGroups();
+    this.bookmarks = await getBookmarks();
+  }
+
+  // 手动/即时同步订阅源
+  async syncSubscription(subId, options = {}) {
+    const result = await syncSubscription(subId, options);
+    this.subscriptions = await getSubscriptions();
+    this.groups = await getGroups();
+    this.bookmarks = await getBookmarks();
+    this.tags = await getAllTags();
+    return result;
+  }
+
+  // 转存团队书签到个人书签 (Fork)
+  async forkBookmarkToCustom(bookmark, targetGroupId = UNGROUPED_GROUP_ID) {
+    const cloned = JSON.parse(JSON.stringify(bookmark));
+    delete cloned.id;
+    delete cloned.subscriptionId;
+    delete cloned.originBookmarkId;
+    cloned.sourceType = 'custom';
+    cloned.isReadOnly = false;
+    cloned.groupId = targetGroupId;
+    cloned.createdAt = Date.now();
+    cloned.updatedAt = Date.now();
+
+    await this.saveBookmark(cloned);
+    toast.show(i18n.t('subscriptions.forkSuccess') || '已转存至个人书签');
   }
 }
 

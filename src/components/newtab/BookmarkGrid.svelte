@@ -23,6 +23,11 @@
 
   function handleDragStart(e, bm) {
     if (!isCustomSort) return;
+    // 订阅只读书签禁止被拖出其原分组
+    if (bm.isReadOnly) {
+      e.preventDefault();
+      return;
+    }
     draggedBookmarkId = bm.id;
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', bm.id);
@@ -35,6 +40,8 @@
 
   function handleDragOver(e, targetBm) {
     if (!isCustomSort) return;
+    // 目标若是只读订阅书签所在组，不允许拖入
+    if (targetBm.isReadOnly) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     if (draggedBookmarkId && draggedBookmarkId !== targetBm.id) {
@@ -50,6 +57,12 @@
 
   async function handleDrop(e, targetBm, group) {
     if (!isCustomSort) return;
+    // 禁止拖入只读订阅分组
+    if (group?.isReadOnly || targetBm.isReadOnly) {
+      draggedBookmarkId = null;
+      dropTargetBookmarkId = null;
+      return;
+    }
     e.preventDefault();
     const sourceId = draggedBookmarkId || e.dataTransfer.getData('text/plain');
     if (!sourceId || sourceId === targetBm.id) {
@@ -162,6 +175,14 @@
                 </svg>
                 <span>{getGroupName(group)}</span>
               </button>
+              {#if group.isSubscribed}
+                <span
+                  class="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium border border-accent/20"
+                  title={t('subscriptions.readOnlyGroupTooltip')}
+                >
+                  {group.subscriptionName || t('subscriptions.readOnlyBadge')}
+                </span>
+              {/if}
               <span class="text-[11px] font-mono text-text-tertiary">
                 ({bookmarks.length})
               </span>
@@ -170,8 +191,8 @@
             <!-- 极细横贯分割线 -->
             <div class="flex-1 h-[1px] bg-border-subtle/60"></div>
 
-            <!-- 分组快捷操作 (新增到此分组) -->
-            {#if group.id !== UNGROUPED_GROUP_ID}
+            <!-- 分组快捷操作 (新增到此分组，仅限非只读分组) -->
+            {#if group.id !== UNGROUPED_GROUP_ID && !group.isReadOnly}
               <button
                 type="button"
                 onclick={() => onAddBookmarkToGroup(group.id)}

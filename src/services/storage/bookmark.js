@@ -12,6 +12,7 @@ import {
 import { db } from './db.js';
 import { broadcastStorageChange } from './sync.js';
 import { ensureTagsExist, renameTag as storageRenameTag, deleteTag as storageDeleteTag } from './tag.js';
+import { serviceError } from '../errors.js';
 
 /**
  * 规范化书签数据实体（阻断非标字段与原型链污染）
@@ -60,6 +61,10 @@ export function normalizeBookmarkEntity(bm, fallbackOrder = 0) {
     customIconBase64: String(bm.customIconBase64 || ''),
     endpoints,
     order: typeof bm.order === 'number' ? bm.order : fallbackOrder,
+    subscriptionId: bm.subscriptionId ? String(bm.subscriptionId) : null,
+    sourceType: bm.sourceType || (bm.subscriptionId ? 'subscription' : 'custom'),
+    isReadOnly: Boolean(bm.isReadOnly),
+    originBookmarkId: bm.originBookmarkId ? String(bm.originBookmarkId) : null,
     createdAt: typeof bm.createdAt === 'number' ? bm.createdAt : now,
     updatedAt: typeof bm.updatedAt === 'number' ? bm.updatedAt : now
   };
@@ -144,6 +149,9 @@ export async function saveBookmark(bookmark) {
     const tagNames = matchedTags.map(t => t.name);
 
     const existing = await db.bookmarks.get(bookmarkId);
+    if (existing?.isReadOnly && !bookmark.__internalSync) {
+      throw serviceError('readOnlyBookmark', 'Subscribed bookmark is read-only and cannot be modified directly');
+    }
     let order = typeof bookmark.order === 'number' ? bookmark.order : existing?.order;
     if (order === undefined) {
       order = await db.bookmarks.count();
@@ -176,6 +184,10 @@ export async function saveBookmark(bookmark) {
  */
 export async function deleteBookmark(bookmarkId) {
   return await withStorageLock(async () => {
+    const existing = await db.bookmarks.get(bookmarkId);
+    if (existing?.isReadOnly) {
+      throw serviceError('readOnlyBookmark', 'Subscribed bookmark is read-only and cannot be deleted directly');
+    }
     await db.bookmarks.delete(bookmarkId);
     broadcastStorageChange({ type: 'BOOKMARKS_CHANGED', action: 'delete', id: bookmarkId });
     return await getBookmarks();

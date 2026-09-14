@@ -33,6 +33,30 @@ export class SmartBookmarkDB extends Dexie {
       appSettings: 'key'
     });
 
+    // 升级至版本 2：支持团队公共书签 / 订阅集合 (Subscribed Collections)
+    this.version(2).stores({
+      // 书签表：追加 subscriptionId 索引
+      bookmarks: 'id, groupId, order, subscriptionId, createdAt, updatedAt',
+      // 分组表：追加 subscriptionId 索引
+      groups: 'id, order, isPinned, subscriptionId',
+      // 7. 团队订阅集合源表：主键 id，单值索引 url, updateInterval, lastSyncedAt, status, order
+      subscriptions: 'id, url, updateInterval, lastSyncedAt, status, order'
+    }).upgrade(async tx => {
+      // 从 version 1 平滑升级：存量数据补齐字段
+      await Promise.all([
+        tx.table('bookmarks').toCollection().modify(bm => {
+          if (!bm.subscriptionId) bm.subscriptionId = null;
+          if (!bm.sourceType) bm.sourceType = 'custom';
+          if (typeof bm.isReadOnly !== 'boolean') bm.isReadOnly = false;
+        }),
+        tx.table('groups').toCollection().modify(grp => {
+          if (!grp.subscriptionId) grp.subscriptionId = null;
+          if (!grp.sourceType) grp.sourceType = 'custom';
+          if (typeof grp.isReadOnly !== 'boolean') grp.isReadOnly = false;
+        })
+      ]);
+    });
+
     // 注册 DBCore 全局脱敏中间件：拦截所有表的 add/put 操作（含批量）
     this.use({
       stack: 'dbcore',
