@@ -32,7 +32,10 @@ export default {
     finish: 'Done',
     themeSwitched: 'Switched to theme: {name}',
     themeDesc: 'Visual style (3 minimalist themes)',
-    resetDone: 'Reset to default data'
+    resetDone: 'Reset to default data',
+    privacyTitle: 'Data Privacy & Local-First Commitment',
+    privacyDesc: 'Smart Bookmark adopts a 100% Local-First architecture. All bookmarks, favicons, and usage statistics are strictly stored in local IndexedDB with zero cloud telemetry and zero tracking.',
+    privacyLink: 'View Full Privacy Policy'
   },
   ai: {
     preparingData: 'Preparing bookmark data...',
