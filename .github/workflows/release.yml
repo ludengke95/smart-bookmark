@@ -6,7 +6,7 @@ name: Create Release
 # Release 附带三类产物：
 #   1) 源码包 —— GitHub 自动生成的 Source code (zip / tar.gz)
 #   2) 插件包 —— `wxt zip` 构建并打包的 Chrome / Edge 扩展 zip（.output/smart-bookmark-v<version>-<browser>.zip）
-#   3) mcp 包  —— 子包 `npm pack` 产出的 npm tarball（packages/smart-bookmark-mcp/*.tgz）
+#   3) mcp 包  —— 子包 `pnpm pack` 产出的 tarball（packages/smart-bookmark-mcp/*.tgz）
 # 完成后将级联触发 publish.yml 自动发布到 npm。
 on:
   push:
@@ -36,12 +36,14 @@ jobs:
           fetch-depth: 0 # conventional-changelog 需要完整历史与全部 tag 以计算变更
           fetch-tags: true
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: package-lock.json
+          cache: pnpm
 
       # 0) 同步并确定版本号；若在 master 分支且未打 Tag，则自动创建并推送 Tag
       - name: Sync & resolve release tag
@@ -76,21 +78,19 @@ jobs:
 
       # 1) 插件包：安装根依赖并构建 + 打包 Chrome 扩展
       - name: Install root dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build & zip Chrome extension（插件包）
-        run: npm run zip
+        run: pnpm run zip
 
-      # 2) mcp 包：子包 npm pack
+      # 2) mcp 包：子包 pack
       - name: Pack mcp sub-package（mcp 包）
         working-directory: packages/smart-bookmark-mcp
-        run: |
-          npm ci
-          npm pack
+        run: pnpm pack
 
       # 3) 由 Conventional Commits 与 GitHub PR 自动生成分类 Release 正文 (Closes #15)
       - name: Generate release notes
-        run: npm run release:notes
+        run: pnpm run release:notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # 4) 创建 Release，附插件包 (ZIP) + mcp 包 + 自动生成的变更日志正文

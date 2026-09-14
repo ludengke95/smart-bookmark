@@ -6,20 +6,19 @@
  * 3. 自动同步更新：
  *    - 根目录 package.json
  *    - packages/smart-bookmark-mcp/package.json
- *    - 根目录 package-lock.json
- *    - packages/smart-bookmark-mcp/package-lock.json
+ *    - 根目录 pnpm-lock.yaml
  * 4. 支持导出到 GitHub Actions $GITHUB_OUTPUT (new_version, previous_version)
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const rootPkgPath = join(root, 'package.json');
 const subPkgPath = join(root, 'packages', 'smart-bookmark-mcp', 'package.json');
-const rootLockPath = join(root, 'package-lock.json');
-const subLockPath = join(root, 'packages', 'smart-bookmark-mcp', 'package-lock.json');
+const pnpmLockPath = join(root, 'pnpm-lock.yaml');
 
 const rootPkg = JSON.parse(readFileSync(rootPkgPath, 'utf-8'));
 const currentVersion = rootPkg.version;
@@ -83,20 +82,22 @@ if (existsSync(subPkgPath)) {
 }
 
 // 3. 更新锁文件（零网络依赖精准更新）
-function updateLockfile(filePath, newVersion) {
-  if (existsSync(filePath)) {
-    const lock = JSON.parse(readFileSync(filePath, 'utf-8'));
-    lock.version = newVersion;
-    if (lock.packages && lock.packages['']) {
-      lock.packages[''].version = newVersion;
-    }
-    writeFileSync(filePath, JSON.stringify(lock, null, 2) + '\n');
-    console.log(`✓ 已同步锁文件 ${filePath}`);
+if (existsSync(pnpmLockPath)) {
+  try {
+    execSync('pnpm install --lockfile-only', { cwd: root, stdio: 'inherit' });
+    console.log(`✓ 已通过 pnpm 同步锁文件 ${pnpmLockPath}`);
+  } catch (err) {
+    console.warn(`! pnpm 命令不可用，尝试就地文本同步: ${err.message}`);
+    // 回退纯文本替换 workspace/root package 版本
+    let content = readFileSync(pnpmLockPath, 'utf-8');
+    content = content.replace(
+      new RegExp(`(version:\\s*['"]?)${currentVersion.replace(/\./g, '\\.')}(['"]?)`, 'g'),
+      `$1${targetVersion}$2`
+    );
+    writeFileSync(pnpmLockPath, content);
+    console.log(`✓ 已文本同步锁文件 ${pnpmLockPath}`);
   }
 }
-
-updateLockfile(rootLockPath, targetVersion);
-updateLockfile(subLockPath, targetVersion);
 
 // 4. 导出变量供 GitHub Actions 使用
 if (process.env.GITHUB_OUTPUT) {

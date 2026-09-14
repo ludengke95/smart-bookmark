@@ -120,7 +120,7 @@ function findBrowserPath() {
 
   throw new Error(
     `未在当前系统 (${platform}) 找到可用的 Chrome / Edge 浏览器可执行文件。\n` +
-    `可通过环境变量设置自定义路径，例如: CHROME_PATH=/path/to/chrome npm run dev:debug`
+    `可通过环境变量设置自定义路径，例如: CHROME_PATH=/path/to/chrome pnpm run dev:debug`
   );
 }
 
@@ -282,7 +282,7 @@ async function main() {
   if (await isPortInUse(DEBUG_PORT)) {
     throw new Error(
       `调试端口 :${DEBUG_PORT} 正被系统其他程序占用。\n` +
-      `请关闭占用端口的程序，或指定新端口重试，例如: REMOTE_DEBUG_PORT=9223 npm run dev:debug`
+      `请关闭占用端口的程序，或指定新端口重试，例如: REMOTE_DEBUG_PORT=9223 pnpm run dev:debug`
     );
   }
 

@@ -39,13 +39,16 @@ jobs:
           ref: master
           fetch-depth: 0
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
-      # 1. 自动计算目标版本并写入所有 package.json 与 package-lock.json
+      # 1. 自动计算目标版本并写入所有 package.json 与 pnpm-lock.yaml
       - name: Bump & Sync Versions
         id: bump
         run: node scripts/bump-version.mjs
@@ -56,15 +59,14 @@ jobs:
       # 2. 严谨校验：单元测试、MCP 桥接测试与 Chrome 扩展构建
       - name: Verify Core Tests & Build
         run: |
-          npm ci
+          pnpm install --frozen-lockfile
           node test/verify-core.js
-          npm --prefix packages/smart-bookmark-mcp ci
-          npm --prefix packages/smart-bookmark-mcp test
-          npm run build
+          pnpm --filter @ludengke95/smart-bookmark-mcp test
+          pnpm run build
 
       # 3. 生成版本变更日志（conventional-changelog）
       - name: Generate Release Notes
-        run: npm run release:notes
+        run: pnpm run release:notes
 
       # 4. 创建发版分支并提交变更
       - name: Create Release Branch & Commit
@@ -74,7 +76,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add package.json package-lock.json packages/smart-bookmark-mcp/package.json packages/smart-bookmark-mcp/package-lock.json
+          git add package.json pnpm-lock.yaml packages/smart-bookmark-mcp/package.json
           git commit -m "chore(release): bump version to ${NEW_V}"
           git push -u origin "$BRANCH" --force
 

@@ -27,11 +27,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
       # 1. 运行零信任白名单与语义审计脚本
       - name: Run Security & Integrity Audit
@@ -40,11 +43,10 @@ jobs:
       # 2. 依赖安装与核心逻辑验证
       - name: Verify Core Tests & Extension Build
         run: |
-          npm ci
+          pnpm install --frozen-lockfile
           node test/verify-core.js
-          npm --prefix packages/smart-bookmark-mcp ci
-          npm --prefix packages/smart-bookmark-mcp test
-          npm run build
+          pnpm --filter @ludengke95/smart-bookmark-mcp test
+          pnpm run build
 
       # 3. 审计与测试全部通过，登记审查意见
       - name: Record Audit Approval

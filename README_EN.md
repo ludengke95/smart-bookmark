@@ -63,7 +63,7 @@
 
 ### Prerequisites
 - Node.js >= 18.0.0
-- npm >= 9.0.0
+- pnpm >= 9.0.0
 
 ### Installation & Development
 
@@ -73,10 +73,10 @@ git clone https://github.com/ludengke95/smart-bookmark.git
 cd smart-bookmark
 
 # 2. Install dependencies
-npm install
+pnpm install
 
 # 3. Start development mode (with Vite + WXT HMR)
-npm run dev
+pnpm run dev
 ```
 
 ### Loading in Chrome
@@ -89,10 +89,10 @@ npm run dev
 
 ```bash
 # Build production bundle
-npm run build
+pnpm run build
 
 # Package into a zip archive ready for Web Store distribution
-npm run zip
+pnpm run zip
 ```
 
 ---

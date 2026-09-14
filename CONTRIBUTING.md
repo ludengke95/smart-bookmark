@@ -67,17 +67,17 @@ fix(zip): 插件包命名加 v 前缀
 
 3. 标签推送触发自动化链：
    - `release.yml`：构建扩展 + 打包 mcp → 用 conventional-changelog **自动生成 Release 正文**并创建 GitHub Release（附源码包 / 插件包 / mcp 包）。
-   - `publish.yml`：Release 发布后自动 `npm publish`（依赖仓库 Secret `NPM_TOKEN`）。
+   - `publish.yml`：Release 发布后自动 `pnpm publish` 发布至 npm（依赖仓库 Secret `NPM_TOKEN`）。
 
 ## 5. 版本升级规范
 
-仓库存在三个版本面：扩展版本（用户可见，来自 `manifest.version`）、根包版本（`package.json`，用于 zip 命名）、npm 子包版本（`packages/smart-bookmark-mcp/package.json`）。为避免版本漂移，统一遵循以下规则。
+仓库存在三个版本面：扩展版本（用户可见，来自 `manifest.version`）、根包版本（`package.json`，用于 zip 命名）、MCP 子包版本（`packages/smart-bookmark-mcp/package.json`）。为避免版本漂移，统一遵循以下规则。
 
 ### 5.1 单一真相源
 
 - 根包 `package.json` 的 `version` 为**唯一版本真相源**。
 - `wxt.config.js` 的 `manifest.version` 须**派生自根包 `package.json`**（而非硬编码），确保扩展内部版本号与 zip 命名 `{{packageVersion}}` 永远一致。
-- npm 子包版本与根包**联动（lockstep）**：发布时由脚本把根包 `version` 同步写入子包 `package.json`，二者同号、同步发布。
+- MCP 子包版本与根包**联动（lockstep）**：发布时由脚本把根包 `version` 同步写入子包 `package.json`，二者同号、同步发布。
 
 ### 5.2 语义化版本映射
 
@@ -92,7 +92,7 @@ fix(zip): 插件包命名加 v 前缀
 ### 5.3 标签与发布
 
 - 单一 tag 命名：`vX.Y.Z`（不为子包另设前缀）。
-- 打 tag 即触发现有自动化链：`release.yml`（构建扩展 + 打包 mcp + 自动生成 Release 正文并创建 GitHub Release）与 `publish.yml`（Release 发布后 `npm publish`）。
+- 打 tag 即触发现有自动化链：`release.yml`（构建扩展 + 打包 mcp + 自动生成 Release 正文并创建 GitHub Release）与 `publish.yml`（Release 发布后 `pnpm publish`）。
 - 暂不支持预发布通道（如 `1.1.0-beta.1`）；后续如需商店 Beta 渠道再补充。
 
 ### 5.4 桥接协议兼容闸门
@@ -103,12 +103,12 @@ fix(zip): 插件包命名加 v 前缀
 
 1. 在 `release/vX.Y.Z` 分支，仅修改根包 `package.json` 的 `version`（子包由发布脚本同步）。
 2. 合入 `master`，打 `vX.Y.Z` 并推送触发自动化链（见 §4）。
-3. 人工上架：本地 `npm run zip` 后，去 Chrome Web Store 后台上传 `smart-bookmark-vX.Y.Z-chrome.zip` 并发布（商店不接受自动发布）。
+3. 人工上架：本地 `pnpm run zip` 后，去 Chrome Web Store 后台上传 `smart-bookmark-vX.Y.Z-chrome.zip` 并发布（商店不接受自动发布）。
 
 ## 6. 本地开发
 
 - 运行环境：Node 22。
-- 安装依赖：根包 `npm ci`；子包 `cd packages/smart-bookmark-mcp && npm ci`。
-- 本地起 MCP 桥：`npm run mcp`（默认 `127.0.0.1:8333`）。
-- 构建扩展：`npm run build`；打包 zip：`npm run zip`。
-- 生成变更日志（本地预览）：`npm run release:notes`（产出 `RELEASE_NOTES.md`）。
+- 安装依赖：`pnpm install`。
+- 本地起 MCP 桥：`pnpm run mcp`（默认 `127.0.0.1:8333`）。
+- 构建扩展：`pnpm run build`；打包 zip：`pnpm run zip`。
+- 生成变更日志（本地预览）：`pnpm run release:notes`（产出 `RELEASE_NOTES.md`）。

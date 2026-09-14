@@ -3,9 +3,8 @@
  * Release PR 零信任安全审计脚本：
  * 1. 严格校验改动文件列表，只允许白名单中的版本元数据文件：
  *    - package.json
- *    - package-lock.json
+ *    - pnpm-lock.yaml
  *    - packages/smart-bookmark-mcp/package.json
- *    - packages/smart-bookmark-mcp/package-lock.json
  *    - RELEASE_NOTES.md
  * 2. 深度语义校验：
  *    - 对比基准分支（origin/master）与当前 PR 分支的 package.json
@@ -24,9 +23,8 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 // 允许改动的安全白名单文件清单
 const ALLOWED_FILES = new Set([
   'package.json',
-  'package-lock.json',
-  'packages/smart-bookmark-mcp/package.json',
-  'packages/smart-bookmark-mcp/package-lock.json'
+  'pnpm-lock.yaml',
+  'packages/smart-bookmark-mcp/package.json'
 ]);
 
 function runGit(cmd) {
