@@ -18,6 +18,8 @@ import { db } from '../src/services/storage/db.js';
 import { UNGROUPED_GROUP_ID } from '../src/constants/index.js';
 import { validateAndCleanSubscription, isSafeUrl } from '../src/services/subscription/validator.js';
 import { computeSubscriptionDiff } from '../src/services/subscription/diff.js';
+import { buildTeamCollectionPayload, getSampleSubscriptionTemplate } from '../src/services/subscription/exporter.js';
+import { executeMcpTool, MCP_TOOL_DEFINITIONS } from '../src/services/mcp/tools.js';
 
 async function testValidator() {
   console.log('--- 1. 验证订阅数据安全校验与熔断 (Validator) ---');
@@ -246,11 +248,137 @@ async function testStorageAndIntegrity() {
   console.log('✓ 订阅生命周期、只读保护与原子级联清理验证通过');
 }
 
+async function testExporter() {
+  console.log('--- 4. 验证团队源导出生成与数据脱敏 (Exporter) ---');
+
+  const groups = [
+    { id: 'custom-grp-1', name: '研发中间件', order: 1 },
+    { id: 'custom-grp-2', name: '监控运维', order: 2 },
+    { id: UNGROUPED_GROUP_ID, name: '未分组', order: 99 }
+  ];
+
+  const bookmarks = [
+    {
+      id: 'local-bm-101',
+      name: 'Kafka 控制台',
+      groupId: 'custom-grp-1',
+      subscriptionId: 'sub-legacy',
+      isReadOnly: true,
+      originBookmarkId: 'old-bm-1',
+      endpoints: [
+        { url: 'https://kafka.internal:9092', name: '内网集群', isDefault: true, privateProbeTag: 'dirty' },
+        { url: 'https://kafka.external.com', name: '公网代理' }
+      ],
+      tags: ['中间件', '消息队列']
+    },
+    {
+      id: 'local-bm-102',
+      name: 'Prometheus 监控',
+      groupId: 'custom-grp-2',
+      endpoints: [{ url: 'http://prometheus.internal:9090' }]
+    },
+    {
+      id: 'local-bm-103',
+      name: '杂项草稿',
+      groupId: UNGROUPED_GROUP_ID,
+      endpoints: [{ url: 'https://draft.example.com' }]
+    }
+  ];
+
+  // 4.1 导出指定分组，并验证未选分组和系统内置分组被排除
+  const payload = buildTeamCollectionPayload({
+    name: '基础架构团队源',
+    description: '核心中间件与集群监控',
+    intranetCidrs: ['10.10.0.0/16'],
+    groupIds: ['custom-grp-1'],
+    groups,
+    bookmarks
+  });
+
+  assert.equal(payload.name, '基础架构团队源');
+  assert.equal(payload.version, '1.0.0');
+  assert.equal(payload.topology.intranetCidrs[0], '10.10.0.0/16');
+  assert.equal(payload.groups.length, 1, '应仅导出指定的 custom-grp-1');
+  assert.equal(payload.groups[0].name, '研发中间件');
+  assert.equal(payload.groups[0].id, 'grp_1', '分组 ID 应被重新映射为稳态自增 ID');
+
+  assert.equal(payload.bookmarks.length, 1, '应仅导出 custom-grp-1 下的书签');
+  const exportedBm = payload.bookmarks[0];
+  assert.equal(exportedBm.name, 'Kafka 控制台');
+  assert.equal(exportedBm.id, 'bm_1', '书签 ID 应被脱敏并重置为稳态自增 ID');
+  assert.equal(exportedBm.groupId, 'grp_1', '书签引用的 groupId 应同步指向脱敏后的新 ID');
+  assert.equal(exportedBm.subscriptionId, undefined, '内部 subscriptionId 必须被脱敏剔除');
+  assert.equal(exportedBm.isReadOnly, undefined, '内部 isReadOnly 标记必须被剔除');
+  assert.equal(exportedBm.originBookmarkId, undefined, '内部 originBookmarkId 必须被剔除');
+  assert.equal(exportedBm.endpoints[0].privateProbeTag, undefined, '私有探测瞬态字段必须被剔除');
+  assert.equal(exportedBm.endpoints[0].url, 'https://kafka.internal:9092');
+
+  // 4.2 验证导出的数据完全符合校验器验证
+  const validationResult = validateAndCleanSubscription(payload);
+  assert.equal(validationResult.name, '基础架构团队源');
+  assert.equal(validationResult.bookmarks.length, 1);
+
+  // 4.3 验证模板生成
+  const sample = getSampleSubscriptionTemplate();
+  assert.ok(sample.$schema);
+  assert.equal(sample.version, '1.0.0');
+  assert.ok(sample.groups.length > 0);
+  assert.ok(sample.bookmarks.length > 0);
+
+  console.log('✓ 团队源导出脱敏与标准模板验证通过');
+}
+
+async function testMcpTools() {
+  console.log('--- 5. 验证 MCP 团队协同工具接入 (executeMcpTool) ---');
+
+  // 5.1 验证工具清单包含团队书签工具
+  const expectedTools = [
+    'export_team_collection',
+    'list_subscriptions',
+    'sync_subscription',
+    'get_sample_team_collection_template'
+  ];
+  for (const toolName of expectedTools) {
+    const found = MCP_TOOL_DEFINITIONS.some(t => t.name === toolName);
+    assert.ok(found, `MCP 工具清单中应包含 ${toolName}`);
+  }
+
+  // 5.2 测试 get_sample_team_collection_template
+  const sampleRes = await executeMcpTool('get_sample_team_collection_template', {});
+  assert.equal(sampleRes.version, '1.0.0');
+  assert.ok(Array.isArray(sampleRes.groups));
+
+  // 5.3 测试 export_team_collection
+  const exportRes = await executeMcpTool('export_team_collection', {
+    name: 'MCP测试团队源',
+    description: '通过 MCP 导出的测试团队源',
+    intranetCidrs: ['172.16.0.0/12']
+  });
+  assert.equal(exportRes.success, true);
+  assert.equal(exportRes.summary.name, 'MCP测试团队源');
+  assert.ok(exportRes.payload);
+  assert.equal(exportRes.payload.topology.intranetCidrs[0], '172.16.0.0/12');
+
+  // 5.4 测试 list_subscriptions
+  const listRes = await executeMcpTool('list_subscriptions', {});
+  assert.ok(typeof listRes.total === 'number');
+  assert.ok(Array.isArray(listRes.subscriptions));
+
+  // 5.5 测试 sync_subscription (无到期项)
+  const syncRes = await executeMcpTool('sync_subscription', {});
+  assert.equal(syncRes.success, true);
+  assert.ok(Array.isArray(syncRes.results));
+
+  console.log('✓ MCP 团队协同工具协议与无头执行验证通过');
+}
+
 async function main() {
   try {
     await testValidator();
     await testDiffAlgorithm();
     await testStorageAndIntegrity();
+    await testExporter();
+    await testMcpTools();
 
     console.log('\n========================================');
     console.log('🎉 团队公共书签所有核心单元测试 100% 通过！');

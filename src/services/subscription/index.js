@@ -5,3 +5,4 @@ export * from './schema.js';
 export * from './validator.js';
 export * from './diff.js';
 export * from './engine.js';
+export * from './exporter.js';

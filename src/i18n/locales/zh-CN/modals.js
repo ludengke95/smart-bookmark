@@ -344,6 +344,25 @@ export default {
     readOnlyBadge: '团队',
     readOnlyTooltip: '团队订阅公共书签，受订阅源保护无法直接编辑',
     readOnlyGroupTooltip: '团队订阅分组，由订阅源统一管理维护',
-    dragDisabled: '团队订阅分组不支持手动拖拽移动'
+    dragDisabled: '团队订阅分组不支持手动拖拽移动',
+    // 导出与生成团队书签
+    exportSectionTitle: '发布与导出团队源',
+    exportSectionDesc: '将本地精选分组与多入口书签导出为标准化 JSON 订阅源，方便托管到内网 Git、Nginx 或 Wiki 共享给全团队。',
+    exportBtn: '导出团队订阅源',
+    downloadTemplateBtn: '下载标准模版',
+    exportModalTitle: '导出为团队订阅源',
+    exportModalDesc: '选择要共享的分组，生成符合 Schema v1.0 规范的只读团队书签源。个人统计与私有数据将被自动脱敏。',
+    collectionNameLabel: '团队源名称 *',
+    collectionNamePlaceholder: '例如：DevOps & 基础架构控制台',
+    collectionDescLabel: '说明描述',
+    collectionDescPlaceholder: '例如：研发集群、镜像仓库、监控大屏与团队高频入口',
+    selectGroupsLabel: '选择要导出的分组',
+    selectAllGroups: '全选',
+    deselectAllGroups: '取消全选',
+    noGroupsSelected: '请至少选择一个分组进行导出',
+    intranetCidrsLabel: '团队内网 CIDR 网段声明 (可选，逗号分隔)',
+    intranetCidrsPlaceholder: '10.0.0.0/8, 192.168.0.0/16',
+    exportSuccess: '团队订阅源已导出为 {filename}',
+    templateDownloaded: '已下载标准团队订阅源示例模板'
   }
 };

@@ -4,6 +4,8 @@
   import { t } from '../../../i18n/index.svelte.js';
   import ConfirmModal from '../../common/ConfirmModal.svelte';
   import Select from '../../common/Select.svelte';
+  import ExportTeamFeedModal from '../ExportTeamFeedModal.svelte';
+  import { getSampleSubscriptionTemplate } from '../../../services/subscription/index.js';
 
   // 表单状态
   let url = $state('');
@@ -16,6 +18,24 @@
   // 确认删除弹窗状态
   let confirmDeleteOpen = $state(false);
   let pendingDeleteSub = $state(null);
+
+  // 导出弹窗状态
+  let exportModalOpen = $state(false);
+
+  function handleDownloadTemplate() {
+    const template = getSampleSubscriptionTemplate();
+    const jsonStr = JSON.stringify(template, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'smart-bookmark-sample-team-feed.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.show(t('subscriptions.templateDownloaded'));
+  }
 
   const intervalOptions = $derived([
     { value: 0, label: t('subscriptions.intervals.manual') },
@@ -308,7 +328,44 @@
       </div>
     {/if}
   </div>
+
+  <!-- 发布与导出团队源卡片 -->
+  <div class="p-3.5 rounded-xl border border-border-subtle bg-surface space-y-2.5">
+    <div class="flex items-center justify-between gap-3">
+      <div class="space-y-0.5 min-w-0 flex-1">
+        <div class="text-xs font-semibold text-text-primary">{t('subscriptions.exportSectionTitle')}</div>
+        <div class="text-[11px] text-text-tertiary leading-relaxed">{t('subscriptions.exportSectionDesc')}</div>
+      </div>
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <button
+          type="button"
+          onclick={handleDownloadTemplate}
+          class="px-2.5 py-1.5 rounded-lg border border-border-subtle hover:bg-subtle text-text-secondary hover:text-text-primary transition-colors text-xs font-medium flex items-center gap-1.5"
+          title={t('subscriptions.downloadTemplateBtn')}
+        >
+          <svg class="w-3.5 h-3.5 text-text-tertiary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span>{t('subscriptions.downloadTemplateBtn')}</span>
+        </button>
+
+        <button
+          type="button"
+          onclick={() => (exportModalOpen = true)}
+          class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg hover:opacity-90 transition-opacity text-xs font-medium flex items-center gap-1.5 shadow-sm"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          <span>{t('subscriptions.exportBtn')}</span>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- 导出团队订阅源弹窗 -->
+<ExportTeamFeedModal bind:open={exportModalOpen} />
 
 <!-- 取消订阅确认弹窗 -->
 <ConfirmModal

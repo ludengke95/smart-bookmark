@@ -344,6 +344,25 @@ export default {
     readOnlyBadge: 'Team',
     readOnlyTooltip: 'Team subscribed bookmark (read-only)',
     readOnlyGroupTooltip: 'Team subscribed group, managed by subscription feed',
-    dragDisabled: 'Subscribed collections do not support manual reordering'
+    dragDisabled: 'Subscribed collections do not support manual reordering',
+    // Export & Generation
+    exportSectionTitle: 'Publish & Export Team Collection',
+    exportSectionDesc: 'Export selected groups and multi-endpoint bookmarks into a standardized JSON feed. Host it on your internal Git, Nginx, or Wiki for the team.',
+    exportBtn: 'Export Team Feed',
+    downloadTemplateBtn: 'Download Template',
+    exportModalTitle: 'Export as Team Collection',
+    exportModalDesc: 'Select groups to share as a read-only Schema v1.0 feed. Personal stats and IDs will be automatically sanitized.',
+    collectionNameLabel: 'Team Collection Name *',
+    collectionNamePlaceholder: 'e.g. DevOps & Infrastructure Console',
+    collectionDescLabel: 'Description',
+    collectionDescPlaceholder: 'e.g. Clusters, container registries, monitoring, and team endpoints',
+    selectGroupsLabel: 'Select Groups to Export',
+    selectAllGroups: 'Select All',
+    deselectAllGroups: 'Deselect All',
+    noGroupsSelected: 'Please select at least one group to export',
+    intranetCidrsLabel: 'Team Intranet CIDR Subnets (Optional, comma-separated)',
+    intranetCidrsPlaceholder: '10.0.0.0/8, 192.168.0.0/16',
+    exportSuccess: 'Team collection exported as {filename}',
+    templateDownloaded: 'Standard team collection sample template downloaded'
   }
 };
