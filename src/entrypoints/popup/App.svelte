@@ -254,7 +254,7 @@
         type="button"
         onclick={() => appState.refreshNetwork()}
         class="p-1.5 rounded-lg hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
-        title={t('popup.refreshNetwork')}
+        aria-label={t('popup.refreshNetwork')}
       >
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -265,7 +265,7 @@
         type="button"
         onclick={openNewTab}
         class="p-1.5 rounded-lg hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
-        title={t('popup.openConsole')}
+        aria-label={t('popup.openConsole')}
       >
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -321,7 +321,7 @@
                 type="button"
                 onclick={() => handleEditInNewTab(existingBookmarkMatch)}
                 class="p-1 rounded hover:bg-surface text-text-tertiary hover:text-text-primary transition-colors"
-                title={t('popup.editInNewTab')}
+                aria-label={t('popup.editInNewTab')}
               >
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -354,7 +354,7 @@
                         type="button"
                         onclick={() => handleSwitchToEndpoint(ep)}
                         class="px-1.5 py-0.5 rounded bg-subtle hover:bg-accent hover:text-accent-fg text-text-secondary transition-colors"
-                        title={t('popup.switchToEndpoint')}
+                        aria-label={t('popup.switchToEndpoint')}
                       >
                         {t('popup.switchToEndpoint')}
                       </button>
@@ -363,7 +363,7 @@
                       type="button"
                       onclick={() => handleCopyEndpoint(ep.url)}
                       class="p-0.5 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
-                      title={t('popup.copyEndpoint')}
+                      aria-label={t('popup.copyEndpoint')}
                     >
                       <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -396,7 +396,7 @@
                   type="button"
                   onclick={startAppendMode}
                   class="px-2 py-1 rounded-lg bg-subtle hover:bg-border-subtle text-text-secondary hover:text-text-primary font-medium text-[11px] transition-colors flex items-center gap-0.5 border border-border-subtle"
-                  title={t('popup.appendEndpoint')}
+                  aria-label={t('popup.appendEndpoint')}
                 >
                   <span>{t('popup.appendEndpoint')}</span>
                 </button>
@@ -479,7 +479,6 @@
           onclick={() => (searchQuery = '')}
           class="text-text-tertiary hover:text-text-primary"
           aria-label={t('common.clear')}
-          title={t('common.clear')}
         >
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -516,7 +515,7 @@
                     : (optimal.isIntranet ? t('bookmark.intranetBadge') : t('bookmark.extranetBadge')))}
                 <span
                   class="w-1.5 h-1.5 rounded-full flex-shrink-0 {optimal.reachable === false ? 'bg-status-danger' : optimal.isIntranet ? 'bg-status-intranet' : 'bg-status-extranet'}"
-                  title={dotTip}
+                  aria-label={dotTip}
                 ></span>
                 <span class="truncate">{optimal.targetIp || optimal.host || optimal.url}</span>
               {:else}
