@@ -86,8 +86,6 @@ export default {
     switchToEndpoint: 'Switch to this endpoint',
     copiedEndpoint: 'Endpoint URL copied',
     copyEndpoint: 'Copy endpoint',
-    editInNewTab: 'Edit in dashboard',
-    noEndpoints: 'No endpoints configured',
-    allEndpoints: 'Configured Endpoints'
+    editInNewTab: 'Edit in dashboard'
   }
 };

@@ -86,8 +86,6 @@ export default {
     switchToEndpoint: '切换到该入口',
     copiedEndpoint: '已复制入口地址',
     copyEndpoint: '复制入口',
-    editInNewTab: '在控制台完整编辑',
-    noEndpoints: '暂无可用入口',
-    allEndpoints: '所有已配置入口'
+    editInNewTab: '在控制台完整编辑'
   }
 };

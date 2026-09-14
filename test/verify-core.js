@@ -68,7 +68,7 @@ assert.strictEqual(res2.optimal.url, 'http://10.200.1.5:8080');
 
 console.log('✓ 网络拓扑寻径与容灾降级算法验证通过');
 
-console.log('--- 6. 验证 URL 规范化与书签精准/同源匹配 ---');
+console.log('--- 6. 验证 URL 规范化与书签精准匹配 ---');
 const norm1 = normalizeEndpointUrl('https://example.com/?utm_source=twitter&utm_medium=cpc&from=feed');
 assert.strictEqual(norm1.cleanUrl, 'https://example.com');
 
