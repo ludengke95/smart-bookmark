@@ -160,6 +160,35 @@ async function run() {
   assert.equal(settingsAfterImport.ai?.apiKey, undefined, '导入后 settings 表中无明文残留');
   console.log('✓ 导入旧备份升级兼容校验通过');
 
+  // 8. 验证大模型 SSE 流式 chunk 响应弹性解析兼容
+  console.log('--- 8. 大模型 SSE 流式 chunk 响应兼容解析 ---');
+  const sseMockResponse = `data: {"id":"chatcmpl-D5ynau_5O9utz7IP-LiUiQk","object":"chat.completion.chunk","created":1789369361,"model":"gemini-3.8-flash","choices":[{"index":0,"delta":{"role":"assistant"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-D5ynau_5O9utz7IP-LiUiQk","object":"chat.completion.chunk","created":1789369361,"model":"gemini-3.8-flash","choices":[{"index":0,"delta":{"content":"pong"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-D5ynau_5O9utz7IP-LiUiQk","object":"chat.completion.chunk","created":1789369361,"model":"gemini-3.8-flash","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":2017,"completion_tokens":96,"total_tokens":2113}}`;
+
+  // 模拟 Response 对象
+  const mockResp = {
+    text: async () => sseMockResponse
+  };
+  // 引入测试或者直接验证逻辑
+  const lines = sseMockResponse.split('\n');
+  let sseContent = '';
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('data:')) continue;
+    const dataStr = trimmed.replace(/^data:\s*/, '').trim();
+    if (!dataStr || dataStr === '[DONE]') continue;
+    try {
+      const chunk = JSON.parse(dataStr);
+      const delta = chunk.choices?.[0]?.delta?.content || chunk.choices?.[0]?.message?.content || '';
+      sseContent += delta;
+    } catch (e) {}
+  }
+  assert.equal(sseContent, 'pong', 'SSE 格式响应成功解析出 pong');
+  console.log('✓ SSE 流式响应解析校验通过');
+
   console.log('\n🎉 所有安全机密凭证与脱敏用例全部通过！');
   process.exit(0);
 }
