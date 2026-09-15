@@ -15,19 +15,26 @@
   let selectedGroupIds = $state(new Set());
   let isExporting = $state(false);
 
+  let hasUserInteracted = $state(false);
+
   // 可导出的自定义分组列表 (排除系统内置常用与未分组)
   const exportableGroups = $derived(
     appState.groups.filter(g => g.id !== PINNED_GROUP_ID && g.id !== UNGROUPED_GROUP_ID)
   );
 
-  // 初始化或打开弹窗时默认全选可用分组
+  // 仅在初次打开弹窗且用户未手动清空时默认全选可用分组
   $effect(() => {
-    if (open && exportableGroups.length > 0 && selectedGroupIds.size === 0) {
-      selectedGroupIds = new Set(exportableGroups.map(g => g.id));
+    if (open) {
+      if (!hasUserInteracted && exportableGroups.length > 0 && selectedGroupIds.size === 0) {
+        selectedGroupIds = new Set(exportableGroups.map(g => g.id));
+      }
+    } else {
+      hasUserInteracted = false;
     }
   });
 
   function toggleGroup(groupId) {
+    hasUserInteracted = true;
     const next = new Set(selectedGroupIds);
     if (next.has(groupId)) {
       next.delete(groupId);
@@ -38,10 +45,12 @@
   }
 
   function handleSelectAll() {
+    hasUserInteracted = true;
     selectedGroupIds = new Set(exportableGroups.map(g => g.id));
   }
 
   function handleDeselectAll() {
+    hasUserInteracted = true;
     selectedGroupIds = new Set();
   }
 
@@ -106,16 +115,16 @@
   height="h-[560px]"
   zIndex="z-[60]"
 >
-  <div class="flex flex-col h-full space-y-3.5 text-xs">
+  <div class="flex-1 flex flex-col min-h-0 space-y-3.5 text-xs">
     <!-- 顶部说明 -->
     <div class="p-2.5 rounded-lg border border-border-subtle bg-subtle text-text-tertiary leading-relaxed">
       {t('subscriptions.exportModalDesc')}
     </div>
 
-    <!-- 表单字段区 (自适应滚动) -->
-    <div class="flex-1 overflow-y-auto space-y-3 pr-1">
+    <!-- 表单字段区 (单层自适应布局，杜绝外层滚动条) -->
+    <div class="flex-1 flex flex-col min-h-0 space-y-2.5">
       <!-- 团队源名称 -->
-      <div class="space-y-1">
+      <div class="space-y-1 flex-shrink-0">
         <label for="export-name-input" class="text-[11px] font-medium text-text-secondary">
           {t('subscriptions.collectionNameLabel')}
         </label>
@@ -129,7 +138,7 @@
       </div>
 
       <!-- 描述说明 -->
-      <div class="space-y-1">
+      <div class="space-y-1 flex-shrink-0">
         <label for="export-desc-input" class="text-[11px] font-medium text-text-secondary">
           {t('subscriptions.collectionDescLabel')}
         </label>
@@ -143,7 +152,7 @@
       </div>
 
       <!-- 内网 CIDR 网段声明 -->
-      <div class="space-y-1">
+      <div class="space-y-1 flex-shrink-0">
         <label for="export-cidrs-input" class="text-[11px] font-medium text-text-secondary">
           {t('subscriptions.intranetCidrsLabel')}
         </label>
@@ -156,9 +165,9 @@
         />
       </div>
 
-      <!-- 分组多选列表 -->
-      <div class="space-y-1.5 pt-1">
-        <div class="flex items-center justify-between">
+      <!-- 分组多选列表 (作为唯一局部滚动容器消化动态内容) -->
+      <div class="flex-1 flex flex-col min-h-0 space-y-1.5 pt-0.5">
+        <div class="flex items-center justify-between flex-shrink-0">
           <span class="text-[11px] font-medium text-text-secondary">
             {t('subscriptions.selectGroupsLabel')} ({selectedGroupIds.size}/{exportableGroups.length})
           </span>
@@ -181,7 +190,7 @@
           </div>
         </div>
 
-        <div class="space-y-1 max-h-40 overflow-y-auto border border-border-subtle rounded-lg p-1.5 bg-subtle/50">
+        <div class="flex-1 overflow-y-auto min-h-0 space-y-1 border border-border-subtle rounded-lg p-1.5 bg-subtle/50 pr-1">
           {#if exportableGroups.length === 0}
             <div class="py-4 text-center text-text-tertiary text-[11px]">
               {t('import.noCustomGroupHint')}

@@ -162,13 +162,15 @@ class AppState {
 
   // 派生状态：按分组聚合的书签结构 (常用在首位，自定义分组居中，未分组始终置于最后)
   groupedBookmarks = $derived.by(() => {
+    const validGroupIds = new Set(this.groups.map(g => g.id));
     const map = new Map();
     for (const g of this.groups) {
       map.set(g.id, []);
     }
 
     for (const bm of this.filteredBookmarks) {
-      const gId = bm.groupId || UNGROUPED_GROUP_ID;
+      // 容错兜底：若书签指向已不存在的分组，自动归入未分组，杜绝幽灵书签
+      const gId = (bm.groupId && validGroupIds.has(bm.groupId)) ? bm.groupId : UNGROUPED_GROUP_ID;
       if (!map.has(gId)) {
         map.set(gId, []);
       }

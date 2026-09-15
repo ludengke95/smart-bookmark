@@ -19,7 +19,7 @@
 
   const groupOptions = $derived(
     appState.groups
-      .filter(g => g.id !== PINNED_GROUP_ID)
+      .filter(g => g.id !== PINNED_GROUP_ID && !g.subscriptionId && !g.isReadOnly)
       .map(g => ({
         value: g.id,
         label: getGroupName(g),

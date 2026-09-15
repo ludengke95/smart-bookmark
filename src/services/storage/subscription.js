@@ -7,6 +7,7 @@ import { withStorageLock, deepCloneToRaw } from './base.js';
 import { db } from './db.js';
 import { broadcastStorageChange } from './sync.js';
 import { serviceError } from '../errors.js';
+import { UNGROUPED_GROUP_ID } from '../../constants/index.js';
 
 /**
  * 规范化订阅实体
@@ -149,13 +150,30 @@ export async function deleteSubscription(id) {
       // 3. 级联删除该订阅所属的书签
       await db.bookmarks.where('subscriptionId').equals(subId).delete();
 
-      // 4. 级联删除该订阅所属的分组
+      // 4. 获取该订阅所属的分组 ID
+      const subGroups = await db.groups.where('subscriptionId').equals(subId).toArray();
+      const subGroupIds = subGroups.map(g => g.id);
+
+      // 5. 容错自愈：若有个人书签意外关联了即将被删除的订阅分组，自动回退到未分组，杜绝幽灵书签
+      if (subGroupIds.length > 0) {
+        await db.bookmarks
+          .where('groupId')
+          .anyOf(subGroupIds)
+          .modify(bm => {
+            bm.groupId = UNGROUPED_GROUP_ID;
+            bm.updatedAt = Date.now();
+          });
+      }
+
+      // 6. 级联删除该订阅所属的分组
       await db.groups.where('subscriptionId').equals(subId).delete();
 
-      // 5. 删除订阅元数据自身
+      // 7. 删除订阅元数据自身
       await db.subscriptions.delete(subId);
     });
 
     broadcastStorageChange({ type: 'SUBSCRIPTIONS_CHANGED', id: subId });
+    broadcastStorageChange({ type: 'GROUPS_CHANGED', action: 'delete_subscription' });
+    broadcastStorageChange({ type: 'BOOKMARKS_CHANGED', action: 'delete_subscription' });
   });
 }

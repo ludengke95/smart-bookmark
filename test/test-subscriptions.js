@@ -234,6 +234,21 @@ async function testStorageAndIntegrity() {
   const statsBefore = await getClickStats('all');
   assert.equal(statsBefore[subBmId], 2, '只读书签点击频次应正常记录');
 
+  // 3.4.1 模拟个人书签被异常分配到订阅分组下 (挂载在 subGroupId)
+  const orphanPersonalBmId = 'personal-bm-in-sub-group';
+  await db.bookmarks.add({
+    id: orphanPersonalBmId,
+    name: '意外加入团队分组的个人书签',
+    groupId: subGroupId,
+    subscriptionId: null,
+    sourceType: 'custom',
+    isReadOnly: false,
+    endpoints: [{ url: 'https://personal-tool.example.com' }],
+    order: 2,
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  });
+
   // 3.5 级联清理测试：取消订阅
   await deleteSubscription(sub.id);
 
@@ -247,9 +262,13 @@ async function testStorageAndIntegrity() {
   assert.equal(grpsAfter.some(g => g.id === subGroupId), false, '订阅分组应被级联清理');
   assert.equal(Boolean(statsAfter[subBmId]), false, '孤立的书签点击统计应被级联释放');
 
-  // 验证个人书签完好无损
-  assert.equal(bmsAfter.length, 1, '个人私有书签应完好保留');
-  assert.equal(bmsAfter[0].name, '个人常用');
+  // 验证个人书签完好无损且孤儿书签自愈回退到未分组
+  const savedOrphan = bmsAfter.find(b => b.id === orphanPersonalBmId);
+  assert.ok(savedOrphan, '挂在订阅分组下的个人书签不得丢失');
+  assert.equal(savedOrphan.groupId, UNGROUPED_GROUP_ID, '被删除订阅分组下的个人书签应自愈回退到系统未分组');
+
+  assert.equal(bmsAfter.length, 2, '个人私有书签应全数保留');
+  assert.ok(bmsAfter.some(b => b.name === '个人常用'));
 
   console.log('✓ 订阅生命周期、只读保护与原子级联清理验证通过');
 }
