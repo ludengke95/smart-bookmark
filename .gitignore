@@ -23,6 +23,7 @@ node_modules/
 .claude/
 .agents/
 .workbuddy/
+.codex/
 skills-lock.json
 .codegraph/
 

@@ -1,0 +1,57 @@
+name: Publish to Microsoft Edge Add-ons
+
+# 自动发布到 Edge Add-ons 商店流水线：
+# 1) 响应 Create Release 工作流成功执行完成（workflow_run 级联）
+# 2) 支持手动触发（workflow_dispatch）随时在 Actions 界面一键执行/重试发布
+# 需要在仓库 Settings -> Secrets 配置：
+#   - EDGE_PRODUCT_ID: 扩展 Product ID (GUID)
+#   - EDGE_CLIENT_ID: Edge 开发者 API Client ID
+#   - EDGE_API_KEY: Edge 开发者 API Key
+on:
+  workflow_run:
+    workflows: ["Create Release"]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  publish-edge:
+    name: Submit to Edge Add-ons
+    runs-on: ubuntu-latest
+    # 闸门过滤：手动触发放行，或上游 Create Release 成功完成时放行
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout 代码
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 构建商店版 Edge 扩展包
+        run: TARGET_STORE=true pnpm run zip:edge
+
+      - name: 提交至 Edge 开发者中心并提交审核
+        run: |
+          ZIP_FILE=$(ls .output/smart-bookmark-*-edge.zip | head -n 1)
+          if [ -z "$ZIP_FILE" ]; then
+            echo "::error::Edge ZIP package not found in .output/"
+            exit 1
+          fi
+          echo "Submitting $ZIP_FILE to Edge Add-ons..."
+          pnpm exec wxt submit --edge-zip "$ZIP_FILE"
+        env:
+          EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+          EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+          EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
