@@ -13,8 +13,6 @@ import { PINNED_GROUP_ID, UNGROUPED_GROUP_ID } from '../../constants/index.js';
  * @param {object} params
  * @param {string} params.name - 团队集合名称
  * @param {string} [params.description] - 描述说明
- * @param {Array<string>} [params.intranetCidrs] - 内部网络 CIDR 声明
- * @param {string} [params.topologyNotes] - 拓扑说明
  * @param {Array<string>} [params.groupIds] - 指定导出的分组 ID (默认导出所有非内置自定义分组)
  * @param {Array<object>} params.groups - 全部分组数据
  * @param {Array<object>} params.bookmarks - 全部书签数据
@@ -23,8 +21,6 @@ import { PINNED_GROUP_ID, UNGROUPED_GROUP_ID } from '../../constants/index.js';
 export function buildTeamCollectionPayload({
   name,
   description = '',
-  intranetCidrs = [],
-  topologyNotes = '',
   groupIds = null,
   groups = [],
   bookmarks = []
@@ -91,22 +87,13 @@ export function buildTeamCollectionPayload({
     });
   }
 
-  // 3. 清洗内网 CIDR 列表
-  const cleanCidrs = (intranetCidrs || [])
-    .map(c => String(c).trim())
-    .filter(c => /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/.test(c));
-
-  // 4. 组装标准契约数据
+  // 3. 组装标准契约数据
   return {
     $schema: 'https://smart-bookmark.extension/schema/v1.json',
     version: SUBSCRIPTION_SCHEMA_VERSION,
     name: collectionName,
     description: String(description || '').trim(),
     updatedAt: now,
-    topology: {
-      intranetCidrs: cleanCidrs.length > 0 ? cleanCidrs : ['10.0.0.0/8', '192.168.0.0/16'],
-      notes: String(topologyNotes || '').trim() || '企业专用内网网段'
-    },
     groups: exportedGroups,
     bookmarks: exportedBookmarks
   };

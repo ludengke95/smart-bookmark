@@ -314,7 +314,6 @@ async function testExporter() {
   const payload = buildTeamCollectionPayload({
     name: '基础架构团队源',
     description: '核心中间件与集群监控',
-    intranetCidrs: ['10.10.0.0/16'],
     groupIds: ['custom-grp-1'],
     groups,
     bookmarks
@@ -322,7 +321,6 @@ async function testExporter() {
 
   assert.equal(payload.name, '基础架构团队源');
   assert.equal(payload.version, '1.0.0');
-  assert.equal(payload.topology.intranetCidrs[0], '10.10.0.0/16');
   assert.equal(payload.groups.length, 1, '应仅导出指定的 custom-grp-1');
   assert.equal(payload.groups[0].name, '研发中间件');
   assert.equal(payload.groups[0].id, 'grp_1', '分组 ID 应被重新映射为稳态自增 ID');
@@ -376,13 +374,11 @@ async function testMcpTools() {
   // 5.3 测试 export_team_collection
   const exportRes = await executeMcpTool('export_team_collection', {
     name: 'MCP测试团队源',
-    description: '通过 MCP 导出的测试团队源',
-    intranetCidrs: ['172.16.0.0/12']
+    description: '通过 MCP 导出的测试团队源'
   });
   assert.equal(exportRes.success, true);
   assert.equal(exportRes.summary.name, 'MCP测试团队源');
   assert.ok(exportRes.payload);
-  assert.equal(exportRes.payload.topology.intranetCidrs[0], '172.16.0.0/12');
 
   // 5.4 测试 list_subscriptions
   const listRes = await executeMcpTool('list_subscriptions', {});

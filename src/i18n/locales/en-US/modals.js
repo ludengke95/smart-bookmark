@@ -360,8 +360,6 @@ export default {
     selectAllGroups: 'Select All',
     deselectAllGroups: 'Deselect All',
     noGroupsSelected: 'Please select at least one group to export',
-    intranetCidrsLabel: 'Team Intranet CIDR Subnets (Optional, comma-separated)',
-    intranetCidrsPlaceholder: '10.0.0.0/8, 192.168.0.0/16',
     exportSuccess: 'Team collection exported as {filename}',
     templateDownloaded: 'Standard team collection sample template downloaded'
   }

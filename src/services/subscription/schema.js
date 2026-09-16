@@ -13,10 +13,6 @@ export const SAMPLE_SUBSCRIPTION_TEMPLATE = {
   name: 'DevOps & 基础架构导航',
   description: '研发集群控制台、私有镜像库、监控大屏与团队常用入口',
   updatedAt: Date.now(),
-  topology: {
-    intranetCidrs: ['10.0.0.0/8', '192.168.0.0/16', '172.16.0.0/12'],
-    notes: '企业内部 VPC 网段'
-  },
   groups: [
     {
       id: 'grp_devops',

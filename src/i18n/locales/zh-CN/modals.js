@@ -360,8 +360,6 @@ export default {
     selectAllGroups: '全选',
     deselectAllGroups: '取消全选',
     noGroupsSelected: '请至少选择一个分组进行导出',
-    intranetCidrsLabel: '团队内网 CIDR 网段声明 (可选，逗号分隔)',
-    intranetCidrsPlaceholder: '10.0.0.0/8, 192.168.0.0/16',
     exportSuccess: '团队订阅源已导出为 {filename}',
     templateDownloaded: '已下载标准团队订阅源示例模板'
   }

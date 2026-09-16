@@ -11,7 +11,6 @@
 
   let name = $state('');
   let description = $state('');
-  let intranetCidrs = $state('10.0.0.0/8, 192.168.0.0/16');
   let selectedGroupIds = $state(new Set());
   let isExporting = $state(false);
 
@@ -72,15 +71,9 @@
 
     isExporting = true;
     try {
-      const cidrArray = intranetCidrs
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean);
-
       const payload = buildTeamCollectionPayload({
         name: cleanName,
         description: description.trim(),
-        intranetCidrs: cidrArray,
         groupIds: Array.from(selectedGroupIds),
         groups: appState.groups,
         bookmarks: appState.bookmarks
@@ -148,20 +141,6 @@
           bind:value={description}
           placeholder={t('subscriptions.collectionDescPlaceholder')}
           class="w-full px-3 py-1.5 rounded-lg bg-subtle border border-border-subtle outline-none text-text-primary text-xs focus:border-border-focus transition-colors"
-        />
-      </div>
-
-      <!-- 内网 CIDR 网段声明 -->
-      <div class="space-y-1 flex-shrink-0">
-        <label for="export-cidrs-input" class="text-[11px] font-medium text-text-secondary">
-          {t('subscriptions.intranetCidrsLabel')}
-        </label>
-        <input
-          id="export-cidrs-input"
-          type="text"
-          bind:value={intranetCidrs}
-          placeholder={t('subscriptions.intranetCidrsPlaceholder')}
-          class="w-full px-3 py-1.5 rounded-lg bg-subtle border border-border-subtle outline-none text-text-primary font-mono text-xs focus:border-border-focus transition-colors"
         />
       </div>
 

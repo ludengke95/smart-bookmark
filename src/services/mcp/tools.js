@@ -280,7 +280,7 @@ export const MCP_TOOL_DEFINITIONS = [
   },
   {
     name: 'export_team_collection',
-    description: 'Export selected bookmark groups into a standardized Team Subscribed Collection JSON payload (version 1.0.0). Sanitizes personal data, generates stable IDs, and includes enterprise network topology declarations. Perfect for sharing within development/DevOps teams.',
+    description: 'Export selected bookmark groups into a standardized Team Subscribed Collection JSON payload (version 1.0.0). Sanitizes personal data and generates stable IDs. Perfect for sharing within development/DevOps teams.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -290,13 +290,7 @@ export const MCP_TOOL_DEFINITIONS = [
           type: 'array',
           items: { type: 'string' },
           description: 'Array of group IDs to export (optional, defaults to all custom non-builtin groups)'
-        },
-        intranetCidrs: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Team intranet CIDR subnets (e.g. ["10.0.0.0/8", "192.168.0.0/16"])'
-        },
-        topologyNotes: { type: 'string', description: 'Notes regarding network routing' }
+        }
       },
       required: ['name']
     }
@@ -634,8 +628,6 @@ export async function executeMcpTool(name, args = {}) {
         name: args.name,
         description: args.description,
         groupIds: args.groupIds,
-        intranetCidrs: args.intranetCidrs,
-        topologyNotes: args.topologyNotes,
         groups,
         bookmarks
       });
