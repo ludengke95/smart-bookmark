@@ -9,6 +9,7 @@
 [![Svelte 5](https://img.shields.io/badge/Framework-Svelte_5_(Runes)-FF3E00?style=flat-square)](https://svelte.dev)
 [![Tailwind CSS](https://img.shields.io/badge/CSS-Tailwind_3.4-38B2AC?style=flat-square)](https://tailwindcss.com)
 [![Manifest V3](https://img.shields.io/badge/Chrome-Manifest_V3-4285F4?style=flat-square)](https://developer.chrome.com/docs/extensions/mv3/)
+[![Privacy Policy](https://img.shields.io/badge/Privacy-Policy-green?style=flat-square)](PRIVACY_EN.md)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
 ---
@@ -141,11 +142,18 @@ src/
 
 ## 📚 Documentation
 
+- 🔒 [Privacy Policy (English)](./PRIVACY_EN.md) | [隐私政策 (中文)](./PRIVACY.md)
 - [Product Overview (English)](./doc/en/product-overview.md) | [产品介绍 (中文)](./doc/产品介绍.md)
 - [User Manual (English)](./doc/en/user-manual.md) | [用户使用手册 (中文)](./doc/用户使用手册.md)
 - [Requirements & Specifications (English)](./doc/en/requirements-spec.md) | [需求文档 (中文)](./doc/书签应用-需求文档.md)
 - [Frontend Design Specification (English)](./doc/en/frontend-design-spec.md) | [前端设计规范 (中文)](./doc/前端设计规范.md)
 - 🗺️ [Roadmap: Planned & In-Progress Features (English)](./ROADMAP_EN.md) | [Roadmap 中文](./ROADMAP.md)
+
+---
+
+## 🔒 Privacy & Data Sovereignty
+
+Smart Bookmark strictly adheres to the **Local-First** principle: 100% of your bookmark data resides locally in IndexedDB, with zero remote telemetry, zero central tracking, and zero commercialization of user data. For full details on browser permission boundaries and data handling, please inspect our **[Privacy Policy (PRIVACY_EN.md)](./PRIVACY_EN.md)**.
 
 ---
 

@@ -6,6 +6,11 @@ import {
   getCommonPrefixBits,
   sortEndpointsByTopology
 } from '../src/services/xor-matcher.js';
+import {
+  normalizeEndpointUrl,
+  sanitizeUrlForStorage,
+  matchCurrentTabWithBookmarks
+} from '../src/services/bookmark-matcher.js';
 
 console.log('--- 1. 验证 IPv4 与 Uint32 转换 ---');
 assert.strictEqual(ipToUint32('192.168.1.1'), ((192 << 24) | (168 << 16) | (1 << 8) | 1) >>> 0);
@@ -62,6 +67,50 @@ const res2 = sortEndpointsByTopology(endpoints, '192.168.10.2', {
 assert.strictEqual(res2.optimal.url, 'http://10.200.1.5:8080');
 
 console.log('✓ 网络拓扑寻径与容灾降级算法验证通过');
+
+console.log('--- 6. 验证 URL 规范化与书签精准匹配 ---');
+const norm1 = normalizeEndpointUrl('https://example.com/?utm_source=twitter&utm_medium=cpc&from=feed');
+assert.strictEqual(norm1.cleanUrl, 'https://example.com');
+
+const norm2 = normalizeEndpointUrl('http://192.168.1.100:8080/');
+assert.strictEqual(norm2.cleanUrl, 'http://192.168.1.100:8080');
+
+const bookmarksMock = [
+  {
+    id: 'bm_1',
+    name: 'GitLab',
+    endpoints: [
+      { url: 'https://gitlab.internal.corp', order: 0, type: 'extranet' },
+      { url: 'http://10.0.0.8:8080', order: 1, type: 'intranet' }
+    ]
+  },
+  {
+    id: 'bm_2',
+    name: 'Jenkins',
+    endpoints: [
+      { url: 'http://192.168.1.50:8080', order: 0, type: 'intranet' }
+    ]
+  }
+];
+
+// 测试 1：精确匹配（忽略末尾斜杠）
+const matchExact = matchCurrentTabWithBookmarks('https://gitlab.internal.corp/', bookmarksMock);
+assert.strictEqual(matchExact.exactMatch?.id, 'bm_1');
+assert.strictEqual(matchExact.matchedEndpoint?.url, 'https://gitlab.internal.corp');
+
+// 测试 2：同源但不同路径/非入口页面，不应误判为已收录
+const matchDifferentPath = matchCurrentTabWithBookmarks('https://gitlab.internal.corp/frontend/app/-/issues', bookmarksMock);
+assert.strictEqual(matchDifferentPath.exactMatch, null);
+assert.strictEqual(matchDifferentPath.matchedEndpoint, null);
+
+// 测试 3：完全未收录
+const matchNone = matchCurrentTabWithBookmarks('https://unknown-service.com', bookmarksMock);
+assert.strictEqual(matchNone.exactMatch, null);
+assert.strictEqual(matchNone.matchedEndpoint, null);
+
+console.log('✓ URL 规范化与书签精准匹配测试通过');
+
 console.log('\n==============================');
 console.log('🎉 所有底层算法单元测试 100% 通过！');
 console.log('==============================');
+process.exit(0);

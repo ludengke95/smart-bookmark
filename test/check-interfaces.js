@@ -27,3 +27,4 @@ ipv4List.forEach((item, idx) => {
   console.log(`   ${idx + 1}. 网卡: ${item.name.padEnd(25)} -> IP: ${item.ip}`);
 });
 console.log('====================================================');
+process.exit(0);

@@ -63,3 +63,4 @@ console.log('✓ openInNewTab (Chrome API 与 window.open 双模) 测试全部�
 console.log('\n==============================');
 console.log('🎉 导航与新页面打开服务测试 100% 通过！');
 console.log('==============================');
+process.exit(0);

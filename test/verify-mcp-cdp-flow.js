@@ -347,7 +347,9 @@ async function run() {
   }
 }
 
-run().catch((err) => {
+run().then(() => {
+  process.exit(0);
+}).catch((err) => {
   console.error('\n❌ 验证失败:', err.message);
   process.exit(1);
 });

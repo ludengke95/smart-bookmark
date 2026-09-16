@@ -11,6 +11,8 @@
   } from '../../../constants/index.js';
 
   let isTestingApi = $state(false);
+  let isSavingKey = $state(false);
+  let inputKey = $state('');
 
   function handleSelectPreset(preset) {
     updateAiSettings({
@@ -19,6 +21,32 @@
       model: preset.model || appState.settings.ai?.model || 'gpt-4o-mini'
     });
     toast.show(t('ai.presetSwitched', { name: preset.name }));
+  }
+
+  async function handleSaveKey() {
+    const keyToSave = inputKey.trim();
+    if (!keyToSave) return;
+    isSavingKey = true;
+    try {
+      await appState.saveAiApiKey(keyToSave);
+      inputKey = '';
+      toast.show(t('ai.keySaved'));
+    } finally {
+      isSavingKey = false;
+    }
+  }
+
+  async function handleClearKey() {
+    await appState.clearAiApiKey();
+    inputKey = '';
+    toast.show(t('ai.keyCleared'));
+  }
+
+  function handleKeyKeyDown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveKey();
+    }
   }
 
   async function handleTestApi() {
@@ -30,7 +58,10 @@
     isTestingApi = true;
     toast.show(t('ai.testing'));
     try {
-      const res = await appState.testCustomApiConfig(aiConfig);
+      const res = await appState.testCustomApiConfig({
+        ...aiConfig,
+        apiKey: inputKey.trim() || undefined
+      });
       toast.show(t('ai.testSuccess', { model: res.model }));
     } catch (e) {
       toast.show(t('ai.testFailed', { error: formatServiceError(e) }));
@@ -105,17 +136,52 @@
         </div>
       </div>
 
-      <div class="space-y-1">
-        <label for="ai-key" class="block font-medium text-text-secondary text-[11px]">{t('ai.apiKeyLabel')}</label>
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between">
+          <label for="ai-key" class="block font-medium text-text-secondary text-[11px]">{t('ai.apiKeyLabel')}</label>
+          <div class="flex items-center gap-1.5">
+            {#if appState.aiKeyStatus?.hasKey}
+              <span class="px-1.5 py-0.5 rounded bg-status-success/10 text-status-success border border-status-success/20 text-[10px] font-mono">
+                {t('ai.keyMasked', { masked: appState.aiKeyStatus.maskedKey })}
+              </span>
+            {:else}
+              <span class="px-1.5 py-0.5 rounded bg-subtle text-text-tertiary border border-border-subtle text-[10px]">
+                {t('ai.keyNotSet')}
+              </span>
+            {/if}
+          </div>
+        </div>
+
         <div class="flex items-center gap-2">
           <input
             id="ai-key"
             type="password"
-            value={appState.settings.ai?.apiKey || ''}
-            onchange={(e) => updateAiSettings({ apiKey: e.target.value.trim() })}
-            placeholder="sk-..."
-            class="flex-1 px-2.5 py-1.5 rounded-lg bg-subtle border border-border-subtle outline-none text-text-primary text-[11px] font-mono"
+            bind:value={inputKey}
+            onkeydown={handleKeyKeyDown}
+            placeholder={appState.aiKeyStatus?.hasKey ? t('ai.keyPlaceholderConfigured') : t('ai.keyPlaceholderEmpty')}
+            class="flex-1 px-2.5 py-1.5 rounded-lg bg-subtle border border-border-subtle outline-none text-text-primary text-[11px] font-mono focus:border-accent"
           />
+
+          {#if inputKey.trim()}
+            <button
+              type="button"
+              disabled={isSavingKey}
+              onclick={handleSaveKey}
+              class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg hover:opacity-90 transition-opacity text-[11px] font-medium flex-shrink-0"
+            >
+              {t('ai.updateKey')}
+            </button>
+          {:else if appState.aiKeyStatus?.hasKey}
+            <button
+              type="button"
+              onclick={handleClearKey}
+              class="px-2.5 py-1.5 rounded-lg border border-border-subtle hover:bg-status-danger/10 hover:text-status-danger text-text-tertiary transition-colors text-[11px] flex-shrink-0"
+              title={t('ai.clearKey')}
+            >
+              {t('ai.clearKey')}
+            </button>
+          {/if}
+
           <button
             type="button"
             disabled={isTestingApi}

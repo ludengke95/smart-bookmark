@@ -37,6 +37,10 @@ import {
   getSubscriptions,
   saveSubscription as storageSaveSubscription,
   deleteSubscription as storageDeleteSubscription,
+  getAiApiKeyStatus,
+  saveAiApiKey as storageSaveAiApiKey,
+  getAiApiKey as storageGetAiApiKey,
+  clearAiApiKey as storageClearAiApiKey,
   onStorageChange,
   STORAGE_KEYS
 } from '../services/storage.js';
@@ -83,7 +87,8 @@ class AppState {
   // MCP 连接状态
   mcpStatus = $state({ isConnected: false, isConnecting: false, lastError: null });
 
-  // AI 状态
+  // AI 状态与安全凭证状态
+  aiKeyStatus = $state({ hasKey: false, maskedKey: '', updatedAt: 0 });
   aiRunning = $state(false);
   aiProgress = $state(null); // { phase, current, total, percent, message }
 
@@ -247,6 +252,7 @@ class AppState {
     this.clickStats = await getClickStats('30d');
     this.detailedStats = await getDetailedStats();
     this.snapshots = await getSnapshots();
+    this.aiKeyStatus = await getAiApiKeyStatus();
 
     // 恢复默认折叠状态
     const initCollapsed = new Set();
@@ -326,6 +332,9 @@ class AppState {
             this.groups = await getGroups();
             this.bookmarks = await getBookmarks();
             break;
+          case 'AI_KEY_STATUS_CHANGED':
+            this.aiKeyStatus = event.data || await getAiApiKeyStatus();
+            break;
           case 'ALL_CHANGED':
             this.groups = await getGroups();
             this.bookmarks = await getBookmarks();
@@ -334,6 +343,7 @@ class AppState {
             this.snapshots = await getSnapshots();
             this.clickStats = await getClickStats('30d');
             this.detailedStats = await getDetailedStats();
+            this.aiKeyStatus = await getAiApiKeyStatus();
             break;
         }
       });
@@ -616,8 +626,25 @@ class AppState {
   // AI 智能治理与操作 (通用大模型 API)
   // ==========================================
 
+  async saveAiApiKey(apiKey) {
+    const status = await storageSaveAiApiKey(apiKey);
+    this.aiKeyStatus = status;
+    return status;
+  }
+
+  async clearAiApiKey() {
+    const status = await storageClearAiApiKey();
+    this.aiKeyStatus = status;
+    return status;
+  }
+
+  async getAiApiKey() {
+    return await storageGetAiApiKey();
+  }
+
   async testCustomApiConfig(config) {
-    return await testCustomApiConnection(config);
+    const apiKey = config.apiKey || await this.getAiApiKey();
+    return await testCustomApiConnection({ ...config, apiKey });
   }
 
   // 组装 AI 进度（message 按当前语言生成，service 层不再返回本地化文案）

@@ -9,6 +9,7 @@
 [![Svelte 5](https://img.shields.io/badge/Framework-Svelte_5_(Runes)-FF3E00?style=flat-square)](https://svelte.dev)
 [![Tailwind CSS](https://img.shields.io/badge/CSS-Tailwind_3.4-38B2AC?style=flat-square)](https://tailwindcss.com)
 [![Manifest V3](https://img.shields.io/badge/Chrome-Manifest_V3-4285F4?style=flat-square)](https://developer.chrome.com/docs/extensions/mv3/)
+[![Privacy Policy](https://img.shields.io/badge/Privacy-Policy-green?style=flat-square)](PRIVACY.md)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
 ---
@@ -182,7 +183,14 @@ newtab/
 - 📖 [用户使用手册与 FAQ](doc/用户使用手册.md)
 - 🎨 [前端设计与色彩规范](doc/前端设计规范.md)
 - 📝 [需求与功能规格文档](doc/书签应用-需求文档.md)
+- 🔒 [隐私政策与权限说明 (Privacy Policy)](PRIVACY.md)
 - 🗺️ [Roadmap：待实现需求总览](ROADMAP.md)
+
+---
+
+## 🔒 隐私与安全性 (Privacy & Security)
+
+本项目严格坚持 **Local-First（本地优先）** 理念：数据 100% 存储于本地 IndexedDB，零云端上报、零追踪埋点、绝不出售用户数据。详细隐私政策与所有浏览器权限使用边界，请查阅完整版 **[隐私政策文档 (PRIVACY.md)](PRIVACY.md)**。
 
 ---
 
