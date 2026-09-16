@@ -4,6 +4,7 @@ import { onStorageChange } from '../services/storage/sync.js';
 import { nativeHostClient } from '../services/mcp/native-host.js';
 import { initKeepaliveListener } from '../services/mcp/keepalive.js';
 import { DEFAULT_MCP_WS_PORT } from '../constants/index.js';
+import { syncDueSubscriptions, syncSubscription } from '../services/subscription/index.js';
 export default defineBackground(() => {
   console.log('[Background] Smart Bookmark service worker active');
 
@@ -11,6 +12,18 @@ export default defineBackground(() => {
   initKeepaliveListener();
 
   const MCP_KEEPALIVE_ALARM = 'mcp_keepalive_alarm';
+  const SUBSCRIPTION_SYNC_ALARM = 'subscription_sync_alarm';
+
+  // 注册团队订阅定时静默轮询 Alarm (每 30 分钟检查一次到达周期的源)
+  try {
+    chrome.alarms?.get(SUBSCRIPTION_SYNC_ALARM, (alarm) => {
+      if (!alarm) {
+        chrome.alarms.create(SUBSCRIPTION_SYNC_ALARM, { periodInMinutes: 30 });
+      }
+    });
+  } catch (e) {
+    console.warn('[Background] Subscription alarm init warning:', e);
+  }
 
   // 同步 MCP 状态与保活机制：优先使用 Native Messaging 宿主，未开启或关闭时彻底释放资源
   function syncMcpKeepalive(enabled, port, allowLan) {
@@ -53,7 +66,7 @@ export default defineBackground(() => {
     }
   });
 
-  // MV3 周期性保活触发 (仅在用户开启 MCP 状态下生效)
+  // MV3 周期性保活与订阅定时触发
   chrome.alarms?.onAlarm?.addListener((alarm) => {
     if (alarm.name === MCP_KEEPALIVE_ALARM) {
       getSettings().then(settings => {
@@ -66,6 +79,11 @@ export default defineBackground(() => {
           syncMcpKeepalive(false);
         }
       }).catch(() => {});
+    } else if (alarm.name === SUBSCRIPTION_SYNC_ALARM) {
+      console.log('[Background] Triggering scheduled subscription check');
+      syncDueSubscriptions().catch(err => {
+        console.warn('[Background] Scheduled subscription sync error:', err);
+      });
     }
   });
 
@@ -94,6 +112,18 @@ export default defineBackground(() => {
     if (message?.action === 'disconnectMcp') {
       nativeHostClient.disconnect();
       sendResponse({ success: true });
+      return true;
+    }
+    if (message?.action === 'syncSubscription' && message.subId) {
+      syncSubscription(message.subId, { force: Boolean(message.force) })
+        .then(result => sendResponse({ success: true, data: result }))
+        .catch(err => sendResponse({ success: false, error: err.message }));
+      return true;
+    }
+    if (message?.action === 'syncAllSubscriptions') {
+      syncDueSubscriptions()
+        .then(results => sendResponse({ success: true, data: results }))
+        .catch(err => sendResponse({ success: false, error: err.message }));
       return true;
     }
     if (message?.action === 'getBookmarks') {

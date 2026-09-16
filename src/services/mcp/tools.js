@@ -20,8 +20,16 @@ import {
   getProbeCache,
   exportFullBackupJson,
   getSnapshots,
-  rollbackToSnapshot
+  rollbackToSnapshot,
+  getSubscriptions,
+  getSubscription
 } from '../storage.js';
+import {
+  syncSubscription,
+  syncDueSubscriptions,
+  buildTeamCollectionPayload,
+  getSampleSubscriptionTemplate
+} from '../subscription/index.js';
 import {
   sortIpByPriority,
   getSystemNetworkInterfaces,
@@ -268,6 +276,44 @@ export const MCP_TOOL_DEFINITIONS = [
   {
     name: 'export_full_data',
     description: 'Export a complete JSON backup of all bookmarks, groups, and settings',
+    inputSchema: { type: 'object', properties: {} }
+  },
+  {
+    name: 'export_team_collection',
+    description: 'Export selected bookmark groups into a standardized Team Subscribed Collection JSON payload (version 1.0.0). Sanitizes personal data and generates stable IDs. Perfect for sharing within development/DevOps teams.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Name of the team collection (e.g. "DevOps & Infrastructure")' },
+        description: { type: 'string', description: 'Description of the collection' },
+        groupIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of group IDs to export (optional, defaults to all custom non-builtin groups)'
+        }
+      },
+      required: ['name']
+    }
+  },
+  {
+    name: 'list_subscriptions',
+    description: 'List all subscribed team bookmark collections with their sync status, URLs, update intervals, and bookmark counts',
+    inputSchema: { type: 'object', properties: {} }
+  },
+  {
+    name: 'sync_subscription',
+    description: 'Trigger synchronization for a subscribed team collection by ID (or sync all due collections if ID is omitted)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Subscription ID to sync (optional)' },
+        force: { type: 'boolean', description: 'Force full sync bypassing ETag 304 cache (default false)' }
+      }
+    }
+  },
+  {
+    name: 'get_sample_team_collection_template',
+    description: 'Get a standardized sample template JSON for team subscribed bookmark collections with multi-endpoint routing examples',
     inputSchema: { type: 'object', properties: {} }
   }
 ];
@@ -573,6 +619,47 @@ export async function executeMcpTool(name, args = {}) {
     case 'export_full_data': {
       const json = await exportFullBackupJson();
       return JSON.parse(json);
+    }
+
+    case 'export_team_collection': {
+      const groups = await getGroups();
+      const bookmarks = await getBookmarks();
+      const payload = buildTeamCollectionPayload({
+        name: args.name,
+        description: args.description,
+        groupIds: args.groupIds,
+        groups,
+        bookmarks
+      });
+      return {
+        success: true,
+        summary: {
+          name: payload.name,
+          groupCount: payload.groups.length,
+          bookmarkCount: payload.bookmarks.length,
+          cidrs: payload.topology?.intranetCidrs || []
+        },
+        payload
+      };
+    }
+
+    case 'list_subscriptions': {
+      const subs = await getSubscriptions();
+      return { total: subs.length, subscriptions: subs };
+    }
+
+    case 'sync_subscription': {
+      if (args.id) {
+        const res = await syncSubscription(args.id, { force: Boolean(args.force) });
+        return { success: true, result: res };
+      } else {
+        const results = await syncDueSubscriptions();
+        return { success: true, count: results.length, results };
+      }
+    }
+
+    case 'get_sample_team_collection_template': {
+      return getSampleSubscriptionTemplate();
     }
 
     default:

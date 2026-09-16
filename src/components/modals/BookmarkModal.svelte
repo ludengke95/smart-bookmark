@@ -23,9 +23,9 @@
   let isProbing = $state({});
   let showIconPicker = $state(false);
 
-  // 过滤掉常用分组（常用为自动统计计算的分组，物理归属为具体自定义分组或未分组）
+  // 过滤掉常用分组与团队只读分组（仅允许保存到个人自定义分组或未分组）
   const selectableGroups = $derived(
-    appState.groups.filter(g => g.id !== PINNED_GROUP_ID)
+    appState.groups.filter(g => g.id !== PINNED_GROUP_ID && !g.subscriptionId && !g.isReadOnly)
   );
 
   const groupOptions = $derived(

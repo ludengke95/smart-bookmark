@@ -143,5 +143,13 @@ export default {
     builtinGroupNoDelete: '系统内置固定分组不可删除',
     mcpBookmarkNotFound: '未找到 ID 为 {id} 的书签',
     mcpUnknownTool: '未知的工具名称: {name}'
+  },
+  subscriptions: {
+    forkBookmark: '转存到我的书签',
+    forkSuccess: '已成功转存至个人书签',
+    readOnlyBadge: '团队',
+    readOnlyTooltip: '团队订阅公共书签，受订阅源保护无法直接编辑',
+    readOnlyGroupTooltip: '团队订阅分组，由订阅源统一管理维护',
+    dragDisabled: '团队订阅分组不支持手动拖拽移动'
   }
 };

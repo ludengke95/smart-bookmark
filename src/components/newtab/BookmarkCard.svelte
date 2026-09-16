@@ -84,9 +84,19 @@
         size={26}
       />
       <div class="min-w-0 flex-1">
-        <h3 class="text-xs sm:text-sm font-medium text-text-primary truncate group-hover:text-accent transition-colors">
-          {bookmark.name}
-        </h3>
+        <div class="flex items-center gap-1.5 min-w-0">
+          <h3 class="text-xs sm:text-sm font-medium text-text-primary truncate group-hover:text-accent transition-colors">
+            {bookmark.name}
+          </h3>
+          {#if bookmark.isReadOnly}
+            <span
+              class="text-[9px] px-1 py-0.5 rounded border border-border-subtle bg-subtle text-text-tertiary flex-shrink-0"
+              title={t('subscriptions.readOnlyTooltip')}
+            >
+              {t('subscriptions.readOnlyBadge')}
+            </span>
+          {/if}
+        </div>
         {#if (bookmark.tags || []).length > 0}
           <div class="flex items-center gap-1 mt-0.5 overflow-hidden">
             {#each bookmark.tags.slice(0, 2) as tag}
@@ -99,7 +109,7 @@
       </div>
     </div>
 
-    <!-- 悬浮操作按钮组 (编辑 / 更多入口 / 删除) -->
+    <!-- 悬浮操作按钮组 (编辑 / 转存 / 更多入口 / 删除) -->
     <div class="no-jump opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
       {#if (bookmark.endpoints || []).length > 1}
         <button
@@ -114,27 +124,42 @@
         </button>
       {/if}
 
-      <button
-        type="button"
-        onclick={() => onEdit(bookmark)}
-        class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
-        title={t('common.edit')}
-      >
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-        </svg>
-      </button>
+      {#if bookmark.isReadOnly}
+        <!-- 转存到我的书签按钮 (Fork) -->
+        <button
+          type="button"
+          onclick={() => appState.forkBookmarkToCustom(bookmark)}
+          class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-accent transition-colors"
+          title={t('subscriptions.forkBookmark')}
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+          </svg>
+        </button>
+      {:else}
+        <!-- 普通编辑与删除按钮 -->
+        <button
+          type="button"
+          onclick={() => onEdit(bookmark)}
+          class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
+          title={t('common.edit')}
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        </button>
 
-      <button
-        type="button"
-        onclick={() => onDelete(bookmark)}
-        class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-status-danger transition-colors"
-        title={t('common.delete')}
-      >
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
-      </button>
+        <button
+          type="button"
+          onclick={() => onDelete(bookmark)}
+          class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-status-danger transition-colors"
+          title={t('common.delete')}
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      {/if}
     </div>
   </div>
 

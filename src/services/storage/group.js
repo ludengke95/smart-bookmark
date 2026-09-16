@@ -30,7 +30,10 @@ export function normalizeGroupEntity(grp, fallbackOrder = 1) {
     order: typeof grp.order === 'number' ? grp.order : fallbackOrder,
     isPinned: Boolean(grp.isPinned),
     isUngrouped: Boolean(grp.isUngrouped),
-    isDefaultCollapsed: Boolean(grp.isDefaultCollapsed)
+    isDefaultCollapsed: Boolean(grp.isDefaultCollapsed),
+    subscriptionId: grp.subscriptionId ? String(grp.subscriptionId) : null,
+    sourceType: grp.sourceType || (grp.subscriptionId ? 'subscription' : 'custom'),
+    isReadOnly: Boolean(grp.isReadOnly)
   };
 }
 
@@ -274,6 +277,9 @@ export async function updateGroup(groupId, newName) {
     if (!target) {
       throw serviceError('groupNotFound', `Group with ID "${groupId}" not found`);
     }
+    if (target.isReadOnly) {
+      throw serviceError('readOnlyGroup', 'Subscribed group is read-only and managed by subscription');
+    }
 
     target.name = name;
     await db.groups.put(target);
@@ -292,6 +298,11 @@ export async function deleteGroup(groupId) {
   }
 
   return await withStorageLock(async () => {
+    const target = await db.groups.get(groupId);
+    if (target?.isReadOnly) {
+      throw serviceError('readOnlyGroup', 'Subscribed group is read-only and managed by subscription');
+    }
+
     await db.transaction('rw', [db.groups, db.bookmarks], async () => {
       // 1. 删除分组实体
       await db.groups.delete(groupId);

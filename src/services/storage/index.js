@@ -13,4 +13,5 @@ export * from './group.js';
 export * from './stats.js';
 export * from './backup.js';
 export * from './ai.js';
+export * from './subscription.js';
 export * from './secure-vault.js';
