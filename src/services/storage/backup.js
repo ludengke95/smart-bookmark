@@ -1,3 +1,4 @@
+import { autoUploadOnBackup } from './cloud-sync.js';
 /**
  * 数据快照、备份与完整 JSON 导入导出
  *
@@ -114,6 +115,11 @@ export async function createSnapshot(reason = null, type = 'manual', isLocked = 
     });
 
     broadcastStorageChange({ type: 'SNAPSHOTS_CHANGED', action: 'create', id: snapshotId });
+
+    if (type === 'manual' || type === 'auto_daily') {
+      autoUploadOnBackup(type).catch(err => console.warn('[Backup] Cloud auto upload failed:', err));
+    }
+
     return snapshot;
   });
 }
@@ -259,7 +265,7 @@ export async function exportFullBackupJson(options = {}) {
 /**
  * 从 JSON 字符串恢复全部数据
  */
-export async function importFullBackupJson(jsonString) {
+export async function importFullBackupJson(jsonString, options = {}) {
   try {
     const payload = JSON.parse(jsonString);
     if (!payload || typeof payload !== 'object') {
@@ -317,6 +323,10 @@ export async function importFullBackupJson(jsonString) {
 
       broadcastStorageChange({ type: 'ALL_CHANGED', action: 'import_json' });
     });
+
+    if (!options?.skipCloudSync) {
+      autoUploadOnBackup('manual').catch(err => console.warn('[Backup] Cloud auto upload after import failed:', err));
+    }
 
     return { success: true };
   } catch (err) {
