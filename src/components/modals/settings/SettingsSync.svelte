@@ -153,6 +153,9 @@
     isPushing = true;
     try {
       await handleFieldBlur();
+      if (webdavPassword.trim() || gistToken.trim()) {
+        await handleSaveCredentials();
+      }
       if (inputMasterPassword.trim()) {
         appState.setCloudMasterPassword(inputMasterPassword.trim());
         inputMasterPassword = '';
@@ -179,6 +182,9 @@
   async function performPull() {
     isPulling = true;
     try {
+      if (webdavPassword.trim() || gistToken.trim()) {
+        await handleSaveCredentials();
+      }
       const pass = inputMasterPassword.trim() || null;
       await appState.pullFromCloud({ passphrase: pass });
       inputMasterPassword = '';

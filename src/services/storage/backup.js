@@ -279,8 +279,10 @@ export async function importFullBackupJson(jsonString, options = {}) {
       return { success: false, message: 'JSON contains no bookmarks or groups' };
     }
 
-    // 导入前自动创建安全快照
-    await createSnapshot(null, 'auto_preimport');
+    // 导入前自动创建安全快照（允许通过 skipPreSnapshot 避免重复快照）
+    if (!options?.skipPreSnapshot) {
+      await createSnapshot(null, 'auto_preimport');
+    }
 
     // 检查并安全迁移凭据（支持显式导出的 credentials 与历史备份中的 settings.ai.apiKey）
     const legacyOrExportedKey = payload.credentials?.aiApiKey || payload.settings?.ai?.apiKey;

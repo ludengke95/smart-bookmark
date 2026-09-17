@@ -513,8 +513,8 @@ export async function pushToCloud({ force = false } = {}) {
   }
 
   // 1. 冲突防踩踏：检查云端当前状态
+  let remoteMeta = null;
   if (!force) {
-    let remoteMeta = null;
     try {
       if (settings.provider === 'webdav') {
         remoteMeta = await getWebDavMeta(settings.webdav, credentials);
@@ -525,7 +525,13 @@ export async function pushToCloud({ force = false } = {}) {
       // 忽略检查异常（可能文件未创建）
     }
 
-    if (remoteMeta?.exists && (!settings.lastRemoteHash || (remoteMeta.etag && remoteMeta.etag !== settings.lastRemoteHash))) {
+    const hasNeverSynced = !settings.lastSyncTime || settings.lastSyncTime === 0;
+    const hasConflict = remoteMeta?.exists && (
+      hasNeverSynced ||
+      (remoteMeta.etag && settings.lastRemoteHash && remoteMeta.etag !== settings.lastRemoteHash)
+    );
+
+    if (hasConflict) {
       throw serviceError('cloudConflict', 'Remote backup is newer than last synced version', {
         remoteModified: remoteMeta.lastModified
       });
@@ -554,9 +560,10 @@ export async function pushToCloud({ force = false } = {}) {
   }
 
   // 5. 更新元数据与同步状态
+  const finalEtag = result.etag || remoteMeta?.etag || settings.lastRemoteHash || '';
   const patch = {
     lastSyncTime: Date.now(),
-    lastRemoteHash: result.etag || '',
+    lastRemoteHash: finalEtag,
     lastError: ''
   };
   if (settings.provider === 'gist' && result.gistId && result.gistId !== settings.gist?.gistId) {
@@ -612,7 +619,7 @@ export async function pullFromCloud({ passphrase = null } = {}) {
   }
 
   // 4. 导入数据
-  const importRes = await importFullBackupJson(jsonString, { skipCloudSync: true });
+  const importRes = await importFullBackupJson(jsonString, { skipCloudSync: true, skipPreSnapshot: true });
   if (!importRes.success) {
     throw serviceError('cloudImportFailed', importRes.message || 'Failed to import downloaded backup');
   }

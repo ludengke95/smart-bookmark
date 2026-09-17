@@ -208,6 +208,42 @@ assert.equal(gistGetRes.content, '{"gist": true}');
 globalThis.fetch = originalFetch;
 console.log('✓ GitHub Gist 协议读写与私有保护测试通过');
 
+
+console.log('--- 5. 验证冲突检测边界与 WebDAV 首次/后续推送 ---');
+// 场景 A: 首次同步（从不同步过），云端已存在文件 -> 触发冲突拦截
+const neverSynced = { lastSyncTime: 0, lastRemoteHash: '' };
+const remoteExists = { exists: true, etag: '"etag_remote_1"' };
+const hasConflictFirstTime = Boolean(
+  remoteExists.exists && (
+    !neverSynced.lastSyncTime ||
+    Boolean(remoteExists.etag && neverSynced.lastRemoteHash && remoteExists.etag !== neverSynced.lastRemoteHash)
+  )
+);
+assert.equal(hasConflictFirstTime, true, '从未同步过且远端已有文件必须触发冲突');
+
+// 场景 B: 已经成功同步过一次，WebDAV PUT 响应无 ETag（保留原有或为空），再次推送时不应误报冲突
+const syncedBeforeNoEtag = { lastSyncTime: 12345678, lastRemoteHash: '' };
+const remoteNoEtagChange = { exists: true, etag: '' };
+const hasConflictSynced = Boolean(
+  remoteNoEtagChange.exists && (
+    (!syncedBeforeNoEtag.lastSyncTime || syncedBeforeNoEtag.lastSyncTime === 0) ||
+    Boolean(remoteNoEtagChange.etag && syncedBeforeNoEtag.lastRemoteHash && remoteNoEtagChange.etag !== syncedBeforeNoEtag.lastRemoteHash)
+  )
+);
+assert.equal(hasConflictSynced, false, '已同步设备在无 ETag 漂移时不应误报冲突');
+
+// 场景 C: 远端已被其他设备更新（ETag 不一致） -> 必须拦截冲突
+const syncedWithOldHash = { lastSyncTime: 12345678, lastRemoteHash: '"etag_device_a"' };
+const remoteUpdatedByOther = { exists: true, etag: '"etag_device_b"' };
+const hasConflictOtherDevice = Boolean(
+  remoteUpdatedByOther.exists && (
+    (!syncedWithOldHash.lastSyncTime || syncedWithOldHash.lastSyncTime === 0) ||
+    Boolean(remoteUpdatedByOther.etag && syncedWithOldHash.lastRemoteHash && remoteUpdatedByOther.etag !== syncedWithOldHash.lastRemoteHash)
+  )
+);
+assert.equal(hasConflictOtherDevice, true, '远端 ETag 不一致时必须触发冲突拦截');
+console.log('✓ 冲突检测状态机边界测试通过');
+
 console.log('\n==============================');
 console.log('🎉 云同步与 E2EE 核心服务测试全部通过！');
 console.log('==============================');

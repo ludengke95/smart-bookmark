@@ -872,6 +872,13 @@ class AppState {
     try {
       this.cloudSyncSettings = await getCloudSyncSettings();
       this.isE2eeUnlocked = isE2EEUnlocked();
+
+      if (this.cloudSyncSettings.provider === 'none') {
+        this.cloudSyncStatus = 'idle';
+        this.cloudSyncError = '';
+        return;
+      }
+
       if (this.cloudSyncSettings.lastError === 'conflict') {
         this.cloudSyncStatus = 'conflict';
       } else if (this.cloudSyncSettings.lastError === 'locked_pending') {
