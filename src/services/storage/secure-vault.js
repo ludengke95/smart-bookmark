@@ -9,7 +9,8 @@ import { withStorageLock } from './base.js';
 import { broadcastStorageChange } from './sync.js';
 
 export const VAULT_KEYS = {
-  AI_API_KEY: 'vault:ai_api_key'
+  AI_API_KEY: 'vault:ai_api_key',
+  CLOUD_CREDENTIALS: 'vault:cloud_credentials'
 };
 
 const PBKDF2_ITERATIONS = 100000;
@@ -265,5 +266,66 @@ export async function migrateLegacyApiKey() {
       console.warn('[SecureVault] Legacy migration check failed:', e);
     }
     return false;
+  });
+}
+
+
+/**
+ * 保存云同步凭据（WebDAV 密码与 Gist Token）至本地加密机密库
+ */
+export async function saveCloudCredentials(creds = {}) {
+  return await withStorageLock(async () => {
+    const existing = await getCloudCredentials();
+    const finalCreds = {
+      webdavPassword: creds.webdavPassword !== undefined ? String(creds.webdavPassword).trim() : existing.webdavPassword,
+      gistToken: creds.gistToken !== undefined ? String(creds.gistToken).trim() : existing.gistToken
+    };
+
+    if (!finalCreds.webdavPassword && !finalCreds.gistToken) {
+      await db.appSettings.delete(VAULT_KEYS.CLOUD_CREDENTIALS);
+      return { hasWebdavPassword: false, hasGistToken: false };
+    }
+
+    const payload = JSON.stringify(finalCreds);
+    const encrypted = await encryptSecret(payload);
+    await db.appSettings.put({
+      key: VAULT_KEYS.CLOUD_CREDENTIALS,
+      value: {
+        ...encrypted,
+        updatedAt: Date.now()
+      }
+    });
+
+    return {
+      hasWebdavPassword: Boolean(finalCreds.webdavPassword),
+      hasGistToken: Boolean(finalCreds.gistToken)
+    };
+  });
+}
+
+/**
+ * 获取云同步解密后凭据（仅供云同步服务发起网络调用时获取）
+ */
+export async function getCloudCredentials() {
+  const item = await db.appSettings.get(VAULT_KEYS.CLOUD_CREDENTIALS);
+  if (!item?.value?.ciphertext) {
+    return { webdavPassword: '', gistToken: '' };
+  }
+  try {
+    const raw = await decryptSecret(item.value);
+    return raw ? JSON.parse(raw) : { webdavPassword: '', gistToken: '' };
+  } catch (err) {
+    console.error('[SecureVault] Failed to decrypt cloud credentials:', err);
+    return { webdavPassword: '', gistToken: '' };
+  }
+}
+
+/**
+ * 清除云同步敏感凭据
+ */
+export async function clearCloudCredentials() {
+  return await withStorageLock(async () => {
+    await db.appSettings.delete(VAULT_KEYS.CLOUD_CREDENTIALS);
+    return { hasWebdavPassword: false, hasGistToken: false };
   });
 }

@@ -1,3 +1,4 @@
+import { autoUploadOnBackup } from './cloud-sync.js';
 /**
  * 数据快照、备份与完整 JSON 导入导出
  *
@@ -114,6 +115,11 @@ export async function createSnapshot(reason = null, type = 'manual', isLocked = 
     });
 
     broadcastStorageChange({ type: 'SNAPSHOTS_CHANGED', action: 'create', id: snapshotId });
+
+    if (type === 'manual' || type === 'auto_daily') {
+      autoUploadOnBackup(type).catch(err => console.warn('[Backup] Cloud auto upload failed:', err));
+    }
+
     return snapshot;
   });
 }
@@ -259,7 +265,7 @@ export async function exportFullBackupJson(options = {}) {
 /**
  * 从 JSON 字符串恢复全部数据
  */
-export async function importFullBackupJson(jsonString) {
+export async function importFullBackupJson(jsonString, options = {}) {
   try {
     const payload = JSON.parse(jsonString);
     if (!payload || typeof payload !== 'object') {
@@ -273,8 +279,10 @@ export async function importFullBackupJson(jsonString) {
       return { success: false, message: 'JSON contains no bookmarks or groups' };
     }
 
-    // 导入前自动创建安全快照
-    await createSnapshot(null, 'auto_preimport');
+    // 导入前自动创建安全快照（允许通过 skipPreSnapshot 避免重复快照）
+    if (!options?.skipPreSnapshot) {
+      await createSnapshot(null, 'auto_preimport');
+    }
 
     // 检查并安全迁移凭据（支持显式导出的 credentials 与历史备份中的 settings.ai.apiKey）
     const legacyOrExportedKey = payload.credentials?.aiApiKey || payload.settings?.ai?.apiKey;
@@ -317,6 +325,10 @@ export async function importFullBackupJson(jsonString) {
 
       broadcastStorageChange({ type: 'ALL_CHANGED', action: 'import_json' });
     });
+
+    if (!options?.skipCloudSync) {
+      autoUploadOnBackup('manual').catch(err => console.warn('[Backup] Cloud auto upload after import failed:', err));
+    }
 
     return { success: true };
   } catch (err) {
