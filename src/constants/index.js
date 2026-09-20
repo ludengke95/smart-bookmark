@@ -153,6 +153,7 @@ export const DEFAULT_MCP_SETTINGS = {
   enabled: false,
   wsHost: DEFAULT_MCP_WS_HOST,
   wsPort: DEFAULT_MCP_WS_PORT,
+  token: '',
   allowLan: false,
   autoReconnect: false
 };

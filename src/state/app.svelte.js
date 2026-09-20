@@ -72,7 +72,8 @@ import {
   DEFAULT_SETTINGS,
   PROBE_CACHE_TTL_MS,
   DEFAULT_MCP_WS_HOST,
-  DEFAULT_MCP_WS_PORT
+  DEFAULT_MCP_WS_PORT,
+  DEFAULT_MCP_SETTINGS
 } from '../constants/index.js';
 import { i18n } from '../i18n/index.svelte.js';
 
@@ -258,6 +259,21 @@ class AppState {
   async init() {
     await initStorage();
     this.settings = await getSettings();
+
+    // 确保 MCP 访问安全令牌存在
+    if (!this.settings.mcp?.token) {
+      const generatedToken = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID().replace(/-/g, '')
+        : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+      this.settings = {
+        ...this.settings,
+        mcp: {
+          ...(this.settings.mcp || DEFAULT_MCP_SETTINGS),
+          token: generatedToken
+        }
+      };
+      await storageSaveSettings(this.settings);
+    }
 
     // 初始化多语言偏好设置
     i18n.init(this.settings.language || 'auto');
@@ -798,10 +814,11 @@ class AppState {
   }
 
   // MCP 外部协同
-  reconnectMcp(host, port, allowLan) {
+  reconnectMcp(host, port, allowLan, token) {
     let targetHost = typeof host === 'string' ? host : (this.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST);
     let targetPort = typeof host === 'number' ? host : (typeof port === 'number' ? port : (this.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT));
     let targetAllowLan = allowLan !== undefined ? allowLan : !!this.settings.mcp?.allowLan;
+    let targetToken = token !== undefined ? token : (this.settings.mcp?.token || '');
 
     this.mcpStatus = { ...this.mcpStatus, isConnecting: true, lastError: null };
     if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
@@ -809,9 +826,25 @@ class AppState {
         action: 'reconnectMcp',
         port: targetPort,
         host: targetHost,
-        allowLan: targetAllowLan
+        allowLan: targetAllowLan,
+        token: targetToken
       });
     }
+  }
+
+  async regenerateMcpToken() {
+    const generatedToken = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID().replace(/-/g, '')
+      : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    const updatedMcp = {
+      ...(this.settings.mcp || DEFAULT_MCP_SETTINGS),
+      token: generatedToken
+    };
+    await this.updateSettings({ mcp: updatedMcp });
+    if (updatedMcp.enabled) {
+      this.reconnectMcp(updatedMcp.wsHost, updatedMcp.wsPort, updatedMcp.allowLan, generatedToken);
+    }
+    return generatedToken;
   }
 
   disconnectMcp() {

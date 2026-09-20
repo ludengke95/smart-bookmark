@@ -87,8 +87,8 @@ class NativeHostClient {
     }
 
     if (this.port) {
-      // 若已建立通信管道但尚未连接成功，或目标端口/网络配置发生变更，向 Native Host 发送 START 重新启动服务
-      if (!this.status.isConnected || this.status.port !== httpPort) {
+      // 若已建立通信管道但尚未连接成功，或目标端口/网络配置/Token发生变更，向 Native Host 发送 START 重新启动服务
+      if (!this.status.isConnected || this.status.port !== httpPort || this.targetOptions?.token !== options.token) {
         try {
           this.shouldBeConnected = true;
           this.updateStatus({ isConnecting: true, port: httpPort, lastError: null });
@@ -98,6 +98,7 @@ class NativeHostClient {
               port: httpPort,
               allowLan: !!options.allowLan,
               host: options.allowLan ? '0.0.0.0' : (options.host || '127.0.0.1'),
+              token: options.token || '',
               tools: MCP_TOOL_DEFINITIONS
             }
           });
@@ -133,6 +134,7 @@ class NativeHostClient {
           port: httpPort,
           allowLan: !!options.allowLan,
           host: options.allowLan ? '0.0.0.0' : (options.host || '127.0.0.1'),
+          token: options.token || '',
           tools: MCP_TOOL_DEFINITIONS
         }
       });
@@ -280,6 +282,7 @@ class NativeHostClient {
             port: httpPort,
             allowLan: !!options.allowLan,
             host: options.allowLan ? '0.0.0.0' : (options.host || '127.0.0.1'),
+            token: options.token || '',
             tools: MCP_TOOL_DEFINITIONS
           }
         });

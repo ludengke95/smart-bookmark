@@ -10,6 +10,7 @@ import { createMcpHttpServer } from './server.js';
 let httpServerInstance = null;
 let currentRunningPort = null;
 let currentRunningHost = null;
+let currentRunningToken = null;
 let cachedTools = [];
 let pendingRequests = new Map();
 let currentPort = 8333;
@@ -84,11 +85,12 @@ async function handleExtensionMessage(message) {
       currentPort = parseInt(payload?.port, 10) || 8333;
       const allowLan = !!payload?.allowLan;
       const currentHost = allowLan ? '0.0.0.0' : (payload?.host || '127.0.0.1');
+      const currentToken = typeof payload?.token === 'string' ? payload.token : '';
       if (Array.isArray(payload?.tools)) {
         cachedTools = payload.tools;
       }
 
-      if (httpServerInstance && (currentRunningPort !== currentPort || currentRunningHost !== currentHost)) {
+      if (httpServerInstance && (currentRunningPort !== currentPort || currentRunningHost !== currentHost || currentRunningToken !== currentToken)) {
         try {
           await httpServerInstance.stop();
         } catch {
@@ -97,6 +99,7 @@ async function handleExtensionMessage(message) {
         httpServerInstance = null;
         currentRunningPort = null;
         currentRunningHost = null;
+        currentRunningToken = null;
       }
 
       if (!httpServerInstance) {
@@ -104,6 +107,7 @@ async function handleExtensionMessage(message) {
           httpServerInstance = createMcpHttpServer({
             port: currentPort,
             host: currentHost,
+            token: currentToken,
             getTools: async () => {
               try {
                 const tools = await sendRequestToExtension('GET_TOOLS', {}, 10000);
@@ -121,6 +125,7 @@ async function handleExtensionMessage(message) {
           await httpServerInstance.start();
           currentRunningPort = currentPort;
           currentRunningHost = currentHost;
+          currentRunningToken = currentToken;
           sendMessageToExtension({
             type: 'SERVER_STARTED',
             payload: { port: currentPort }
@@ -149,6 +154,7 @@ async function handleExtensionMessage(message) {
         httpServerInstance = null;
         currentRunningPort = null;
         currentRunningHost = null;
+        currentRunningToken = null;
       }
       sendMessageToExtension({ type: 'SERVER_STOPPED' });
       break;

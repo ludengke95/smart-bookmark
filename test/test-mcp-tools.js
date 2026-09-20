@@ -8,7 +8,7 @@ import { MCP_TOOL_DEFINITIONS } from '../src/services/mcp/tools.js';
 console.log('--- 1. 验证 MCP 工具定义 (Tool Definitions) ---');
 const tools = MCP_TOOL_DEFINITIONS;
 assert.ok(Array.isArray(tools), 'tools should be an array');
-assert.equal(tools.length, 17, `expected 17 tools, got ${tools.length}`);
+assert.equal(tools.length, 21, `expected 21 tools, got ${tools.length}`);
 
 const toolNames = new Set(tools.map(t => t.name));
 const expectedNames = [
@@ -28,13 +28,17 @@ const expectedNames = [
   'list_snapshots',
   'rollback_snapshot',
   'get_network_topology',
-  'export_full_data'
+  'export_full_data',
+  'export_team_collection',
+  'list_subscriptions',
+  'sync_subscription',
+  'get_sample_team_collection_template'
 ];
 
 for (const name of expectedNames) {
   assert.ok(toolNames.has(name), `Missing expected tool: ${name}`);
 }
-console.log('✓ 17 个 MCP 工具宣告完整且名称正确');
+console.log('✓ 21 个 MCP 工具宣告完整且名称正确');
 
 console.log('--- 2. 验证每个工具 inputSchema 结构 ---');
 for (const tool of tools) {

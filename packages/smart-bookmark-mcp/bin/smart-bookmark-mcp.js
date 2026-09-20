@@ -45,7 +45,8 @@ async function main() {
       // 作为 Stdio MCP 代理运行（由 Cursor / Claude Desktop 启动）
       const port = parseInt(flags.port, 10) || 8333;
       const host = flags.host || '127.0.0.1';
-      await runStdioProxy({ host, port });
+      const token = flags.token || process.env.SMART_BOOKMARK_MCP_TOKEN || '';
+      await runStdioProxy({ host, port, token });
       break;
     }
 
@@ -115,6 +116,7 @@ Commands:
 Options:
   --port <port>     Port for MCP HTTP server (default: 8333)
   --host <host>     Host for MCP HTTP server (default: 127.0.0.1)
+  --token <token>   Authentication token for MCP HTTP server
   --extension-id    Custom Chrome/Edge extension ID (default: gobioihpdadhghfbefcnobinbfadmpli)
 `);
       break;

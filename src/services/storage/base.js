@@ -7,7 +7,8 @@
 import {
   DEFAULT_BOOKMARKS,
   DEFAULT_GROUPS,
-  DEFAULT_SETTINGS
+  DEFAULT_SETTINGS,
+  DEFAULT_MCP_SETTINGS
 } from '../../constants/index.js';
 import { db } from './db.js';
 import { broadcastStorageChange } from './sync.js';
@@ -211,7 +212,27 @@ export async function initStorage() {
  */
 export async function getSettings() {
   const record = await db.appSettings.get('settings');
-  return record?.value ? { ...DEFAULT_SETTINGS, ...record.value } : DEFAULT_SETTINGS;
+  const result = !record?.value
+    ? { ...DEFAULT_SETTINGS }
+    : {
+        ...DEFAULT_SETTINGS,
+        ...record.value,
+        ai: { ...DEFAULT_SETTINGS.ai, ...(record.value.ai || {}) },
+        mcp: { ...DEFAULT_SETTINGS.mcp, ...(record.value.mcp || {}) }
+      };
+
+  if (!result.mcp?.token) {
+    const generatedToken = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID().replace(/-/g, '')
+      : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    result.mcp = { ...(result.mcp || DEFAULT_MCP_SETTINGS), token: generatedToken };
+    try {
+      await db.appSettings.put({ key: 'settings', value: result });
+    } catch {
+      // ignore
+    }
+  }
+  return result;
 }
 
 export async function saveSettings(partial) {

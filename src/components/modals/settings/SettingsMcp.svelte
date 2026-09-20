@@ -5,11 +5,14 @@
   import { DEFAULT_MCP_SETTINGS, DEFAULT_MCP_WS_HOST, DEFAULT_MCP_WS_PORT } from '../../../constants/index.js';
   import Switch from '../../common/Switch.svelte';
   import ToggleRow from '../../common/ToggleRow.svelte';
+  import ConfirmModal from '../../common/ConfirmModal.svelte';
 
   // 步进索引：1 | 2 | 3
   // 如果当前服务已成功连通，初始直接定位到第 3 步；如果开启但尚未连接定位第 2 步；否则第 1 步引导
   let currentStep = $state(appState.mcpStatus.isConnected ? 3 : (appState.settings.mcp?.enabled ? 2 : 1));
   let showAdvanced = $state(false);
+  let showToken = $state(false);
+  let confirmRegenerateOpen = $state(false);
   let portInputRef = $state(null);
 
   let errorCategory = $derived.by(() => {
@@ -37,7 +40,8 @@
       appState.reconnectMcp(
         updated.wsHost || DEFAULT_MCP_WS_HOST,
         updated.wsPort || DEFAULT_MCP_WS_PORT,
-        updated.allowLan
+        updated.allowLan,
+        updated.token
       );
     } else {
       appState.disconnectMcp();
@@ -53,10 +57,24 @@
       toast.show(t('mcp.copyFailedToast'));
     });
   }
+
+  function copyToken() {
+    const token = appState.settings.mcp?.token || '';
+    if (!token) return;
+    navigator.clipboard.writeText(token).then(() => {
+      toast.show(t('mcp.tokenCopiedToast'));
+    }).catch(() => {
+      toast.show(t('mcp.copyFailedToast'));
+    });
+  }
+
   function copyHttpEndpoint() {
     const host = appState.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST;
     const port = appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT;
-    const endpoint = `http://${host}:${port}/mcp`;
+    const token = appState.settings.mcp?.token;
+    const endpoint = token
+      ? `http://${host}:${port}/mcp?token=${token}`
+      : `http://${host}:${port}/mcp`;
     navigator.clipboard.writeText(endpoint).then(() => {
       toast.show(t('mcp.copiedHttpToast'));
     }).catch(() => {
@@ -67,13 +85,21 @@
   function copyHttpJsonConfig() {
     const host = appState.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST;
     const port = appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT;
+    const token = appState.settings.mcp?.token;
     const endpoint = `http://${host}:${port}/mcp`;
+
+    const serverConfig = {
+      url: endpoint
+    };
+    if (token) {
+      serverConfig.headers = {
+        Authorization: `Bearer ${token}`
+      };
+    }
 
     const snippet = JSON.stringify({
       mcpServers: {
-        "smart-bookmark": {
-          url: endpoint
-        }
+        "smart-bookmark": serverConfig
       }
     }, null, 2);
 
@@ -87,9 +113,11 @@
   function copyStdioConfig() {
     const host = appState.settings.mcp?.wsHost || DEFAULT_MCP_WS_HOST;
     const port = appState.settings.mcp?.wsPort || DEFAULT_MCP_WS_PORT;
+    const token = appState.settings.mcp?.token;
     const extraArgs = [];
     if (host !== DEFAULT_MCP_WS_HOST) extraArgs.push('--host', host);
     if (port !== DEFAULT_MCP_WS_PORT) extraArgs.push('--port', String(port));
+    if (token) extraArgs.push('--token', token);
 
     const snippet = JSON.stringify({
       mcpServers: {
@@ -118,7 +146,7 @@
         ? 'bg-surface text-text-primary shadow-sm font-semibold border border-border-subtle/70'
         : 'text-text-secondary hover:text-text-primary hover:bg-surface/50 border border-transparent'}"
     >
-      <span class="w-3.5 h-3.5 rounded-full text-[9px] flex items-center justify-center {currentStep === 1 ? 'bg-accent text-white font-bold' : 'bg-subtle text-text-tertiary border border-border-subtle'}">
+      <span class="w-3.5 h-3.5 rounded-full text-[9px] flex items-center justify-center {currentStep === 1 ? 'bg-accent text-accent-fg font-bold' : 'bg-subtle text-text-tertiary border border-border-subtle'}">
         1
       </span>
       <span>{t('mcp.step1Tab')}</span>
@@ -131,7 +159,7 @@
         ? 'bg-surface text-text-primary shadow-sm font-semibold border border-border-subtle/70'
         : 'text-text-secondary hover:text-text-primary hover:bg-surface/50 border border-transparent'}"
     >
-      <span class="w-3.5 h-3.5 rounded-full text-[9px] flex items-center justify-center {currentStep === 2 ? 'bg-accent text-white font-bold' : 'bg-subtle text-text-tertiary border border-border-subtle'}">
+      <span class="w-3.5 h-3.5 rounded-full text-[9px] flex items-center justify-center {currentStep === 2 ? 'bg-accent text-accent-fg font-bold' : 'bg-subtle text-text-tertiary border border-border-subtle'}">
         2
       </span>
       <span>{t('mcp.step2Tab')}</span>
@@ -144,7 +172,7 @@
         ? 'bg-surface text-text-primary shadow-sm font-semibold border border-border-subtle/70'
         : 'text-text-secondary hover:text-text-primary hover:bg-surface/50 border border-transparent'}"
     >
-      <span class="w-3.5 h-3.5 rounded-full text-[9px] flex items-center justify-center {currentStep === 3 ? 'bg-accent text-white font-bold' : 'bg-subtle text-text-tertiary border border-border-subtle'}">
+      <span class="w-3.5 h-3.5 rounded-full text-[9px] flex items-center justify-center {currentStep === 3 ? 'bg-accent text-accent-fg font-bold' : 'bg-subtle text-text-tertiary border border-border-subtle'}">
         3
       </span>
       <span>{t('mcp.step3Tab')}</span>
@@ -170,7 +198,7 @@
           <button
             type="button"
             onclick={copyRegisterCommand}
-            class="px-2.5 py-1 rounded-md bg-accent text-white hover:opacity-90 transition-opacity text-[11px] font-medium flex-shrink-0 shadow-sm"
+            class="px-2.5 py-1 rounded-md bg-accent text-accent-fg hover:opacity-90 transition-opacity text-[11px] font-medium flex-shrink-0 shadow-sm"
           >
             {t('mcp.copyRegister')}
           </button>
@@ -185,7 +213,7 @@
         <button
           type="button"
           onclick={() => (currentStep = 2)}
-          class="px-3.5 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm"
+          class="px-3.5 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm"
         >
           <span>{t('mcp.nextStep')}</span>
           <span>→</span>
@@ -246,7 +274,7 @@
                 showAdvanced = true;
                 setTimeout(() => portInputRef?.focus(), 50);
               }}
-              class="ml-auto px-2 py-0.5 rounded text-[10px] font-medium bg-accent text-white hover:opacity-90 transition-opacity flex-shrink-0 shadow-sm"
+              class="ml-auto px-2 py-0.5 rounded text-[10px] font-medium bg-accent text-accent-fg hover:opacity-90 transition-opacity flex-shrink-0 shadow-sm"
             >
               {t('mcp.fixPort')}
             </button>
@@ -254,14 +282,14 @@
             <button
               type="button"
               onclick={() => (currentStep = 1)}
-              class="ml-auto px-2 py-0.5 rounded text-[10px] font-medium bg-accent text-white hover:opacity-90 transition-opacity flex-shrink-0 shadow-sm"
+              class="ml-auto px-2 py-0.5 rounded text-[10px] font-medium bg-accent text-accent-fg hover:opacity-90 transition-opacity flex-shrink-0 shadow-sm"
             >
               {t('mcp.fixRegister')}
             </button>
           {/if}
         </div>
 
-        <!-- 高级网络设置 (折叠展开) -->
+        <!-- 高级网络与安全设置 (折叠展开) -->
         <div>
           <button
             type="button"
@@ -273,6 +301,7 @@
           </button>
           {#if showAdvanced}
             <div class="mt-2 p-2.5 rounded-lg bg-subtle/40 border border-border-subtle/40 space-y-2.5">
+              <!-- 端口设置 -->
               <div class="flex items-center justify-between gap-2">
                 <span class="text-[10px] text-text-secondary">{t('mcp.portLabel')}</span>
                 <input
@@ -290,6 +319,43 @@
                 />
               </div>
 
+              <!-- 访问安全令牌 (Auth Token) -->
+              <div class="pt-2 border-t border-border-subtle/30 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <div class="space-y-0.5">
+                    <span class="text-[10px] text-text-secondary font-medium block">{t('mcp.tokenLabel')}</span>
+                    <p class="text-[9px] text-text-tertiary leading-tight">{t('mcp.tokenDesc')}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onclick={() => (confirmRegenerateOpen = true)}
+                    class="px-2 py-0.5 rounded text-[10px] text-text-secondary hover:text-text-primary hover:bg-surface border border-border-subtle transition-colors flex-shrink-0"
+                  >
+                    {t('mcp.regenerateToken')}
+                  </button>
+                </div>
+                <div class="flex items-center gap-1.5 p-1 rounded bg-surface border border-border-subtle">
+                  <span class="flex-1 font-mono text-[10px] text-text-primary select-all truncate pl-1">
+                    {showToken ? (appState.settings.mcp?.token || '—') : (appState.settings.mcp?.token ? '••••••••••••••••••••••••••••••••' : '—')}
+                  </span>
+                  <button
+                    type="button"
+                    onclick={() => (showToken = !showToken)}
+                    class="px-1.5 py-0.5 rounded text-[9px] text-text-secondary hover:text-text-primary hover:bg-subtle transition-colors flex-shrink-0"
+                  >
+                    {showToken ? t('mcp.hideToken') : t('mcp.showToken')}
+                  </button>
+                  <button
+                    type="button"
+                    onclick={copyToken}
+                    class="px-2 py-0.5 rounded bg-subtle hover:bg-surface border border-border-subtle text-[10px] text-text-primary font-medium transition-colors flex-shrink-0"
+                  >
+                    {t('mcp.copyToken')}
+                  </button>
+                </div>
+              </div>
+
+              <!-- 局域网协同 -->
               <div class="pt-2 border-t border-border-subtle/30">
                 <ToggleRow
                   id="mcp-allow-lan"
@@ -322,7 +388,7 @@
         <button
           type="button"
           onclick={() => (currentStep = 3)}
-          class="px-3.5 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm"
+          class="px-3.5 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm"
         >
           <span>{t('mcp.nextStep')}</span>
           <span>→</span>
@@ -370,7 +436,7 @@
             <button
               type="button"
               onclick={copyHttpJsonConfig}
-              class="flex-1 py-1.5 rounded-lg bg-accent text-white hover:opacity-90 transition-opacity text-xs font-medium shadow-sm text-center"
+              class="flex-1 py-1.5 rounded-lg bg-accent text-accent-fg hover:opacity-90 transition-opacity text-xs font-medium shadow-sm text-center"
             >
               {t('mcp.copyHttpJson')}
             </button>
@@ -397,3 +463,15 @@
     </div>
   {/if}
 </div>
+
+<ConfirmModal
+  bind:open={confirmRegenerateOpen}
+  title={t('mcp.regenerateConfirmTitle')}
+  message={t('mcp.regenerateConfirmMsg')}
+  confirmLabel={t('mcp.regenerateToken')}
+  danger
+  onconfirm={async () => {
+    await appState.regenerateMcpToken();
+    toast.show(t('mcp.tokenRegeneratedToast'));
+  }}
+/>

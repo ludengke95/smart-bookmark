@@ -56,9 +56,11 @@ test('createMcpHttpServer: Streamable HTTP client lists and calls tools', async 
 
   let calledToolName = null;
   let calledToolArgs = null;
+  const token = 'test_token_secret_123';
 
   const server = createMcpHttpServer({
     port: 0,
+    token,
     getTools: async () => mockTools,
     callTool: async (name, args) => {
       calledToolName = name;
@@ -70,7 +72,16 @@ test('createMcpHttpServer: Streamable HTTP client lists and calls tools', async 
   const { port } = await server.start();
 
   try {
-    const clientTransport = new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${port}/mcp`));
+    const clientTransport = new StreamableHTTPClientTransport(
+      new URL(`http://127.0.0.1:${port}/mcp`),
+      {
+        requestInit: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      }
+    );
     const client = new Client(
       { name: 'test-client', version: '1.0.0' },
       { capabilities: {} }
@@ -143,4 +154,133 @@ test('Native Messaging 4-byte LE framing verification', () => {
   assert.equal(frame.readUInt32LE(0), jsonBuf.length);
   const decoded = JSON.parse(frame.subarray(4).toString('utf8'));
   assert.deepEqual(decoded, payload);
+});
+
+test('createMcpHttpServer: rejects unauthenticated requests with 401', async () => {
+  const server = createMcpHttpServer({
+    port: 0,
+    token: 'super_secret_token_123',
+    getTools: async () => [],
+    callTool: async () => ({})
+  });
+  const { port } = await server.start();
+
+  try {
+    // 1. /ping 正常可达
+    const pingRes = await fetch(`http://127.0.0.1:${port}/ping`);
+    assert.equal(pingRes.status, 200);
+
+    // 2. /mcp 无 Token 访问返回 401
+    const resNoToken = await fetch(`http://127.0.0.1:${port}/mcp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' })
+    });
+    assert.equal(resNoToken.status, 401);
+    const errData = await resNoToken.json();
+    assert.ok(errData.error.includes('Unauthorized'));
+
+    // 3. 错误 Token 访问返回 401
+    const resWrongToken = await fetch(`http://127.0.0.1:${port}/mcp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer wrong_token'
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' })
+    });
+    assert.equal(resWrongToken.status, 401);
+  } finally {
+    await server.stop();
+  }
+});
+
+test('createMcpHttpServer: accepts requests with valid Bearer token', async () => {
+  const mockTools = [{ name: 'test_tool', inputSchema: { type: 'object' } }];
+  const server = createMcpHttpServer({
+    port: 0,
+    token: 'super_secret_token_123',
+    getTools: async () => mockTools,
+    callTool: async () => ({})
+  });
+  const { port } = await server.start();
+
+  try {
+    const clientTransport = new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${port}/mcp`), {
+      requestInit: {
+        headers: {
+          Authorization: 'Bearer super_secret_token_123'
+        }
+      }
+    });
+    const client = new Client(
+      { name: 'authenticated-client', version: '1.0.0' },
+      { capabilities: {} }
+    );
+    await client.connect(clientTransport);
+
+    const toolList = await client.listTools();
+    assert.equal(toolList.tools.length, 1);
+    assert.equal(toolList.tools[0].name, 'test_tool');
+
+    await client.close();
+  } finally {
+    await server.stop();
+  }
+});
+
+test('createMcpHttpServer: CORS blocks untrusted origins and allows extension origins', async () => {
+  const server = createMcpHttpServer({
+    port: 0,
+    getTools: async () => [],
+    callTool: async () => ({})
+  });
+  const { port } = await server.start();
+
+  try {
+    // 1. 恶意网页来源的 OPTIONS 预检请求返回 403
+    const badOptions = await fetch(`http://127.0.0.1:${port}/mcp`, {
+      method: 'OPTIONS',
+      headers: {
+        'Origin': 'https://malicious-website.com'
+      }
+    });
+    assert.equal(badOptions.status, 403);
+    assert.equal(badOptions.headers.get('access-control-allow-origin'), null);
+
+    // 2. 扩展来源的 OPTIONS 预检请求返回 204 并允许 CORS
+    const extOptions = await fetch(`http://127.0.0.1:${port}/mcp`, {
+      method: 'OPTIONS',
+      headers: {
+        'Origin': 'chrome-extension://gobioihpdadhghfbefcnobinbfadmpli'
+      }
+    });
+    assert.equal(extOptions.status, 204);
+    assert.equal(
+      extOptions.headers.get('access-control-allow-origin'),
+      'chrome-extension://gobioihpdadhghfbefcnobinbfadmpli'
+    );
+  } finally {
+    await server.stop();
+  }
+});
+test('createMcpHttpServer: rejects when server token is empty string', async () => {
+  const server = createMcpHttpServer({
+    port: 0,
+    token: '',
+    getTools: async () => [],
+    callTool: async () => ({})
+  });
+  const { port } = await server.start();
+
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/mcp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' })
+    });
+    assert.equal(res.status, 401);
+  } finally {
+    await server.stop();
+  }
 });
