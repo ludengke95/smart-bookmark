@@ -71,6 +71,7 @@ const SNAPSHOT_REASON_KEYS = {
   auto_ai_group: 'backup.reasonAiGroup',
   auto_ai_tag: 'backup.reasonAiTag',
   auto_preimport: 'backup.reasonPreImport',
+  auto_precloud: 'backup.reasonPreCloud',
   auto_preclear: 'backup.reasonPreClear',
   auto_prerollback: 'backup.reasonPreRollback',
   auto_daily: 'backup.reasonDaily',

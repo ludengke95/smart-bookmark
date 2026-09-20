@@ -42,7 +42,18 @@ import {
   getAiApiKey as storageGetAiApiKey,
   clearAiApiKey as storageClearAiApiKey,
   onStorageChange,
-  STORAGE_KEYS
+  STORAGE_KEYS,
+  DEFAULT_CLOUD_SYNC_SETTINGS,
+  getCloudSyncSettings,
+  saveCloudSyncSettings as storageSaveCloudSyncSettings,
+  testCloudConnection as storageTestCloudConnection,
+  pushToCloud as storagePushToCloud,
+  pullFromCloud as storagePullFromCloud,
+  setSessionMasterPassword,
+  clearSessionMasterPassword,
+  isE2EEUnlocked,
+  saveCloudCredentials as storageSaveCloudCredentials,
+  getCloudCredentials as storageGetCloudCredentials
 } from '../services/storage.js';
 import { syncSubscription } from '../services/subscription/index.js';
 import { toast } from './toast.svelte.js';
@@ -91,6 +102,12 @@ class AppState {
   aiKeyStatus = $state({ hasKey: false, maskedKey: '', updatedAt: 0 });
   aiRunning = $state(false);
   aiProgress = $state(null); // { phase, current, total, percent, message }
+
+  // 云同步状态
+  cloudSyncSettings = $state(DEFAULT_CLOUD_SYNC_SETTINGS);
+  cloudSyncStatus = $state('idle'); // 'idle' | 'syncing' | 'conflict' | 'locked_pending' | 'error'
+  cloudSyncError = $state('');
+  isE2eeUnlocked = $state(false);
 
   // 兼容别名
   get localIp() {
@@ -253,6 +270,7 @@ class AppState {
     this.detailedStats = await getDetailedStats();
     this.snapshots = await getSnapshots();
     this.aiKeyStatus = await getAiApiKeyStatus();
+    await this.refreshCloudSync();
 
     // 恢复默认折叠状态
     const initCollapsed = new Set();
@@ -318,6 +336,10 @@ class AppState {
           case 'STATS_CHANGED':
             this.clickStats = await getClickStats('30d');
             this.detailedStats = await getDetailedStats();
+            break;
+          case 'CLOUD_SYNC_SETTINGS_CHANGED':
+          case 'CLOUD_SYNC_STATUS_CHANGED':
+            await this.refreshCloudSync();
             break;
           case 'MCP_STATUS_CHANGED':
             if (event.data) {
@@ -843,6 +865,92 @@ class AppState {
     await this.saveBookmark(cloned);
     toast.show(i18n.t('subscriptions.forkSuccess') || '已转存至个人书签');
   }
+
+  // --- 云同步 (Cloud Sync) 响应式接口 ---
+
+  async refreshCloudSync() {
+    try {
+      this.cloudSyncSettings = await getCloudSyncSettings();
+      this.isE2eeUnlocked = isE2EEUnlocked();
+
+      if (this.cloudSyncSettings.provider === 'none') {
+        this.cloudSyncStatus = 'idle';
+        this.cloudSyncError = '';
+        return;
+      }
+
+      if (this.cloudSyncSettings.lastError === 'conflict') {
+        this.cloudSyncStatus = 'conflict';
+      } else if (this.cloudSyncSettings.lastError === 'locked_pending') {
+        this.cloudSyncStatus = 'locked_pending';
+      } else if (this.cloudSyncSettings.lastError) {
+        this.cloudSyncStatus = 'error';
+        this.cloudSyncError = this.cloudSyncSettings.lastError;
+      } else {
+        this.cloudSyncStatus = 'idle';
+        this.cloudSyncError = '';
+      }
+    } catch (e) {
+      console.warn('[AppState] refreshCloudSync failed:', e);
+    }
+  }
+
+  async saveCloudSyncSettings(partial) {
+    this.cloudSyncSettings = await storageSaveCloudSyncSettings(partial);
+    await this.refreshCloudSync();
+    return this.cloudSyncSettings;
+  }
+
+  async saveCloudCredentials(creds) {
+    return await storageSaveCloudCredentials(creds);
+  }
+
+  async getCloudCredentials() {
+    return await storageGetCloudCredentials();
+  }
+
+  setCloudMasterPassword(password) {
+    setSessionMasterPassword(password);
+    this.isE2eeUnlocked = isE2EEUnlocked();
+  }
+
+  clearCloudMasterPassword() {
+    clearSessionMasterPassword();
+    this.isE2eeUnlocked = false;
+  }
+
+  async testCloudConnection() {
+    return await storageTestCloudConnection();
+  }
+
+  async pushToCloud(options = {}) {
+    this.cloudSyncStatus = 'syncing';
+    this.cloudSyncError = '';
+    try {
+      const res = await storagePushToCloud(options);
+      await this.refreshCloudSync();
+      return res;
+    } catch (err) {
+      this.cloudSyncStatus = err.code === 'cloudConflict' ? 'conflict' : 'error';
+      this.cloudSyncError = err.message || err.code;
+      throw err;
+    }
+  }
+
+  async pullFromCloud(options = {}) {
+    this.cloudSyncStatus = 'syncing';
+    this.cloudSyncError = '';
+    try {
+      const res = await storagePullFromCloud(options);
+      await this.init();
+      return res;
+    } catch (err) {
+      this.cloudSyncStatus = err.code === 'e2eeLocked' ? 'locked_pending' : 'error';
+      this.cloudSyncError = err.message || err.code;
+      throw err;
+    }
+  }
+
 }
 
 export const appState = new AppState();
