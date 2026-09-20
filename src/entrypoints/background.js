@@ -26,11 +26,11 @@ export default defineBackground(() => {
   }
 
   // 同步 MCP 状态与保活机制：优先使用 Native Messaging 宿主，未开启或关闭时彻底释放资源
-  function syncMcpKeepalive(enabled, port, allowLan) {
+  function syncMcpKeepalive(enabled, port, allowLan, token) {
     const targetPort = port || DEFAULT_MCP_WS_PORT;
     if (enabled) {
       if (!nativeHostClient.status.isConnected && !nativeHostClient.status.isConnecting) {
-        nativeHostClient.connect(targetPort, { allowLan });
+        nativeHostClient.connect(targetPort, { allowLan, token });
       }
       try {
         chrome.alarms?.get(MCP_KEEPALIVE_ALARM, (alarm) => {
@@ -54,7 +54,7 @@ export default defineBackground(() => {
   // 初始化检查
   getSettings().then(settings => {
     const isMcpEnabled = settings?.mcp?.enabled === true;
-    syncMcpKeepalive(isMcpEnabled, settings?.mcp?.wsPort, settings?.mcp?.allowLan);
+    syncMcpKeepalive(isMcpEnabled, settings?.mcp?.wsPort, settings?.mcp?.allowLan, settings?.mcp?.token);
   }).catch(() => {});
 
   // 监听设置动态变更 (通过 BroadcastChannel 跨上下文总线即时响应)
@@ -62,7 +62,7 @@ export default defineBackground(() => {
     if (event.type === 'SETTINGS_CHANGED') {
       const newSettings = event.data;
       const isMcpEnabled = newSettings?.mcp?.enabled === true;
-      syncMcpKeepalive(isMcpEnabled, newSettings?.mcp?.wsPort, newSettings?.mcp?.allowLan);
+      syncMcpKeepalive(isMcpEnabled, newSettings?.mcp?.wsPort, newSettings?.mcp?.allowLan, newSettings?.mcp?.token);
     }
   });
 
@@ -73,7 +73,7 @@ export default defineBackground(() => {
         if (settings?.mcp?.enabled === true) {
           const targetPort = settings?.mcp?.wsPort || DEFAULT_MCP_WS_PORT;
           if (!nativeHostClient.status.isConnected && !nativeHostClient.status.isConnecting) {
-            nativeHostClient.connect(targetPort, { allowLan: settings?.mcp?.allowLan });
+            nativeHostClient.connect(targetPort, { allowLan: settings?.mcp?.allowLan, token: settings?.mcp?.token });
           }
         } else {
           syncMcpKeepalive(false);
@@ -105,7 +105,7 @@ export default defineBackground(() => {
       return true;
     }
     if (message?.action === 'reconnectMcp') {
-      nativeHostClient.reconnect(message.port, { allowLan: message.allowLan, host: message.host });
+      nativeHostClient.reconnect(message.port, { allowLan: message.allowLan, host: message.host, token: message.token });
       sendResponse({ success: true });
       return true;
     }

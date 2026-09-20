@@ -6,16 +6,40 @@
 
 import http from 'node:http';
 import crypto from 'node:crypto';
+import { Buffer } from 'node:buffer';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
+function extractProvidedToken(req, url) {
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    const match = authHeader.match(/^Bearer\s+(.+)$/i);
+    if (match) return match[1].trim();
+    return authHeader.trim();
+  }
+  const xToken = req.headers['x-mcp-token'];
+  if (xToken) return String(xToken).trim();
+  const queryToken = url.searchParams.get('token');
+  if (queryToken) return queryToken.trim();
+  return null;
+}
+
+function verifyToken(expectedToken, providedToken) {
+  if (!expectedToken || !providedToken) return false;
+  const expectedBuf = Buffer.from(expectedToken);
+  const providedBuf = Buffer.from(providedToken);
+  if (expectedBuf.length !== providedBuf.length) return false;
+  return crypto.timingSafeEqual(expectedBuf, providedBuf);
+}
+
 export function createMcpHttpServer({
   getTools,
   callTool,
   port = 8333,
-  host = '127.0.0.1'
+  host = '127.0.0.1',
+  token = ''
 }) {
   const httpSessions = new Map();
   const sseSessions = new Map();
@@ -24,7 +48,7 @@ export function createMcpHttpServer({
     const server = new Server(
       {
         name: 'smart-bookmark',
-        version: '1.0.3'
+        version: '1.1.1'
       },
       {
         capabilities: {
@@ -67,28 +91,53 @@ export function createMcpHttpServer({
   }
 
   const httpServer = http.createServer(async (req, res) => {
-    // 跨域 CORS 支持
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, mcp-session-id');
-    res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id');
+    const origin = req.headers.origin;
+    const isExtensionOrigin = origin && (
+      origin.startsWith('chrome-extension://') ||
+      origin.startsWith('moz-extension://') ||
+      origin.startsWith('edge-extension://')
+    );
+
+    // 仅针对合法浏览器扩展来源设置 CORS 响应头，拒绝普通网页跨域请求
+    if (isExtensionOrigin) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Vary', 'Origin');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-mcp-token, mcp-session-id');
+      res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id');
+    }
 
     if (req.method === 'OPTIONS') {
-      res.writeHead(204);
-      res.end();
+      if (!origin || isExtensionOrigin) {
+        res.writeHead(204);
+        res.end();
+      } else {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'CORS forbidden: untrusted origin' }));
+      }
       return;
     }
 
     const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
 
-    // 健康检查端点
+    // 健康检查端点（不返回书签等敏感数据，用于存活状态探活）
     if (url.pathname === '/ping') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         status: 'ok',
         uptime: process.uptime(),
-        version: '1.0.3',
+        version: '1.1.1',
         service: 'smart-bookmark-mcp'
+      }));
+      return;
+    }
+
+    // 核心业务端点 Token 鉴权校验（强制鉴权：未配置 Token 或客户端未提供有效 Token 均拒绝访问）
+    const providedToken = extractProvidedToken(req, url);
+    if (!verifyToken(token, providedToken)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        error: 'Unauthorized: Invalid or missing authentication token'
       }));
       return;
     }

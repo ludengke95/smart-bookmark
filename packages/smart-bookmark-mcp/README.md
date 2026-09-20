@@ -88,8 +88,10 @@ smart-bookmark-mcp native
 | --- | --- | --- |
 | `--host <host>` | `127.0.0.1` | 目标 HTTP 服务监听地址 |
 | `--port <port>` | `8333` | 目标 HTTP 服务监听端口 |
+| `--token <token>` | 空 | 访问安全令牌 (Auth Token) |
 | `SMART_BOOKMARK_MCP_HOST` | `127.0.0.1` | 环境变量：目标地址 |
 | `SMART_BOOKMARK_MCP_PORT` | `8333` | 环境变量：目标端口 |
+| `SMART_BOOKMARK_MCP_TOKEN` | 空 | 环境变量：访问安全令牌 |
 
 ---
 

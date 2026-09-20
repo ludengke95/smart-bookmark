@@ -13,6 +13,7 @@ import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprot
 export async function runStdioProxy(options = {}) {
   const host = options.host || '127.0.0.1';
   const port = options.port || 8333;
+  const token = options.token || process.env.SMART_BOOKMARK_MCP_TOKEN || '';
   const endpoint = `http://${host}:${port}/mcp`;
 
   let httpClient = null;
@@ -21,9 +22,17 @@ export async function runStdioProxy(options = {}) {
     if (httpClient) return httpClient;
 
     try {
-      const transport = new StreamableHTTPClientTransport(new URL(endpoint));
+      const requestHeaders = {};
+      if (token) {
+        requestHeaders['Authorization'] = `Bearer ${token}`;
+      }
+      const transport = new StreamableHTTPClientTransport(new URL(endpoint), {
+        requestInit: {
+          headers: requestHeaders
+        }
+      });
       const client = new Client(
-        { name: 'smart-bookmark-stdio-proxy', version: '1.0.3' },
+        { name: 'smart-bookmark-stdio-proxy', version: '1.1.1' },
         { capabilities: {} }
       );
       await client.connect(transport);
@@ -39,7 +48,7 @@ export async function runStdioProxy(options = {}) {
   }
 
   const server = new Server(
-    { name: 'smart-bookmark-stdio', version: '1.0.3' },
+    { name: 'smart-bookmark-stdio', version: '1.1.1' },
     { capabilities: { tools: {} } }
   );
 

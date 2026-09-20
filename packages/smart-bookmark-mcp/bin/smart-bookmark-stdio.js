@@ -9,8 +9,9 @@ import { runStdioProxy } from '../src/stdio-proxy/proxy.js';
 
 const port = process.env.SMART_BOOKMARK_MCP_PORT ? parseInt(process.env.SMART_BOOKMARK_MCP_PORT, 10) : 8333;
 const host = process.env.SMART_BOOKMARK_MCP_HOST || '127.0.0.1';
+const token = process.env.SMART_BOOKMARK_MCP_TOKEN || '';
 
-runStdioProxy({ host, port }).catch((err) => {
+runStdioProxy({ host, port, token }).catch((err) => {
   console.error('[Stdio Error]', err);
   process.exit(1);
 });
