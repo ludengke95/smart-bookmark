@@ -62,9 +62,9 @@ export const THEMES = [
     id: 'obsidian-dark',
     name: '深曜黑 (Obsidian Dark)',
     isDark: true,
-    previewBg: '#14161A',
-    previewBorder: '#E2E7F0',
-    desc: '深空石墨，沉静暗夜'
+    previewBg: '#17191E',
+    previewBorder: '#3B6EB8',
+    desc: '柔和深灰，护眼低眩光'
   }
 ];
 
@@ -169,6 +169,7 @@ export const DEFAULT_SETTINGS = {
   motto: 'Stay hungry, stay foolish. 无论内网外网，一键极速直达。',
   frequentLimits: { compact: 6, icon: 8, list: 5, comfortable: 4 },
   density: 'compact',
+  layoutMode: 'grid',
   aestheticSize: 'medium',
   customWallpaper: null,
   wallpaperMaskOpacity: 40,

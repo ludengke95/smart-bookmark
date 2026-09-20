@@ -54,7 +54,7 @@
             <span class="w-1.5 h-1.5 rounded-full {appState.currentLocalIp ? 'bg-status-intranet shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-text-tertiary'} {isRefreshing ? 'animate-pulse' : ''}"></span>
             <span>{appState.currentLocalIp || t('nav.statusExtranet')}</span>
             {#if appState.allLocalIps.length > 1}
-              <span class="px-1 py-0.2 text-[9px] font-sans font-semibold rounded bg-surface border border-border-subtle text-text-tertiary">+{appState.allLocalIps.length - 1}</span>
+              <span class="px-1 py-0.2 text-[11px] font-sans font-semibold rounded bg-surface border border-border-subtle text-text-tertiary">+{appState.allLocalIps.length - 1}</span>
             {/if}
           </button>
 
@@ -68,7 +68,7 @@
                     <span class="w-2 h-2 rounded-full {appState.currentLocalIp ? 'bg-status-intranet' : 'bg-text-tertiary'}"></span>
                     {t('nav.topologySensing')}
                   </span>
-                  <span class="text-[10px] text-text-tertiary">
+                  <span class="text-[11px] text-text-tertiary">
                     {appState.allLocalIps.length > 0 ? t('nav.discoveredSubnets', { count: appState.allLocalIps.length }) : t('nav.noPrivateIp')}
                   </span>
                 </div>
@@ -83,13 +83,13 @@
                           <span class="font-mono text-[11px] {idx === 0 ? 'text-text-primary font-medium' : 'text-text-secondary'}">{ip}</span>
                         </div>
                         {#if idx === 0}
-                          <span class="text-[9px] px-1.5 py-0.5 rounded bg-status-intranet/10 text-status-intranet border border-status-intranet/20 font-medium">{t('nav.primaryNic')}</span>
+                          <span class="text-[11px] px-1.5 py-0.5 rounded bg-status-intranet/10 text-status-intranet border border-status-intranet/20 font-medium">{t('nav.primaryNic')}</span>
                         {:else if ip.startsWith('198.18.')}
-                          <span class="text-[9px] text-text-tertiary">{t('nav.tunProxy')}</span>
+                          <span class="text-[11px] text-text-tertiary">{t('nav.tunProxy')}</span>
                         {:else if ip.startsWith('172.')}
-                          <span class="text-[9px] text-text-tertiary">{t('nav.virtualNic')}</span>
+                          <span class="text-[11px] text-text-tertiary">{t('nav.virtualNic')}</span>
                         {:else if ip.startsWith('10.')}
-                          <span class="text-[9px] text-text-tertiary">{t('nav.vpnSubnet')}</span>
+                          <span class="text-[11px] text-text-tertiary">{t('nav.vpnSubnet')}</span>
                         {/if}
                       </div>
                     {/each}
@@ -101,11 +101,11 @@
                 </div>
 
                 <!-- 底部提示 -->
-                <div class="pt-2 border-t border-border-subtle/60 flex items-center justify-between text-[10px] text-text-tertiary">
+                <div class="pt-2 border-t border-border-subtle/60 flex items-center justify-between text-[11px] text-text-tertiary">
                   <span>{t('nav.lpmBenchmark')}</span>
                   <button
                     type="button"
-                    class="text-accent cursor-pointer hover:underline text-[10px] bg-transparent border-0 p-0"
+                    class="text-accent cursor-pointer hover:underline text-[11px] bg-transparent border-0 p-0"
                     onclick={handleRefreshNetwork}
                   >
                     {t('nav.clickToRefresh')}
@@ -124,7 +124,7 @@
       <button
         onclick={onOpenStats}
         class="p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-subtle transition-colors"
-        title={t('nav.stats')}
+        aria-label={t('nav.stats')}
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -135,7 +135,7 @@
       <button
         onclick={onOpenBackup}
         class="p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-subtle transition-colors"
-        title={t('nav.backup')}
+        aria-label={t('nav.backup')}
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -146,7 +146,7 @@
       <button
         onclick={onOpenAiOrganize}
         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-accent bg-accent/10 hover:bg-accent/15 border border-accent/20 transition-all shadow-2xs"
-        title={t('nav.aiOrganize')}
+        aria-label={t('nav.aiOrganize')}
       >
         <span class="text-xs">✨</span>
         <span>{t('nav.aiOrganize')}</span>
@@ -156,7 +156,7 @@
       <button
         onclick={onOpenImport}
         class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-subtle border border-border-subtle transition-colors"
-        title={t('nav.importBookmarks')}
+        aria-label={t('nav.importBookmarks')}
       >
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -179,14 +179,14 @@
       <button
         onclick={onOpenSettings}
         class="relative p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-subtle transition-colors"
-        title={t('nav.settings')}
+        aria-label={t('nav.settings')}
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
         {#if appState.cloudSyncStatus === 'locked_pending'}
-          <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-surface"></span>
+          <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-status-warn ring-2 ring-surface"></span>
         {:else if appState.cloudSyncStatus === 'conflict' || appState.cloudSyncStatus === 'error'}
           <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-status-danger ring-2 ring-surface"></span>
         {/if}

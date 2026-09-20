@@ -12,10 +12,10 @@
   let showEngineMenu = $state(false);
   let searchInputEl = $state(null);
   let isFocused = $state(false);
-  let activeActionIndex = $state(0); // 0: 搜索引擎, 1: 直达最佳书签
+  let activeActionIndex = $state(0); // 0: 搜索引擎, 1..N: 直达最佳书签
 
-  let targetBookmark = $derived(appState.filteredBookmarks[0] || null);
-  let targetRoute = $derived(targetBookmark ? appState.getBookmarkRoute(targetBookmark) : null);
+  let candidateBookmarks = $derived(appState.filteredBookmarks.slice(0, 4));
+  let totalActions = $derived(1 + candidateBookmarks.length);
   let hasQuery = $derived(Boolean(appState.searchQuery?.trim()));
   let showSuggestions = $derived(isFocused && hasQuery);
 
@@ -90,15 +90,11 @@
 
   function handleInputKeyDown(e) {
     if (e.key === 'ArrowDown') {
-      if (targetBookmark && activeActionIndex === 0) {
-        e.preventDefault();
-        activeActionIndex = 1;
-      }
+      e.preventDefault();
+      activeActionIndex = (activeActionIndex + 1) % totalActions;
     } else if (e.key === 'ArrowUp') {
-      if (activeActionIndex === 1) {
-        e.preventDefault();
-        activeActionIndex = 0;
-      }
+      e.preventDefault();
+      activeActionIndex = (activeActionIndex - 1 + totalActions) % totalActions;
     } else if (e.key === 'Escape') {
       isFocused = false;
       searchInputEl?.blur();
@@ -108,16 +104,16 @@
       if (!q) return;
 
       if (e.shiftKey) {
-        // Shift + Enter: 优先直达书签
-        if (targetBookmark) {
-          executeDirectBookmark(targetBookmark);
+        // Shift + Enter: 优先直达首个书签
+        if (candidateBookmarks.length > 0) {
+          executeDirectBookmark(candidateBookmarks[0]);
           return;
         }
         executeEngineSearch(q);
       } else {
-        // 普通 Enter: 按照当前聚焦动作执行 (默认 0 是搜索引擎搜索)
-        if (activeActionIndex === 1 && targetBookmark) {
-          executeDirectBookmark(targetBookmark);
+        // 普通 Enter: 按照当前聚焦动作执行
+        if (activeActionIndex > 0 && candidateBookmarks[activeActionIndex - 1]) {
+          executeDirectBookmark(candidateBookmarks[activeActionIndex - 1]);
         } else {
           executeEngineSearch(q);
         }
@@ -130,8 +126,8 @@
     const q = appState.searchQuery.trim();
     if (!q) return;
 
-    if (activeActionIndex === 1 && targetBookmark) {
-      executeDirectBookmark(targetBookmark);
+    if (activeActionIndex > 0 && candidateBookmarks[activeActionIndex - 1]) {
+      executeDirectBookmark(candidateBookmarks[activeActionIndex - 1]);
     } else {
       executeEngineSearch(q);
     }
@@ -173,9 +169,9 @@
           type="button"
           onclick={() => (showEngineMenu = !showEngineMenu)}
           class="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full hover:bg-subtle text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
-          title={t('search.engineSwitch')}
+          aria-label={t('search.engineSwitch')}
         >
-          <span class="w-4 h-4 rounded-full bg-subtle flex items-center justify-center text-[10px] font-bold {appState.selectedEngine.colorClass}">
+          <span class="w-4 h-4 rounded-full bg-subtle flex items-center justify-center text-[11px] font-bold {appState.selectedEngine.colorClass}">
             {appState.selectedEngine.iconText}
           </span>
           <svg class="w-3 h-3 text-text-tertiary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -192,7 +188,7 @@
                 onclick={() => handleSelectEngine(eng.id)}
                 class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-subtle text-left text-text-secondary hover:text-text-primary transition-colors {eng.id === appState.selectedEngine.id ? 'bg-subtle text-text-primary font-medium' : ''}"
               >
-                <span class="w-4 h-4 rounded-full bg-subtle flex items-center justify-center text-[10px] font-bold {eng.colorClass}">
+                <span class="w-4 h-4 rounded-full bg-subtle flex items-center justify-center text-[11px] font-bold {eng.colorClass}">
                   {eng.iconText}
                 </span>
                 <span>{eng.name}</span>
@@ -225,14 +221,14 @@
             type="button"
             onclick={() => (appState.searchQuery = '')}
             class="p-1 rounded-full hover:text-text-primary hover:bg-subtle transition-colors"
-            title={t('search.clearQuery')}
+            aria-label={t('search.clearQuery')}
           >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         {:else}
-          <kbd class="hidden sm:inline-block px-1.5 py-0.5 rounded border border-border-subtle bg-subtle text-[10px] font-mono text-text-tertiary leading-none">
+          <kbd class="hidden sm:inline-block px-1.5 py-0.5 rounded border border-border-subtle bg-subtle text-[11px] font-mono text-text-tertiary leading-none">
             /
           </kbd>
         {/if}
@@ -242,7 +238,7 @@
           onclick={() => executeEngineSearch()}
           onauxclick={(e) => { if (e.button === 1) { e.preventDefault(); executeEngineSearch(); } }}
           class="p-1.5 rounded-full bg-accent text-accent-fg hover:opacity-90 transition-opacity cursor-pointer"
-          title={t('search.searchWithEngine', { engine: appState.selectedEngine.name })}
+          aria-label={t('search.searchWithEngine', { engine: appState.selectedEngine.name })}
         >
           <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -256,7 +252,7 @@
       <div
         class="absolute left-0 right-0 top-full mt-2 bg-surface border border-border-subtle rounded-2xl shadow-popover p-1.5 z-40 text-left space-y-1 backdrop-blur-md"
       >
-        <!-- 动作 1：调用所选搜索引擎搜索 (Enter 默认触发) -->
+        <!-- 动作 0：调用所选搜索引擎搜索 (Enter 默认触发) -->
         <button
           type="button"
           onmousedown={(e) => { e.preventDefault(); executeEngineSearch(); }}
@@ -265,7 +261,7 @@
           class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer {activeActionIndex === 0 ? 'bg-subtle text-text-primary' : 'text-text-secondary hover:bg-subtle/70'}"
         >
           <div class="flex items-center gap-2.5 min-w-0">
-            <span class="w-5 h-5 rounded-full bg-subtle flex-shrink-0 flex items-center justify-center text-[10px] font-bold {appState.selectedEngine.colorClass}">
+            <span class="w-5 h-5 rounded-full bg-subtle flex-shrink-0 flex items-center justify-center text-[11px] font-bold {appState.selectedEngine.colorClass}">
               {appState.selectedEngine.iconText}
             </span>
             <span class="text-text-secondary flex-shrink-0">
@@ -275,41 +271,48 @@
               "{appState.searchQuery.trim()}"
             </span>
           </div>
-          <kbd class="flex-shrink-0 px-2 py-0.5 rounded border border-border-subtle bg-subtle text-[10px] font-mono text-text-tertiary">
+          <kbd class="flex-shrink-0 px-2 py-0.5 rounded border border-border-subtle bg-subtle text-[11px] font-mono text-text-tertiary">
             {t('search.shortcutEnter')}
           </kbd>
         </button>
 
-        <!-- 动作 2：直达最佳匹配书签 (Shift + Enter 或键盘向下切换) -->
-        {#if targetBookmark}
+        <!-- 动作 1..N：直达最佳匹配书签 (最多 4 个) -->
+        {#each candidateBookmarks as bm, idx}
+          {@const bmRoute = appState.getBookmarkRoute(bm)}
+          {@const isActionActive = activeActionIndex === idx + 1}
           <button
             type="button"
-            onmousedown={(e) => { e.preventDefault(); executeDirectBookmark(targetBookmark); }}
-            onauxclick={(e) => { if (e.button === 1) { e.preventDefault(); executeDirectBookmark(targetBookmark); } }}
-            onmouseenter={() => (activeActionIndex = 1)}
-            class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer {activeActionIndex === 1 ? 'bg-subtle text-text-primary' : 'text-text-secondary hover:bg-subtle/70'}"
+            onmousedown={(e) => { e.preventDefault(); executeDirectBookmark(bm); }}
+            onauxclick={(e) => { if (e.button === 1) { e.preventDefault(); executeDirectBookmark(bm); } }}
+            onmouseenter={() => (activeActionIndex = idx + 1)}
+            class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer {isActionActive ? 'bg-subtle text-text-primary' : 'text-text-secondary hover:bg-subtle/70'}"
           >
             <div class="flex items-center gap-2.5 min-w-0">
-              <span class="w-5 h-5 rounded-full bg-amber-500/10 text-amber-500 flex-shrink-0 flex items-center justify-center text-xs font-bold">
-                ⚡
+              <span class="w-5 h-5 rounded-full bg-status-warn/10 text-status-warn flex-shrink-0 flex items-center justify-center text-xs font-bold">
+                ★
               </span>
               <span class="text-text-secondary flex-shrink-0">
                 {t('search.directBookmark')}:
               </span>
               <span class="font-medium text-text-primary truncate">
-                {targetBookmark.name}
+                {bm.name}
               </span>
-              {#if targetRoute?.optimal?.url}
-                <span class="text-[10px] text-text-tertiary font-mono truncate hidden sm:inline">
-                  ({formatHost(targetRoute.optimal.url)})
+              {#if bmRoute?.optimal?.url}
+                <span class="text-[11px] text-text-tertiary font-mono truncate hidden sm:inline">
+                  ({formatHost(bmRoute.optimal.url)})
                 </span>
               {/if}
             </div>
-            <kbd class="flex-shrink-0 px-2 py-0.5 rounded border border-border-subtle bg-subtle text-[10px] font-mono text-text-tertiary">
-              {t('search.shortcutShiftEnter')}
-            </kbd>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              {#if bmRoute?.optimal?.latency}
+                <span class="font-mono text-[11px] text-status-intranet">{bmRoute.optimal.latency}ms</span>
+              {/if}
+              <kbd class="px-2 py-0.5 rounded border border-border-subtle bg-subtle text-[11px] font-mono text-text-tertiary">
+                {idx === 0 ? t('search.shortcutShiftEnter') : t('search.shortcutEnter')}
+              </kbd>
+            </div>
           </button>
-        {/if}
+        {/each}
       </div>
     {/if}
   </div>

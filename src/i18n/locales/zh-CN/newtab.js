@@ -44,6 +44,10 @@ export default {
     shortcutEnter: 'Enter',
     shortcutShiftEnter: 'Shift + Enter'
   },
+  view: {
+    grid: '网格视图',
+    list: '列表视图'
+  },
   sort: {
     tooltip: '切换书签排序方式',
     toastSorted: '已按「{label}」排序',

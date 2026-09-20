@@ -87,23 +87,24 @@
     </button>
   </div>
 
-  <!-- 分组列表 (独占剩余高度，仅内部滚动) -->
-  <div class="flex-1 min-h-0 overflow-y-auto space-y-1.5 divide-y divide-border-subtle/50 border border-border-subtle rounded-xl bg-surface p-1 pr-1.5">
+  <!-- 分组列表 (独立卡片化排版，参考标签列表，无生硬白色横线) -->
+  <div class="flex-1 min-h-0 overflow-y-auto space-y-1 border border-border-subtle rounded-xl bg-surface p-1 pr-1.5">
     {#each appState.groups as g}
       {@const customIdx = customGroups.findIndex(cg => cg.id === g.id)}
       {@const isCustom = customIdx >= 0}
-      <div class="flex items-center justify-between p-2">
+      {@const groupCount = appState.bookmarks.filter(b => b.groupId === g.id).length}
+      <div class="flex items-center justify-between p-2 hover:bg-subtle/40 rounded-lg transition-colors">
         {#if editingGroupId === g.id}
           <div class="flex items-center gap-1.5 flex-1 mr-2">
             <input
               type="text"
               bind:value={editingGroupName}
-              class="flex-1 px-2 py-1 rounded bg-subtle border border-border-focus outline-none text-text-primary font-medium"
+              class="flex-1 px-2 py-1 rounded bg-subtle border border-border-focus outline-none text-text-primary font-medium text-xs"
             />
             <button
               type="button"
               onclick={handleSaveEditGroup}
-              class="px-2 py-1 rounded bg-accent text-accent-fg text-[11px]"
+              class="px-2 py-1 rounded bg-accent text-accent-fg text-[11px] font-medium"
             >
               {t('common.confirm')}
             </button>
@@ -116,26 +117,32 @@
             </button>
           </div>
         {:else}
-          <span class="font-medium text-text-primary flex items-center gap-1.5">
-            {#if g.id === PINNED_GROUP_ID}
-              <span class="text-amber-500">★</span>
-            {/if}
-            {getGroupName(g)}
+          <div class="flex items-center gap-2 flex-1 min-w-0 mr-2">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-subtle border border-border-subtle text-xs font-medium text-text-primary truncate">
+              {#if g.id === PINNED_GROUP_ID}
+                <span class="text-status-warn">★</span>
+              {:else}
+                <span class="text-accent text-[11px]">📁</span>
+              {/if}
+              <span class="truncate">{getGroupName(g)}</span>
+            </span>
             {#if g.id === PINNED_GROUP_ID || g.id === UNGROUPED_GROUP_ID}
-              <span class="text-[10px] text-text-tertiary font-mono">({t('common.systemBuiltin')})</span>
+              <span class="text-[11px] text-text-tertiary font-mono flex-shrink-0">({t('common.systemBuiltin')})</span>
+            {:else}
+              <span class="text-[11px] text-text-tertiary font-mono flex-shrink-0">({groupCount})</span>
             {/if}
-          </span>
+          </div>
         {/if}
 
         {#if isCustom}
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-1 flex-shrink-0">
             <!-- 上移按钮 -->
             <button
               type="button"
               disabled={customIdx === 0}
               onclick={() => handleMoveGroup(g.id, -1)}
               class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
-              title={t('groups.moveUpTooltip')}
+              aria-label={t('groups.moveUpTooltip')}
             >
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
@@ -147,7 +154,7 @@
               disabled={customIdx === customGroups.length - 1}
               onclick={() => handleMoveGroup(g.id, 1)}
               class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
-              title={t('groups.moveDownTooltip')}
+              aria-label={t('groups.moveDownTooltip')}
             >
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -158,7 +165,7 @@
               type="button"
               onclick={() => handleStartEditGroup(g)}
               class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
-              title={t('groups.renameTooltip')}
+              aria-label={t('groups.renameTooltip')}
             >
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -169,7 +176,7 @@
               type="button"
               onclick={() => handleDeleteGroup(g.id)}
               class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-status-danger transition-colors"
-              title={t('groups.deleteTooltip')}
+              aria-label={t('groups.deleteTooltip')}
             >
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

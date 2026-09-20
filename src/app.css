@@ -4,31 +4,31 @@
 
 @layer base {
   :root, [data-theme="obsidian-dark"] {
-    --bg-canvas: #14161a;
-    --bg-surface: #1c1e24;
-    --bg-surface-hover: #252830;
-    --bg-subtle: #21242c;
-    --bg-input: #1c1e24;
+    --bg-canvas: #17191e;
+    --bg-surface: #1f2229;
+    --bg-surface-hover: #272a33;
+    --bg-subtle: #252831;
+    --bg-input: #1b1e24;
 
-    --border-subtle: #2b2f3a;
-    --border-focus: #545b6d;
+    --border-subtle: #2d313c;
+    --border-focus: #4b5264;
 
-    --text-primary: #dce0e8;
-    --text-secondary: #8c93a1;
-    --text-tertiary: #5c6374;
+    --text-primary: #c9d1dc;
+    --text-secondary: #858f9f;
+    --text-tertiary: #586171;
 
-    --accent: #e2e7f0;
-    --accent-fg: #14161a;
-    --accent-hover: #cbd5e1;
+    --accent: #3b6eb8;
+    --accent-fg: #ffffff;
+    --accent-hover: #487cc9;
 
-    --status-intranet: #22c55e;
-    --status-extranet: #38bdf8;
-    --status-warn: #fbbf24;
-    --status-danger: #f87171;
+    --status-intranet: #34b76a;
+    --status-extranet: #4aa9ea;
+    --status-warn: #e5a43b;
+    --status-danger: #e05a5a;
 
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.25);
-    --shadow-md: 0 4px 12px 0 rgb(0 0 0 / 0.35);
-    --shadow-popover: 0 12px 32px -4px rgb(0 0 0 / 0.5);
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.2);
+    --shadow-md: 0 4px 12px 0 rgb(0 0 0 / 0.28);
+    --shadow-popover: 0 12px 32px -4px rgb(0 0 0 / 0.4);
 
     --radius-sm: 6px;
     --radius-md: 8px;
@@ -91,6 +91,7 @@
     --shadow-md: 0 4px 12px 0 rgb(45 43 40 / 0.06);
     --shadow-popover: 0 12px 32px -4px rgb(45 43 40 / 0.1);
   }
+
 
   body {
     background-color: var(--bg-canvas);

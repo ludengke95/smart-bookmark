@@ -133,21 +133,35 @@
       <section class="space-y-3">
         <div class="flex items-center gap-3">
           <div class="flex items-center gap-1.5 text-xs font-semibold text-text-primary">
-            <span class="text-amber-500">★</span>
+            <span class="text-status-warn">★</span>
             <span>{t('groups.pinned')}</span>
           </div>
-          <div class="flex-1 h-[1px] bg-border-subtle/60"></div>
+          <div class="flex-1 h-px bg-border-subtle opacity-30"></div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-          {#each appState.frequentBookmarks as bm (bm.id || bm.name)}
-            <BookmarkCard
-              bookmark={bm}
-              onEdit={onEditBookmark}
-              onDelete={onDeleteBookmark}
-            />
-          {/each}
-        </div>
+        {#if (appState.settings.layoutMode || 'grid') === 'list'}
+          <div class="flex flex-col gap-1.5">
+            {#each appState.frequentBookmarks as bm (bm.id || bm.name)}
+              <BookmarkCard
+                bookmark={bm}
+                layout="list"
+                onEdit={onEditBookmark}
+                onDelete={onDeleteBookmark}
+              />
+            {/each}
+          </div>
+        {:else}
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+            {#each appState.frequentBookmarks as bm (bm.id || bm.name)}
+              <BookmarkCard
+                bookmark={bm}
+                layout="grid"
+                onEdit={onEditBookmark}
+                onDelete={onDeleteBookmark}
+              />
+            {/each}
+          </div>
+        {/if}
       </section>
     {/if}
 
@@ -177,7 +191,7 @@
               </button>
               {#if group.isSubscribed}
                 <span
-                  class="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium border border-accent/20"
+                  class="text-[11px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium border border-accent/20"
                   title={t('subscriptions.readOnlyGroupTooltip')}
                 >
                   {group.subscriptionName || t('subscriptions.readOnlyBadge')}
@@ -189,7 +203,7 @@
             </div>
 
             <!-- 极细横贯分割线 -->
-            <div class="flex-1 h-[1px] bg-border-subtle/60"></div>
+            <div class="flex-1 h-px bg-border-subtle opacity-30"></div>
 
             <!-- 分组快捷操作 (新增到此分组，仅限非只读分组) -->
             {#if group.id !== UNGROUPED_GROUP_ID && !group.isReadOnly}
@@ -209,25 +223,49 @@
           <!-- 卡片网格 (支持折叠收起与自定义拖拽排序) -->
           {#if !appState.collapsedGroups.has(group.id)}
             {#if bookmarks.length > 0}
-              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                {#each bookmarks as bm (bm.id || bm.name)}
-                  <div
-                    class="transition-transform duration-150 {draggedBookmarkId === bm.id ? 'opacity-40 scale-95' : ''} {dropTargetBookmarkId === bm.id ? 'ring-2 ring-accent ring-offset-2 ring-offset-canvas rounded-lg' : ''}"
-                  >
-                    <BookmarkCard
-                      bookmark={bm}
-                      draggable={isCustomSort}
-                      ondragstart={(e) => handleDragStart(e, bm)}
-                      ondragend={handleDragEnd}
-                      ondragover={(e) => handleDragOver(e, bm)}
-                      ondragleave={() => handleDragLeave(bm)}
-                      ondrop={(e) => handleDrop(e, bm, group)}
-                      onEdit={onEditBookmark}
-                      onDelete={onDeleteBookmark}
-                    />
-                  </div>
-                {/each}
-              </div>
+              {#if (appState.settings.layoutMode || 'grid') === 'list'}
+                <div class="flex flex-col gap-1.5">
+                  {#each bookmarks as bm (bm.id || bm.name)}
+                    <div
+                      class="transition-transform duration-150 {draggedBookmarkId === bm.id ? 'opacity-40 scale-95' : ''} {dropTargetBookmarkId === bm.id ? 'ring-2 ring-accent ring-offset-2 ring-offset-canvas rounded-lg' : ''}"
+                    >
+                      <BookmarkCard
+                        bookmark={bm}
+                        layout="list"
+                        draggable={isCustomSort}
+                        ondragstart={(e) => handleDragStart(e, bm)}
+                        ondragend={handleDragEnd}
+                        ondragover={(e) => handleDragOver(e, bm)}
+                        ondragleave={() => handleDragLeave(bm)}
+                        ondrop={(e) => handleDrop(e, bm, group)}
+                        onEdit={onEditBookmark}
+                        onDelete={onDeleteBookmark}
+                      />
+                    </div>
+                  {/each}
+                </div>
+              {:else}
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                  {#each bookmarks as bm (bm.id || bm.name)}
+                    <div
+                      class="transition-transform duration-150 {draggedBookmarkId === bm.id ? 'opacity-40 scale-95' : ''} {dropTargetBookmarkId === bm.id ? 'ring-2 ring-accent ring-offset-2 ring-offset-canvas rounded-lg' : ''}"
+                    >
+                      <BookmarkCard
+                        bookmark={bm}
+                        layout="grid"
+                        draggable={isCustomSort}
+                        ondragstart={(e) => handleDragStart(e, bm)}
+                        ondragend={handleDragEnd}
+                        ondragover={(e) => handleDragOver(e, bm)}
+                        ondragleave={() => handleDragLeave(bm)}
+                        ondrop={(e) => handleDrop(e, bm, group)}
+                        onEdit={onEditBookmark}
+                        onDelete={onDeleteBookmark}
+                      />
+                    </div>
+                  {/each}
+                </div>
+              {/if}
             {:else}
               <div class="p-6 rounded-lg border border-dashed border-border-subtle/80 text-center text-text-tertiary text-xs">
                 {t('bookmark.groupEmpty')}

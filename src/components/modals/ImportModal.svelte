@@ -619,7 +619,7 @@
                   {/if}
                 </div>
               </div>
-              <div class="flex-1 min-h-0 overflow-y-auto divide-y divide-border-subtle/50 border border-border-subtle rounded-lg bg-surface">
+              <div class="flex-1 min-h-0 overflow-y-auto divide-y divide-border-subtle border border-border-subtle rounded-lg bg-surface">
                 {#each importPreview as item}
                   <div class="p-2 flex items-center justify-between gap-2 hover:bg-subtle/40 transition-colors">
                     <div class="flex items-center gap-2.5 min-w-0 flex-1 truncate">

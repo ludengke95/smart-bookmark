@@ -106,7 +106,7 @@
           </button>
         </div>
 
-        <div class="divide-y divide-border-subtle/50 border border-border-subtle rounded-xl bg-surface">
+        <div class="divide-y divide-border-subtle border border-border-subtle rounded-xl bg-surface">
           {#each rankedBookmarks as bm, idx}
             <div
               role="button"

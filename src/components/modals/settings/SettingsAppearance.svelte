@@ -12,6 +12,11 @@
     { value: 'en-US', label: t('settings.languageEn'), iconText: '🇺🇸' }
   ]);
 
+  const layoutModeOptions = $derived([
+    { value: 'grid', label: t('view.grid') },
+    { value: 'list', label: t('view.list') }
+  ]);
+
   const clockFormatOptions = $derived([
     { value: '24', label: t('settings.clock24') },
     { value: '12', label: t('settings.clock12') }
@@ -41,6 +46,19 @@
   />
 </div>
 
+<!-- 视图模式切换 -->
+<div class="space-y-1.5 pt-2 border-t border-border-subtle">
+  <span class="block font-medium text-text-secondary">{t('settings.layoutMode', {}, '视图排版布局')}</span>
+  <Select
+    options={layoutModeOptions}
+    value={appState.settings.layoutMode || 'grid'}
+    onchange={(val) => {
+      appState.updateSettings({ layoutMode: val });
+      toast.show(t('common.success'));
+    }}
+  />
+</div>
+
 <!-- 3款极简主题切换 -->
 <div class="space-y-2 pt-2 border-t border-border-subtle">
   <span class="block font-medium text-text-secondary">{t('settings.theme')}</span>
@@ -55,7 +73,7 @@
           : 'border-border-subtle bg-surface hover:bg-subtle/50'}"
       >
         <div class="flex items-center justify-between mb-2">
-          <span class="font-medium text-text-primary text-[11px]">{getThemeName(theme)}</span>
+          <span class="font-medium text-text-primary text-[11px] truncate">{getThemeName(theme)}</span>
           {#if appState.settings.theme === theme.id}
             <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
           {/if}
