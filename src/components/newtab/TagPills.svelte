@@ -47,7 +47,7 @@
                 : 'text-text-secondary hover:text-text-primary hover:bg-subtle'}"
             >
               <span>{tag.name}</span>
-              <span class="opacity-60 text-[10px] font-mono">({tag.count})</span>
+              <span class="opacity-60 text-[11px] font-mono">({tag.count})</span>
             </button>
           {/each}
         </div>
@@ -57,7 +57,6 @@
           type="button"
           onclick={() => (isExpanded = !isExpanded)}
           class="flex-shrink-0 p-1.5 mt-[1px] rounded-lg border border-border-subtle/70 bg-surface hover:bg-subtle text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
-          title={isExpanded ? t('tags.collapseAll') : t('tags.expandAll')}
           aria-label={isExpanded ? t('tags.collapseAll') : t('tags.expandAll')}
         >
           <svg class="w-3.5 h-3.5 transition-transform duration-200 {isExpanded ? 'rotate-180' : ''}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -67,53 +66,80 @@
       {/if}
     </nav>
 
-    <!-- 排序规则下拉切换器 -->
-    <div class="relative flex-shrink-0 mt-[1px]">
-      <button
-        type="button"
-        onclick={() => (showSortMenu = !showSortMenu)}
-        class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border-subtle bg-surface hover:bg-subtle text-xs text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
-        title={t('sort.tooltip')}
-      >
-        <span class="text-xs">{currentSort.iconText}</span>
-        <span class="font-medium text-[11px]">{getSortLabel(currentSort.value)}</span>
-        <svg class="w-3 h-3 text-text-tertiary transition-transform duration-200 {showSortMenu ? 'rotate-180 text-text-primary' : ''}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+    <!-- 视图模式切换与排序规则下拉切换器 -->
+    <div class="flex items-center gap-2 flex-shrink-0 mt-[1px]">
+      <!-- 视图模式切换 (网格 / 紧凑单行列表) -->
+      <div class="inline-flex items-center p-0.5 rounded-lg border border-border-subtle bg-surface">
+        <button
+          type="button"
+          onclick={() => appState.updateSettings({ layoutMode: 'grid' })}
+          class="p-1 rounded-md transition-colors {(appState.settings.layoutMode || 'grid') === 'grid' ? 'bg-subtle text-text-primary' : 'text-text-tertiary hover:text-text-primary'}"
+          aria-label={t('view.grid')}
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          onclick={() => appState.updateSettings({ layoutMode: 'list' })}
+          class="p-1 rounded-md transition-colors {appState.settings.layoutMode === 'list' ? 'bg-subtle text-text-primary' : 'text-text-tertiary hover:text-text-primary'}"
+          aria-label={t('view.list')}
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
 
-      {#if showSortMenu}
-        <!-- 遮罩用于点击外部关闭 -->
-        <div
-          class="fixed inset-0 z-40"
-          tabindex="-1"
-          role="presentation"
-          onclick={() => (showSortMenu = false)}
-          onkeydown={(e) => { if (e.key === 'Escape') showSortMenu = false; }}
-        ></div>
+      <!-- 排序菜单 -->
+      <div class="relative">
+        <button
+          type="button"
+          onclick={() => (showSortMenu = !showSortMenu)}
+          class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border-subtle bg-surface hover:bg-subtle text-xs text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+          aria-label={t('sort.tooltip')}
+        >
+          <span class="text-xs">{currentSort.iconText}</span>
+          <span class="font-medium text-[11px]">{getSortLabel(currentSort.value)}</span>
+          <svg class="w-3 h-3 text-text-tertiary transition-transform duration-200 {showSortMenu ? 'rotate-180 text-text-primary' : ''}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
 
-        <div class="absolute right-0 top-full mt-1.5 w-36 bg-surface border border-border-subtle rounded-xl shadow-popover p-1 z-50 text-xs space-y-0.5">
-          <div class="px-2 py-1 text-[10px] text-text-tertiary font-medium border-b border-border-subtle/50 mb-0.5">{t('settings.sortOrder')}</div>
-          {#each BOOKMARK_SORT_OPTIONS as opt}
-            {@const isSelected = opt.value === (appState.settings.bookmarkSortOrder || 'custom')}
-            <button
-              type="button"
-              onclick={() => handleSelectSort(opt.value)}
-              class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors {isSelected ? 'bg-subtle text-text-primary font-medium' : 'text-text-secondary hover:bg-subtle/70 hover:text-text-primary'}"
-            >
-              <div class="flex items-center gap-1.5">
-                <span>{opt.iconText}</span>
-                <span class="text-[11px]">{getSortLabel(opt.value)}</span>
-              </div>
-              {#if isSelected}
-                <svg class="w-3 h-3 text-accent" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              {/if}
-            </button>
-          {/each}
-        </div>
-      {/if}
+        {#if showSortMenu}
+          <!-- 遮罩用于点击外部关闭 -->
+          <div
+            class="fixed inset-0 z-40"
+            tabindex="-1"
+            role="presentation"
+            onclick={() => (showSortMenu = false)}
+            onkeydown={(e) => { if (e.key === 'Escape') showSortMenu = false; }}
+          ></div>
+
+          <div class="absolute right-0 top-full mt-1.5 w-36 bg-surface border border-border-subtle rounded-xl shadow-popover p-1 z-50 text-xs space-y-0.5">
+            <div class="px-2 py-1 text-[11px] text-text-tertiary font-medium border-b border-border-subtle/50 mb-0.5">{t('settings.sortOrder')}</div>
+            {#each BOOKMARK_SORT_OPTIONS as opt}
+              {@const isSelected = opt.value === (appState.settings.bookmarkSortOrder || 'custom')}
+              <button
+                type="button"
+                onclick={() => handleSelectSort(opt.value)}
+                class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors {isSelected ? 'bg-subtle text-text-primary font-medium' : 'text-text-secondary hover:bg-subtle/70 hover:text-text-primary'}"
+              >
+                <div class="flex items-center gap-1.5">
+                  <span>{opt.iconText}</span>
+                  <span class="text-[11px]">{getSortLabel(opt.value)}</span>
+                </div>
+                {#if isSelected}
+                  <svg class="w-3 h-3 text-accent" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                {/if}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
     </div>
   </div>
 {/if}

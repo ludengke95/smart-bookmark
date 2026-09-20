@@ -171,7 +171,7 @@
               >
                 <IconRender {iconKey} customIcon={customIconBase64} size={32} />
               </button>
-              <span class="text-[10px] text-text-tertiary">{t('bookmark.changeIcon')}</span>
+              <span class="text-[11px] text-text-tertiary">{t('bookmark.changeIcon')}</span>
             </div>
 
             <!-- 书签名称 -->
@@ -212,7 +212,7 @@
                     <div class="w-4 h-4" style="color: {val.color || 'currentColor'}">
                       {@html val.svg}
                     </div>
-                    <span class="text-[9px] text-text-tertiary truncate max-w-[40px]">{val.name}</span>
+                    <span class="text-[11px] text-text-tertiary truncate max-w-[40px]">{val.name}</span>
                   </button>
                 {/each}
               </div>
@@ -260,7 +260,7 @@
                 <div class="flex items-center gap-2">
                   <!-- 网络类型指示徽章 -->
                   <span
-                    class="px-1.5 py-1 rounded text-[10px] font-mono flex-shrink-0 {classification.isIntranet
+                    class="px-1.5 py-1 rounded text-[11px] font-mono flex-shrink-0 {classification.isIntranet
                       ? 'bg-status-intranet/10 text-status-intranet border border-status-intranet/20'
                       : 'bg-status-extranet/10 text-status-extranet border border-status-extranet/20'}"
                   >
@@ -280,7 +280,7 @@
                   <button
                     type="button"
                     onclick={() => testProbe(ep.url)}
-                    class="px-2 py-1 rounded border border-border-subtle hover:bg-subtle text-[10px] font-mono text-text-secondary flex-shrink-0"
+                    class="px-2 py-1 rounded border border-border-subtle hover:bg-subtle text-[11px] font-mono text-text-secondary flex-shrink-0"
                     title={t('bookmark.probeTooltip')}
                   >
                     {isProbing[ep.url] || t('bookmark.probeTest')}

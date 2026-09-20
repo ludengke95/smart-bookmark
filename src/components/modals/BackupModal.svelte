@@ -161,7 +161,7 @@
             {t('backup.noSnapshots')}
           </div>
         {:else}
-          <div class="divide-y divide-border-subtle/50 border border-border-subtle rounded-xl bg-surface">
+          <div class="divide-y divide-border-subtle border border-border-subtle rounded-xl bg-surface">
             {#each appState.snapshots as snap}
               <div class="p-3 flex items-center justify-between gap-3">
                 <div class="min-w-0 flex-1">

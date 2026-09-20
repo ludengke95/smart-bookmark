@@ -44,6 +44,10 @@ export default {
     shortcutEnter: 'Enter',
     shortcutShiftEnter: 'Shift + Enter'
   },
+  view: {
+    grid: 'Grid View',
+    list: 'List View'
+  },
   sort: {
     tooltip: 'Switch bookmark sorting order',
     toastSorted: 'Sorted by "{label}"',

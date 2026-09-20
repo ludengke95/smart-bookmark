@@ -7,6 +7,7 @@
 
   let {
     bookmark,
+    layout = 'grid',
     onEdit = () => {},
     onDelete = () => {},
     draggable = false,
@@ -61,46 +62,45 @@
   }
 </script>
 
-<div
-  role="button"
-  tabindex="0"
-  {draggable}
-  {ondragstart}
-  {ondragend}
-  {ondragover}
-  {ondragleave}
-  {ondrop}
-  onclick={handleCardClick}
-  onauxclick={handleAuxClick}
-  onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(e); }}
-  class="group relative flex flex-col justify-between p-3 rounded-lg border border-border-subtle bg-surface hover:border-border-focus hover:shadow-sm transition-all duration-150 cursor-pointer select-none text-left"
->
-  <!-- 卡片头部：图标、名称与右上角悬浮操作区 -->
-  <div class="flex items-start justify-between gap-2.5">
-    <div class="flex items-center gap-2.5 min-w-0 flex-1">
+{#if layout === 'list'}
+  <!-- 紧凑单行列表视图 -->
+  <div
+    role="button"
+    tabindex="0"
+    {draggable}
+    {ondragstart}
+    {ondragend}
+    {ondragover}
+    {ondragleave}
+    {ondrop}
+    onclick={handleCardClick}
+    onauxclick={handleAuxClick}
+    onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(e); }}
+    class="group relative flex items-center justify-between px-3.5 py-2 rounded-lg border border-border-subtle bg-surface hover:border-border-focus hover:shadow-sm transition-all duration-150 cursor-pointer select-none text-left min-h-[42px]"
+  >
+    <!-- 左侧：图标与标题与标签 -->
+    <div class="flex items-center gap-3 min-w-0 flex-1 mr-3">
       <IconRender
         iconKey={bookmark.iconKey}
         customIcon={bookmark.customIconBase64}
-        size={26}
+        size={22}
       />
-      <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-1.5 min-w-0">
-          <h3 class="text-xs sm:text-sm font-medium text-text-primary truncate group-hover:text-accent transition-colors">
-            {bookmark.name}
-          </h3>
-          {#if bookmark.isReadOnly}
-            <span
-              class="text-[9px] px-1 py-0.5 rounded border border-border-subtle bg-subtle text-text-tertiary flex-shrink-0"
-              title={t('subscriptions.readOnlyTooltip')}
-            >
-              {t('subscriptions.readOnlyBadge')}
-            </span>
-          {/if}
-        </div>
+      <div class="flex items-center gap-2 min-w-0 truncate">
+        <span class="text-[13px] sm:text-sm font-medium text-text-primary truncate group-hover:text-accent transition-colors">
+          {bookmark.name}
+        </span>
+        {#if bookmark.isReadOnly}
+          <span
+            class="text-[11px] px-1.5 py-0.2 rounded border border-border-subtle bg-subtle text-text-tertiary flex-shrink-0"
+            aria-label={t('subscriptions.readOnlyTooltip')}
+          >
+            {t('subscriptions.readOnlyBadge')}
+          </span>
+        {/if}
         {#if (bookmark.tags || []).length > 0}
-          <div class="flex items-center gap-1 mt-0.5 overflow-hidden">
-            {#each bookmark.tags.slice(0, 2) as tag}
-              <span class="text-[10px] text-text-tertiary truncate">
+          <div class="hidden sm:flex items-center gap-1.5 overflow-hidden">
+            {#each bookmark.tags.slice(0, 3) as tag}
+              <span class="text-[11px] text-text-tertiary truncate">
                 #{tag}
               </span>
             {/each}
@@ -109,119 +109,262 @@
       </div>
     </div>
 
-    <!-- 悬浮操作按钮组 (编辑 / 转存 / 更多入口 / 删除) -->
-    <div class="no-jump opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
-      {#if (bookmark.endpoints || []).length > 1}
-        <button
-          type="button"
-          onclick={() => (showEndpoints = !showEndpoints)}
-          class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
-          title={t('bookmark.allEndpoints', { count: bookmark.endpoints.length })}
-        >
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-      {/if}
-
-      {#if bookmark.isReadOnly}
-        <!-- 转存到我的书签按钮 (Fork) -->
-        <button
-          type="button"
-          onclick={() => appState.forkBookmarkToCustom(bookmark)}
-          class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-accent transition-colors"
-          title={t('subscriptions.forkBookmark')}
-        >
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-          </svg>
-        </button>
-      {:else}
-        <!-- 普通编辑与删除按钮 -->
-        <button
-          type="button"
-          onclick={() => onEdit(bookmark)}
-          class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
-          title={t('common.edit')}
-        >
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-          </svg>
-        </button>
-
-        <button
-          type="button"
-          onclick={() => onDelete(bookmark)}
-          class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-status-danger transition-colors"
-          title={t('common.delete')}
-        >
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-        </button>
-      {/if}
-    </div>
-  </div>
-
-  <!-- 卡片底部：精密网络拓扑微标行 -->
-  <div class="mt-2.5 flex items-center justify-between gap-2 text-[11px] font-mono">
-    {#if optimal?.url}
-      {@const dotTip = optimal.latency
-        ? `${optimal.latency}ms · ${optimal.isIntranet ? t('bookmark.intranetBadge') : t('bookmark.extranetBadge')}`
-        : (optimal.reachable === false
-          ? (optimal.probeError === 'timeout' ? t('latency.timeout') : t('latency.offline'))
-          : (optimal.isIntranet ? t('bookmark.intranetBadge') : t('bookmark.extranetBadge')))}
-      <div class="flex items-center gap-1.5 min-w-0 text-text-secondary truncate">
-        <!-- 网络拓扑与测速状态指示点 (悬停显示延迟与网络类型) -->
-        <span
-          class="w-1.5 h-1.5 rounded-full flex-shrink-0 {optimal.reachable === false
-            ? 'bg-status-danger'
-            : optimal.isIntranet
-              ? 'bg-status-intranet'
-              : 'bg-status-extranet'}"
-          title={dotTip}
-        ></span>
-        <span class="truncate">
-          {optimal.targetIp || optimal.host || optimal.url || t('bookmark.directAddress')}
-        </span>
+    <!-- 右侧：路由微标与悬浮操作 -->
+    <div class="flex items-center gap-3 flex-shrink-0">
+      <!-- 路由节点 -->
+      <div class="flex items-center gap-1.5 font-mono text-[11px] text-text-secondary">
+        {#if optimal?.url}
+          <span
+            class="w-1.5 h-1.5 rounded-full flex-shrink-0 {optimal.reachable === false
+              ? 'bg-status-danger'
+              : optimal.isIntranet
+                ? 'bg-status-intranet'
+                : 'bg-status-extranet'}"
+            aria-label={optimal.latency ? `${optimal.latency}ms` : ''}
+          ></span>
+          <span class="truncate max-w-[130px] sm:max-w-[200px]">
+            {optimal.targetIp || optimal.host || optimal.url || t('bookmark.directAddress')}
+          </span>
+          {#if optimal.latency}
+            <span class="text-text-tertiary hidden md:inline">({optimal.latency}ms)</span>
+          {/if}
+        {:else}
+          <span class="text-text-tertiary">{t('bookmark.noEndpointsConfigured')}</span>
+        {/if}
       </div>
-    {:else}
-      <div class="flex items-center gap-1.5 min-w-0 text-text-secondary truncate">
-        <span class="text-text-tertiary">{t('bookmark.noEndpointsConfigured')}</span>
+
+      <!-- 操作按钮组 -->
+      <div class="no-jump opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+        {#if (bookmark.endpoints || []).length > 1}
+          <button
+            type="button"
+            onclick={() => (showEndpoints = !showEndpoints)}
+            class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
+            aria-label={t('bookmark.allEndpoints', { count: bookmark.endpoints.length })}
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        {/if}
+
+        {#if bookmark.isReadOnly}
+          <button
+            type="button"
+            onclick={() => appState.forkBookmarkToCustom(bookmark)}
+            class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-accent transition-colors"
+            aria-label={t('subscriptions.forkBookmark')}
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+            </svg>
+          </button>
+        {:else}
+          <button
+            type="button"
+            onclick={() => onEdit(bookmark)}
+            class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
+            aria-label={t('common.edit')}
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            onclick={() => onDelete(bookmark)}
+            class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-status-danger transition-colors"
+            aria-label={t('common.delete')}
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        {/if}
+      </div>
+    </div>
+
+    <!-- 多入口展开抽屉面板 -->
+    {#if showEndpoints && (bookmark.endpoints || []).length > 1}
+      <div class="no-jump absolute right-0 top-full mt-1 w-72 bg-surface border border-border-subtle rounded-lg shadow-popover p-1.5 z-30 text-xs space-y-1">
+        <div class="px-2 py-1 text-[11px] text-text-tertiary font-medium">{t('bookmark.allEndpoints', { count: bookmark.endpoints.length })}</div>
+        {#each route.sorted as ep}
+          <button
+            type="button"
+            onclick={() => handleEndpointClick(ep)}
+            onauxclick={(e) => handleEndpointAuxClick(e, ep)}
+            class="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded hover:bg-subtle text-left transition-colors {ep === optimal ? 'bg-subtle/60 text-text-primary font-medium' : 'text-text-secondary'}"
+          >
+            <div class="flex items-center gap-1.5 min-w-0 truncate">
+              <span
+                class="w-1.5 h-1.5 rounded-full flex-shrink-0 {ep.reachable === false ? 'bg-status-danger' : ep.isIntranet ? 'bg-status-intranet' : 'bg-status-extranet'}"
+              ></span>
+              <span class="font-mono text-[11px] truncate">{ep.url}</span>
+            </div>
+            {#if ep === optimal}
+              <div class="flex items-center flex-shrink-0 text-[11px] font-mono">
+                <span class="text-status-intranet font-medium">{t('bookmark.optimal')}</span>
+              </div>
+            {/if}
+          </button>
+        {/each}
       </div>
     {/if}
   </div>
-
-  <!-- 多入口展开抽屉面板 -->
-  {#if showEndpoints && (bookmark.endpoints || []).length > 1}
-    <div class="no-jump absolute left-0 right-0 top-full mt-1 bg-surface border border-border-subtle rounded-lg shadow-popover p-1.5 z-30 text-xs space-y-1">
-      <div class="px-2 py-1 text-[10px] text-text-tertiary font-medium">{t('bookmark.allEndpoints', { count: bookmark.endpoints.length })}</div>
-      {#each route.sorted as ep}
-        {@const epDotTip = ep.latency
-          ? `${ep.latency}ms · ${ep.isIntranet ? t('bookmark.intranetBadge') : t('bookmark.extranetBadge')}`
-          : (ep.reachable === false
-            ? (ep.probeError === 'timeout' ? t('latency.timeout') : t('latency.offline'))
-            : (ep.isIntranet ? t('bookmark.intranetBadge') : t('bookmark.extranetBadge')))}
-        <button
-          type="button"
-          onclick={() => handleEndpointClick(ep)}
-          onauxclick={(e) => handleEndpointAuxClick(e, ep)}
-          class="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded hover:bg-subtle text-left transition-colors {ep === optimal ? 'bg-subtle/60 text-text-primary font-medium' : 'text-text-secondary'}"
-        >
-          <div class="flex items-center gap-1.5 min-w-0 truncate">
-            <span
-              class="w-1.5 h-1.5 rounded-full flex-shrink-0 {ep.reachable === false ? 'bg-status-danger' : ep.isIntranet ? 'bg-status-intranet' : 'bg-status-extranet'}"
-              title={epDotTip}
-            ></span>
-            <span class="font-mono text-[11px] truncate">{ep.url}</span>
+{:else}
+  <!-- 经典网格卡片视图 -->
+  <div
+    role="button"
+    tabindex="0"
+    {draggable}
+    {ondragstart}
+    {ondragend}
+    {ondragover}
+    {ondragleave}
+    {ondrop}
+    onclick={handleCardClick}
+    onauxclick={handleAuxClick}
+    onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(e); }}
+    class="group relative flex flex-col justify-between p-3 rounded-lg border border-border-subtle bg-surface hover:border-border-focus hover:shadow-sm transition-all duration-150 cursor-pointer select-none text-left"
+  >
+    <!-- 卡片头部：图标、名称与右上角悬浮操作区 -->
+    <div class="flex items-start justify-between gap-2.5">
+      <div class="flex items-center gap-2.5 min-w-0 flex-1">
+        <IconRender
+          iconKey={bookmark.iconKey}
+          customIcon={bookmark.customIconBase64}
+          size={26}
+        />
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <h3 class="text-[13px] sm:text-sm font-medium text-text-primary truncate group-hover:text-accent transition-colors">
+              {bookmark.name}
+            </h3>
+            {#if bookmark.isReadOnly}
+              <span
+                class="text-[11px] px-1.5 py-0.2 rounded border border-border-subtle bg-subtle text-text-tertiary flex-shrink-0"
+                aria-label={t('subscriptions.readOnlyTooltip')}
+              >
+                {t('subscriptions.readOnlyBadge')}
+              </span>
+            {/if}
           </div>
-          {#if ep === optimal}
-            <div class="flex items-center flex-shrink-0 text-[10px] font-mono">
-              <span class="text-status-intranet font-medium">{t('bookmark.optimal')}</span>
+          {#if (bookmark.tags || []).length > 0}
+            <div class="flex items-center gap-1 mt-0.5 overflow-hidden">
+              {#each bookmark.tags.slice(0, 2) as tag}
+                <span class="text-[11px] text-text-tertiary truncate">
+                  #{tag}
+                </span>
+              {/each}
             </div>
           {/if}
-        </button>
-      {/each}
+        </div>
+      </div>
+
+      <!-- 悬浮操作按钮组 (编辑 / 转存 / 更多入口 / 删除) -->
+      <div class="no-jump opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+        {#if (bookmark.endpoints || []).length > 1}
+          <button
+            type="button"
+            onclick={() => (showEndpoints = !showEndpoints)}
+            class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
+            aria-label={t('bookmark.allEndpoints', { count: bookmark.endpoints.length })}
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        {/if}
+
+        {#if bookmark.isReadOnly}
+          <!-- 转存到我的书签按钮 (Fork) -->
+          <button
+            type="button"
+            onclick={() => appState.forkBookmarkToCustom(bookmark)}
+            class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-accent transition-colors"
+            aria-label={t('subscriptions.forkBookmark')}
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+            </svg>
+          </button>
+        {:else}
+          <!-- 普通编辑与删除按钮 -->
+          <button
+            type="button"
+            onclick={() => onEdit(bookmark)}
+            class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
+            aria-label={t('common.edit')}
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            onclick={() => onDelete(bookmark)}
+            class="p-1 rounded hover:bg-subtle text-text-tertiary hover:text-status-danger transition-colors"
+            aria-label={t('common.delete')}
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        {/if}
+      </div>
     </div>
-  {/if}
-</div>
+
+    <!-- 卡片底部：精密网络拓扑微标行 -->
+    <div class="mt-2.5 flex items-center justify-between gap-2 text-[11px] font-mono">
+      {#if optimal?.url}
+        <div class="flex items-center gap-1.5 min-w-0 text-text-secondary truncate">
+          <!-- 网络拓扑与测速状态指示点 -->
+          <span
+            class="w-1.5 h-1.5 rounded-full flex-shrink-0 {optimal.reachable === false
+              ? 'bg-status-danger'
+              : optimal.isIntranet
+                ? 'bg-status-intranet'
+                : 'bg-status-extranet'}"
+            aria-label={optimal.latency ? `${optimal.latency}ms` : ''}
+          ></span>
+          <span class="truncate">
+            {optimal.targetIp || optimal.host || optimal.url || t('bookmark.directAddress')}
+          </span>
+        </div>
+      {:else}
+        <div class="flex items-center gap-1.5 min-w-0 text-text-secondary truncate">
+          <span class="text-text-tertiary">{t('bookmark.noEndpointsConfigured')}</span>
+        </div>
+      {/if}
+    </div>
+
+    <!-- 多入口展开抽屉面板 -->
+    {#if showEndpoints && (bookmark.endpoints || []).length > 1}
+      <div class="no-jump absolute left-0 right-0 top-full mt-1 bg-surface border border-border-subtle rounded-lg shadow-popover p-1.5 z-30 text-xs space-y-1">
+        <div class="px-2 py-1 text-[11px] text-text-tertiary font-medium">{t('bookmark.allEndpoints', { count: bookmark.endpoints.length })}</div>
+        {#each route.sorted as ep}
+          <button
+            type="button"
+            onclick={() => handleEndpointClick(ep)}
+            onauxclick={(e) => handleEndpointAuxClick(e, ep)}
+            class="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded hover:bg-subtle text-left transition-colors {ep === optimal ? 'bg-subtle/60 text-text-primary font-medium' : 'text-text-secondary'}"
+          >
+            <div class="flex items-center gap-1.5 min-w-0 truncate">
+              <span
+                class="w-1.5 h-1.5 rounded-full flex-shrink-0 {ep.reachable === false ? 'bg-status-danger' : ep.isIntranet ? 'bg-status-intranet' : 'bg-status-extranet'}"
+              ></span>
+              <span class="font-mono text-[11px] truncate">{ep.url}</span>
+            </div>
+            {#if ep === optimal}
+              <div class="flex items-center flex-shrink-0 text-[11px] font-mono">
+                <span class="text-status-intranet font-medium">{t('bookmark.optimal')}</span>
+              </div>
+            {/if}
+          </button>
+        {/each}
+      </div>
+    {/if}
+  </div>
+{/if}

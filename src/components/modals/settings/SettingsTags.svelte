@@ -125,7 +125,7 @@
       {t('tags.noMatch')}
     </div>
   {:else}
-    <div class="flex-1 min-h-0 overflow-y-auto space-y-1 divide-y divide-border-subtle/50 border border-border-subtle rounded-xl bg-surface p-1 pr-1.5">
+    <div class="flex-1 min-h-0 overflow-y-auto space-y-1 border border-border-subtle rounded-xl bg-surface p-1 pr-1.5">
       {#each filteredTags as tag (tag.name)}
         <div class="flex items-center justify-between p-2 hover:bg-subtle/40 rounded-lg transition-colors">
           {#if editingTag === tag.name}
@@ -172,7 +172,7 @@
                 type="button"
                 onclick={() => handleStartEdit(tag)}
                 class="p-1.5 rounded hover:bg-subtle text-text-tertiary hover:text-text-primary transition-colors"
-                title={t('tags.renameTooltip')}
+                aria-label={t('tags.renameTooltip')}
               >
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -183,7 +183,7 @@
                 type="button"
                 onclick={() => handlePromptDelete(tag.name)}
                 class="p-1.5 rounded hover:bg-subtle text-text-tertiary hover:text-status-danger transition-colors"
-                title={t('tags.deleteTooltip')}
+                aria-label={t('tags.deleteTooltip')}
               >
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

@@ -5,7 +5,7 @@ export default {
     './components/**/*.{html,ts,js,svelte}',
     './src/**/*.{html,ts,js,svelte}',
   ],
-  darkMode: ['selector', '[data-theme="obsidian-dark"]'],
+  darkMode: ['selector', '[data-theme$="-dark"]'],
   theme: {
     extend: {
       fontFamily: {
