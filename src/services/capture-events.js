@@ -209,6 +209,7 @@ export function registerOmnibox() {
   chrome.omnibox.onInputEntered.addListener(async (content, disposition) => {
     try {
       let targetUrl = '';
+      let fallbackQuery = content || '';
 
       if (content && content.startsWith(OMNIBOX_PREFIX)) {
         const id = content.slice(OMNIBOX_PREFIX.length);
@@ -217,6 +218,7 @@ export function registerOmnibox() {
         if (bm) {
           const route = resolveBookmarkRoute(bm, cache?.localIp || '', cache?.results || {});
           targetUrl = route?.optimal?.url || '';
+          fallbackQuery = bm.name || bm.id;
         }
       } else {
         // 用户未选择建议而直接回车：按输入文本检索最佳匹配，智能寻径直达
@@ -230,7 +232,7 @@ export function registerOmnibox() {
 
       if (!targetUrl) {
         // 无匹配：回退到默认搜索引擎（沿用百度检索）
-        targetUrl = `https://www.baidu.com/s?wd=${encodeURIComponent(content || '')}`;
+        targetUrl = `https://www.baidu.com/s?wd=${encodeURIComponent(fallbackQuery || '')}`;
       }
 
       navigateOmnibox(targetUrl, disposition);
