@@ -10,5 +10,37 @@
   "actionTitle": {
     "message": "Open Smart Bookmark Quick Panel",
     "description": "Extension action icon tooltip"
+  },
+  "commandQuickCapture": {
+    "message": "Quick capture current page to Smart Bookmark",
+    "description": "Global keyboard shortcut description"
+  },
+  "ctxSavePage": {
+    "message": "Save this page to Smart Bookmark",
+    "description": "Context menu: save current page"
+  },
+  "ctxAddEndpoint": {
+    "message": "Add this page as an alternate endpoint of an existing bookmark...",
+    "description": "Context menu: append as endpoint"
+  },
+  "ctxSaveLink": {
+    "message": "Save this link to Smart Bookmark",
+    "description": "Context menu: save selected link"
+  },
+  "captureSaved": {
+    "message": "Saved: {name}",
+    "description": "Capture success toast"
+  },
+  "captureEndpointSaved": {
+    "message": "Added as a new endpoint of \"{name}\"",
+    "description": "Append endpoint success toast"
+  },
+  "captureFailed": {
+    "message": "Save failed: {reason}",
+    "description": "Capture failure toast"
+  },
+  "omniboxDescription": {
+    "message": "Smart Bookmark · smart route",
+    "description": "Omnibox suggestion description"
   }
 }

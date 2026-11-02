@@ -56,6 +56,9 @@ export default defineConfig({
       'activeTab',
       'alarms',
       'nativeMessaging',
+      // 右键上下文菜单收藏 + 前台注入轻量 Toast 反馈
+      'contextMenus',
+      'scripting',
       ...(isChromium ? ['offscreen'] : [])
     ];
 
@@ -71,6 +74,19 @@ export default defineConfig({
       optional_permissions: [
         'bookmarks'
       ],
+      // 地址栏集成：输入 bm + 空格触发本地书签实时检索并智能寻径直达
+      omnibox: {
+        keyword: 'bm'
+      },
+      // 全局快捷键：Alt+Shift+S 唤起快捷收藏面板（_execute_action 直接打开扩展动作弹窗）
+      commands: {
+        _execute_action: {
+          suggested_key: {
+            default: 'Alt+Shift+S'
+          },
+          description: '__MSG_commandQuickCapture__'
+        }
+      },
       chrome_url_overrides: {
         newtab: 'home.html'
       },

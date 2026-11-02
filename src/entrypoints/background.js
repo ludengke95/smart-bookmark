@@ -1,12 +1,19 @@
 import { defineBackground } from 'wxt/utils/define-background';
-import { getBookmarks, getSettings } from '../services/storage.js';
+import { getBookmarks, getSettings, initStorage } from '../services/storage.js';
 import { onStorageChange } from '../services/storage/sync.js';
 import { nativeHostClient } from '../services/mcp/native-host.js';
 import { initKeepaliveListener } from '../services/mcp/keepalive.js';
 import { DEFAULT_MCP_WS_PORT } from '../constants/index.js';
 import { syncDueSubscriptions, syncSubscription } from '../services/subscription/index.js';
+import { registerCaptureShortcuts, registerContextMenus } from '../services/capture-events.js';
 export default defineBackground(() => {
   console.log('[Background] Smart Bookmark service worker active');
+
+  // 采集与地址栏集成：右键菜单 / 全局快捷键 / Omnibox
+  // 确保底层 IndexedDB 已就绪（首次唤醒时补齐默认分组与设置）
+  initStorage().catch((e) => console.warn('[Background] initStorage failed:', e));
+  registerContextMenus();
+  registerCaptureShortcuts();
 
   // 初始化 Offscreen 心跳监听
   initKeepaliveListener();
@@ -89,6 +96,8 @@ export default defineBackground(() => {
 
   // 安装或更新时的初始化
   chrome.runtime.onInstalled?.addListener((details) => {
+    // 上下文菜单需在安装/更新时重建，避免多语言文案或结构变更后残留旧菜单
+    registerContextMenus();
     if (details.reason === 'install') {
       console.log('[Background] 智能书签插件首次安装完成');
     }

@@ -75,7 +75,31 @@
         console.warn('读取当前活动标签页失败:', e);
       }
     }
+
+    // 右键菜单「添加为已有书签备用入口」意图：读取暂存 URL 并直接进入追加模式
+    await consumePendingAppend();
   });
+
+  async function consumePendingAppend() {
+    if (typeof chrome === 'undefined' || !chrome.storage?.session?.get) return;
+    try {
+      const { smartbm_pending_append: pending } = await chrome.storage.session.get('smartbm_pending_append');
+      if (!pending || !pending.url) return;
+      // 及时清理，避免下次打开弹窗重复触发
+      await chrome.storage.session.remove('smartbm_pending_append');
+      // 5 分钟内有效
+      if (Date.now() - (pending.ts || 0) > 5 * 60 * 1000) return;
+      // 用暂存 URL 覆盖当前标签页上下文（右键页面时二者一致；链接场景以目标页为准）
+      if (!currentTab.url) {
+        currentTab = { title: pending.title || pending.url, url: pending.url, favIconUrl: '' };
+      } else {
+        currentTab = { ...currentTab, url: pending.url, title: pending.title || currentTab.title };
+      }
+      startAppendMode();
+    } catch (e) {
+      console.warn('读取待追加意图失败:', e);
+    }
+  }
 
   function openNewTab() {
     if (typeof chrome !== 'undefined' && chrome.tabs && chrome.runtime) {
