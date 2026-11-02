@@ -11,6 +11,7 @@ import {
   sanitizeUrlForStorage,
   matchCurrentTabWithBookmarks
 } from '../src/services/bookmark-matcher.js';
+import { searchBookmarks, resolveBookmarkRoute, buildSuggestionDescription } from '../src/services/omnibox.js';
 
 console.log('--- 1. 验证 IPv4 与 Uint32 转换 ---');
 assert.strictEqual(ipToUint32('192.168.1.1'), ((192 << 24) | (168 << 16) | (1 << 8) | 1) >>> 0);
@@ -109,6 +110,58 @@ assert.strictEqual(matchNone.exactMatch, null);
 assert.strictEqual(matchNone.matchedEndpoint, null);
 
 console.log('✓ URL 规范化与书签精准匹配测试通过');
+
+console.log('--- 7. 验证 Omnibox 地址栏检索与智能寻径 ---');
+const omniBooks = [
+  {
+    id: 'bm_gitlab',
+    name: 'GitLab 代码平台',
+    tags: ['代码仓库'],
+    endpoints: [
+      { url: 'http://192.168.10.20:8080', order: 0, type: 'intranet' },
+      { url: 'https://gitlab.company.com', order: 1, type: 'extranet' }
+    ]
+  },
+  {
+    id: 'bm_jenkins',
+    name: 'Jenkins CI',
+    tags: ['CI/CD'],
+    endpoints: [{ url: 'http://192.168.10.30:8080', order: 0, type: 'intranet' }]
+  },
+  {
+    id: 'bm_wiki',
+    name: '公司 Wiki',
+    tags: [],
+    endpoints: [{ url: 'https://wiki.company.com', order: 0, type: 'extranet' }]
+  }
+];
+
+// 名称前缀匹配优先
+const nameHits = searchBookmarks(omniBooks, 'gitlab');
+assert.strictEqual(nameHits[0]?.id, 'bm_gitlab', '名称匹配应命中 GitLab');
+
+// 标签匹配
+const tagHits = searchBookmarks(omniBooks, 'ci');
+assert(tagHits.some(b => b.id === 'bm_jenkins'), '标签/名称包含 ci 应命中 Jenkins');
+
+// URL 匹配
+const urlHits = searchBookmarks(omniBooks, 'wiki.company');
+assert.strictEqual(urlHits[0]?.id, 'bm_wiki', 'URL 片段应命中 Wiki');
+
+// 无匹配返回空
+assert.strictEqual(searchBookmarks(omniBooks, 'zzz-not-exist').length, 0, '无匹配应返回空数组');
+
+// 智能寻径：内网 IP 下应优选内网入口
+const route = resolveBookmarkRoute(omniBooks[0], '192.168.10.50', {});
+assert.strictEqual(route.optimal?.url, 'http://192.168.10.20:8080', '内网环境应优选内网入口');
+
+// 含 XML 特殊字符的建议描述应被转义（仅保留 <match>/<dim> 富文本标记）
+const desc = buildSuggestionDescription({ name: 'A<B>&C', route, query: 'A', dimText: 'http://x?a=1&b=2' });
+const stripped = desc.replace(/<\/?(match|dim)>/g, '');
+assert(!stripped.includes('<') && !stripped.includes('>'), '除去富文本标记后不应残留裸尖括号');
+assert(desc.includes('&amp;'), '& 应转义为 &amp;');
+assert(desc.includes('&lt;'), '< 应转义为 &lt;');
+console.log('✓ Omnibox 地址栏检索、智能寻径与富文本转义测试通过');
 
 console.log('\n==============================');
 console.log('🎉 所有底层算法单元测试 100% 通过！');

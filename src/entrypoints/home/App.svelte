@@ -26,6 +26,8 @@
 
   let editingBookmark = $state(null);
   let targetDefaultGroupId = $state('');
+  let prefillUrl = $state('');
+  let appendEndpointUrl = $state('');
   let deleteTarget = $state({ open: false, bookmark: null });
 
   onMount(async () => {
@@ -42,6 +44,13 @@
               handleOpenEditBookmark(targetBm);
             }
           }
+        } else if (urlParams.get('action') === 'append') {
+          // 右键「添加为已有书签备用入口」回退流程：优先追加到同主机书签，否则新建书签
+          const targetUrl = urlParams.get('url') || '';
+          const targetTitle = urlParams.get('title') || '';
+          if (targetUrl) {
+            handleAppendPending(targetUrl, targetTitle);
+          }
         }
       } catch (e) {
         console.warn('解析 URL action 参数失败:', e);
@@ -49,15 +58,50 @@
     }
   });
 
+  // 依据暂存 URL 匹配同主机书签，追加为新入口；无匹配则以该 URL 预填新书签
+  function handleAppendPending(url, title) {
+    let host = '';
+    try {
+      host = new URL(/^https?:\/\//i.test(url) ? url : 'http://' + url).hostname.toLowerCase();
+    } catch {
+      host = '';
+    }
+    const matched = appState.bookmarks.find(bm =>
+      !bm.isReadOnly && (bm.endpoints || []).some(ep => {
+        try {
+          return new URL(/^https?:\/\//i.test(ep.url) ? ep.url : 'http://' + ep.url).hostname.toLowerCase() === host;
+        } catch {
+          return false;
+        }
+      })
+    );
+    if (matched) {
+      editingBookmark = matched;
+      targetDefaultGroupId = matched.groupId || '';
+      prefillUrl = '';
+      appendEndpointUrl = url;
+    } else {
+      editingBookmark = null;
+      targetDefaultGroupId = '';
+      prefillUrl = url;
+      appendEndpointUrl = '';
+    }
+    showBookmarkModal = true;
+  }
+
   function handleOpenAddBookmark(groupId = '') {
     editingBookmark = null;
     targetDefaultGroupId = groupId;
+    prefillUrl = '';
+    appendEndpointUrl = '';
     showBookmarkModal = true;
   }
 
   function handleOpenEditBookmark(bm) {
     editingBookmark = bm;
     targetDefaultGroupId = bm.groupId || '';
+    prefillUrl = '';
+    appendEndpointUrl = '';
     showBookmarkModal = true;
   }
 
@@ -108,6 +152,8 @@
     bind:open={showBookmarkModal}
     editBookmark={editingBookmark}
     defaultGroupId={targetDefaultGroupId}
+    prefillUrl={prefillUrl}
+    appendEndpointUrl={appendEndpointUrl}
   />
 
   <ImportModal

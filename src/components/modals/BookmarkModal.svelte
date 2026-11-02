@@ -12,7 +12,7 @@
   import Select from '../common/Select.svelte';
   import ModalShell from '../common/ModalShell.svelte';
 
-  let { open = $bindable(false), editBookmark = null, defaultGroupId = '' } = $props();
+  let { open = $bindable(false), editBookmark = null, defaultGroupId = '', prefillUrl = '', appendEndpointUrl = '' } = $props();
 
   let name = $state('');
   let groupId = $state('');
@@ -50,6 +50,13 @@
         endpoints = (editBookmark.endpoints || []).length > 0
           ? JSON.parse(JSON.stringify(editBookmark.endpoints))
           : [{ url: '', order: 0 }];
+        // 右键「添加为备用入口」：编辑既有书签时追加一个待填入口
+        if (appendEndpointUrl) {
+          const exists = endpoints.some(ep => (ep?.url || '').trim() === appendEndpointUrl.trim());
+          if (!exists) {
+            endpoints.push({ url: appendEndpointUrl.trim(), order: endpoints.length });
+          }
+        }
       } else {
         name = '';
         groupId = (defaultGroupId && defaultGroupId !== PINNED_GROUP_ID)
@@ -58,7 +65,9 @@
         tagsInput = '';
         iconKey = '';
         customIconBase64 = '';
-        endpoints = [{ url: '', order: 0 }];
+        endpoints = prefillUrl
+          ? [{ url: prefillUrl.trim(), order: 0 }]
+          : [{ url: '', order: 0 }];
       }
       isProbing = {};
       showIconPicker = false;

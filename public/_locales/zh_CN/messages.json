@@ -10,5 +10,37 @@
   "actionTitle": {
     "message": "打开 Smart Bookmark 快捷窗口",
     "description": "扩展图标悬浮气泡提示"
+  },
+  "commandQuickCapture": {
+    "message": "快速收藏当前网页至 Smart Bookmark",
+    "description": "全局快捷键说明"
+  },
+  "ctxSavePage": {
+    "message": "收藏当前网页至 Smart Bookmark",
+    "description": "右键菜单：收藏当前页面"
+  },
+  "ctxAddEndpoint": {
+    "message": "将当前网页添加为已有书签备用入口...",
+    "description": "右键菜单：追加为已有书签入口"
+  },
+  "ctxSaveLink": {
+    "message": "收藏此链接至 Smart Bookmark",
+    "description": "右键菜单：收藏选中链接"
+  },
+  "captureSaved": {
+    "message": "已收藏：{name}",
+    "description": "收藏成功 Toast"
+  },
+  "captureEndpointSaved": {
+    "message": "已追加为「{name}」的新入口",
+    "description": "追加备用入口成功 Toast"
+  },
+  "captureFailed": {
+    "message": "收藏失败：{reason}",
+    "description": "收藏失败 Toast"
+  },
+  "omniboxDescription": {
+    "message": "Smart Bookmark · 智能寻径直达",
+    "description": "地址栏建议描述"
   }
 }
